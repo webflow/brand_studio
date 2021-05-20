@@ -1,0 +1,43 @@
+body {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    -webkit-font-smoothing: antialiased;
+    -moz-font-smoothing: antialiased;
+    -o-font-smoothing: antialiased;
+}
+
+* {
+    -moz-osx-font-smoothing: grayscale;
+    text-underline-position: under;
+}
+
+select {
+    -webkit-appearance: none;
+}
+
+/*Text Selection Color*/
+::-moz-selection {
+    background: rgba(67, 83, 255, 0.95);
+    color: #FFFFFF;
+}
+
+::selection {
+    background: rgba(67, 83, 255, 0.95);
+    color: #FFFFFF;
+}
+
+/*Global Focus Outline Color*/
+
+*:focus {
+    outline: none !important;
+}
+
+*:focus-visible {
+    outline: 2px solid #4353ff !important;
+    outline-offset: 1px !important;
+    border-radius: 0px !important;
+}
+
+.nav *:focus {
+    outline: none !important;
+}
