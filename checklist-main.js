@@ -139,7 +139,7 @@ $(function () {
         const checkedParamIds = url.searchParams.get("checked");
 
         if (checkedParamIds && checkedIds.length > 0) {
-            const okayPressed = confirm("Load checks from URL? Current checks will be lost.");
+            const okayPressed = confirm("Load tasks from URL? Current checked tasks will be lost.");
 
             if (okayPressed) {
                 overrideCheckedFromStorageWithURL(checkedParamIds);
@@ -214,7 +214,7 @@ $(function () {
             return;
         }
 
-        const okayPressed = confirm("Reset all checks? Warning: This cannot be undone.");
+        const okayPressed = confirm("Reset all tasks? Warning: This cannot be undone.");
         if (okayPressed) {
             for (i = 1; i < totalGuidelines + 1; i++) {
                 updateCheckmarks(i, false);
