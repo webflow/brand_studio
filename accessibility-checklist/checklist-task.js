@@ -1,135 +1,141 @@
 window.addEventListener("load", () => {
-    const totalGuidelines = $('.guidelines-wrapper_category .guidelines-reference_category').length;
+  const totalGuidelines = $(
+    ".guidelines-wrapper_category .guidelines-reference_category"
+  ).length;
 
-    let checkedIds = [];
+  let checkedIds = [];
 
-    // Load total number of checks
-    $(".checks-progress_total").text(totalGuidelines);
+  // Load total number of checks
+  $(".checks-progress_total").text(totalGuidelines);
 
-    const updateTotalChecked = () => {
-        const percDone = (checkedIds.length / totalGuidelines) * 100;
-        $(".checks-progress_bar-fill").css('width', percDone + '%');
-        $(".checks-progress_counter").text(checkedIds.length);
+  const updateTotalChecked = () => {
+    const percDone = (checkedIds.length / totalGuidelines) * 100;
+    $(".checks-progress_bar-fill").css("width", percDone + "%");
+    $(".checks-progress_counter").text(checkedIds.length);
 
-        if (checkedIds.length === totalGuidelines) {
-            $(".checks-progress_title").hide();
-            $(".checks-progress_bar").hide();
-            $(".checks-progress_celebrate-text").show();
-            $(".checks-progress_celebrate-icon").show();
-        } else {
-            $(".checks-progress_title").show();
-            $(".checks-progress_bar").show();
-            $(".checks-progress_celebrate-text").hide();
-            $(".checks-progress_celebrate-icon").hide();
+    if (checkedIds.length === totalGuidelines) {
+      $(".checks-progress_title").hide();
+      $(".checks-progress_bar").hide();
+      $(".checks-progress_celebrate-text").show();
+      $(".checks-progress_celebrate-icon").show();
+    } else {
+      $(".checks-progress_title").show();
+      $(".checks-progress_bar").show();
+      $(".checks-progress_celebrate-text").hide();
+      $(".checks-progress_celebrate-icon").hide();
+    }
+  };
+
+  // Update all the checks with the id checked on the page
+  const updateCheckmarks = (checklistItemId, checked) => {
+    $("input[data-url-id='" + checklistItemId + "']").each((i, ele) => {
+      ele.checked = checked;
+      const sectionEle = $(ele).closest(".checks-group");
+
+      // Update section totals
+      if (sectionEle) {
+        const checksInSection = sectionEle.find(
+          "input[data-url-id]:checked"
+        ).length;
+        const checkInSectionEle = sectionEle.find(".checks-counter_checked");
+
+        if (checkInSectionEle) {
+          checkInSectionEle.text(checksInSection);
+
+          // Strike and gray guideline when checked
+          if (checked) {
+            $(ele)
+              .closest(".checks-checkbox")
+              .siblings(".accordion-item")
+              .find(".accordion-title")
+              .addClass("cc-checked");
+          } else {
+            $(ele)
+              .closest(".checks-checkbox")
+              .siblings(".accordion-item")
+              .find(".accordion-title")
+              .removeClass("cc-checked");
+          }
         }
-    };
+      }
+    });
+  };
 
-    // Update all the checks with the id checked on the page
-    const updateCheckmarks = (checklistItemId, checked) => {
-        $("input[data-url-id='" + checklistItemId + "']").each((i, ele) => {
-            ele.checked = checked;
-            const sectionEle = $(ele).closest('.checks-group');
+  const loadCheckedItemsFromLocalStorage = () => {
+    const storageCheckedIds = JSON.parse(
+      window.localStorage.getItem("wf_accessiblity_checklist_ids")
+    );
 
-            // Update section totals
-            if (sectionEle) {
-                const checksInSection = sectionEle.find('input[data-url-id]:checked').length;
-                const checkInSectionEle = sectionEle.find('.checks-counter_checked');
+    if (storageCheckedIds && storageCheckedIds.length > 0) {
+      for (i = 1; i < totalGuidelines + 1; i++) {
+        updateCheckmarks(i, storageCheckedIds.includes(i.toString(10)));
+      }
 
-                if (checkInSectionEle) {
-                    checkInSectionEle.text(checksInSection);
+      checkedIds = storageCheckedIds;
+      updateTotalChecked();
+    }
+  };
+  loadCheckedItemsFromLocalStorage();
 
-                    // Strike and gray guideline when checked
-                    if (checked) {
-                        $(ele).closest('.checks-checkbox').siblings('.accordion-item').find('.accordion-title').addClass("cc-checked");
-                    } else {
-                        $(ele).closest('.checks-checkbox').siblings('.accordion-item').find('.accordion-title').removeClass("cc-checked");
-                    }
-                }
-            }
-        });
+  // Update URL Params when checklist changes
+  const updateChecklistItem = (event, updateCheck) => {
+    const checklistItemEle = event.target;
+    const checklistItemId = checklistItemEle.getAttribute("data-url-id");
+
+    let newCheck = checklistItemEle.checked;
+    if (updateCheck) {
+      newCheck = !checklistItemEle.checked;
     }
 
-    const loadCheckedItemsFromLocalStorage = () => {
-        const storageCheckedIds = JSON.parse(window.localStorage.getItem('wf_accessiblity_checklist_ids'));
+    updateCheckmarks(checklistItemId, newCheck);
 
-        if (storageCheckedIds && storageCheckedIds.length > 0) {
-            for (i = 1; i < totalGuidelines + 1; i++) {
-                updateCheckmarks(i, storageCheckedIds.includes(i.toString(10)));
-            }
-
-            checkedIds = storageCheckedIds;
-            updateTotalChecked();
-        }
+    if (!checkedIds.includes(checklistItemId)) {
+      checkedIds.push(checklistItemId);
+    } else {
+      checkedIds = checkedIds.filter((item) => item !== checklistItemId);
     }
-    loadCheckedItemsFromLocalStorage();
 
-    // Update URL Params when checklist changes
-    const updateChecklistItem = (event, updateCheck) => {
-        const checklistItemEle = event.target;
-        const checklistItemId = checklistItemEle.getAttribute("data-url-id");
+    updateTotalChecked();
+    window.localStorage.setItem(
+      "wf_accessiblity_checklist_ids",
+      JSON.stringify(checkedIds)
+    );
+  };
 
-        let newCheck = checklistItemEle.checked;
-        if (updateCheck) {
-            newCheck = !checklistItemEle.checked;
-        }
+  // Watch localstorage to update checks from other tabs
+  window.addEventListener("storage", (event) => {
+    if (document.hasFocus()) {
+      return;
+    }
 
-        updateCheckmarks(checklistItemId, newCheck);
+    if (event.key !== "wf_accessiblity_checklist_ids") {
+      return;
+    }
 
-        if (!checkedIds.includes(checklistItemId)) {
-            checkedIds.push(checklistItemId);
-        } else {
-            checkedIds = checkedIds.filter(item => item !== checklistItemId)
-        }
+    // localstorage came from another tab
+    const storageCheckedIds = JSON.parse(
+      window.localStorage.getItem("wf_accessiblity_checklist_ids")
+    );
 
-        updateTotalChecked();
-        window.localStorage.setItem('wf_accessiblity_checklist_ids', JSON.stringify(checkedIds));
-    };
+    if (storageCheckedIds) {
+      for (i = 1; i < totalGuidelines + 1; i++) {
+        updateCheckmarks(i, storageCheckedIds.includes(i.toString(10)));
+      }
 
-    // Watch localstorage to update checks from other tabs
-    window.addEventListener('storage', (event) => {
-        if (document.hasFocus()) {
-            return;
-        }
+      checkedIds = storageCheckedIds;
+      updateTotalChecked();
+    }
+  });
 
-        if (event.key !== 'wf_accessiblity_checklist_ids') {
-            return;
-        }
+  $("input[data-url-id]").on("click touchend", (event) => {
+    updateChecklistItem(event, false);
+  });
 
-        // localstorage came from another tab
-        const storageCheckedIds = JSON.parse(window.localStorage.getItem('wf_accessiblity_checklist_ids'));
-
-        if (storageCheckedIds) {
-            for (i = 1; i < totalGuidelines + 1; i++) {
-                updateCheckmarks(i, storageCheckedIds.includes(i.toString(10)));
-            }
-
-            checkedIds = storageCheckedIds;
-            updateTotalChecked();
-        }
-    });
-
-    $("input[data-url-id]").on('click touchend', (event) => {
-        updateChecklistItem(event, false);
-    });
-
-    $("input[data-url-id]").keyup((event) => {
-        // enter or space
-        if (event.which === 13 || event.which === 32) {
-            event.preventDefault();
-            updateChecklistItem(event, true);
-        }
-    });
-
-    const checkProgressDropdownBtn = $(".checks-progress_collapse-btn");
-    checkProgressDropdownBtn.on('click keyup touchend', (event) => {
-        if (event.type === "keyup" && (event.which !== 13 || event.which !== 32)) {
-            return;
-        }
-
-        if ($('.checks-progress_collapse-text').is(":visible")) {
-            checkProgressDropdownBtn.attr("aria-expanded", "false");
-        } else {
-            checkProgressDropdownBtn.attr("aria-expanded", "true");
-        }
-    });
+  $("input[data-url-id]").keyup((event) => {
+    // enter or space
+    if (event.which === 13 || event.which === 32) {
+      event.preventDefault();
+      updateChecklistItem(event, true);
+    }
+  });
 });
