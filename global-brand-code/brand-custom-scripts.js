@@ -13,7 +13,7 @@ $(document).ready(function () {
     });
 });
 
-// Make modals accessible with trapped focus and ESC key to close
+// Trap modal focus and enable ESC key for accessibility
 $(document).ready(function () {
     var buttonThatOpenedModal;
     var findModal = function (elem) {
@@ -93,8 +93,7 @@ $(document).ready(function () {
 });
 
 
-// Toggle Accordion Attributes for Accessibility
-
+// Toggle accordion attributes for accessibility
 $(document).ready(function () {
     var accordionToggleButton = $('.accordion-trigger');
     accordionToggleButton.on('keydown', function (e) {
