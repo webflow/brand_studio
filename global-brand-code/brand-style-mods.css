@@ -29,15 +29,28 @@ select {
 /*Global Focus Outline Color*/
 
 *:focus {
-    outline: none !important;
+    outline-width: 2px solid #4353ff;
+    outline-offset: 2px;
+    border-radius: 0px;
+}
+
+.w-input:focus,
+.w-select:focus {
+    outline: 2px solid #4353ff;
+    outline-offset: 2px;
+    border-radius: 0px;
+}
+
+*:focus:not(:focus-visible) {
+    outline: 0;
 }
 
 *:focus-visible {
-    outline: 2px solid #4353ff !important;
-    outline-offset: 1px !important;
-    border-radius: 0px !important;
+    outline: 3px solid #4353ff;
+    outline-offset: 2px;
+    border-radius: 0px;
 }
 
 .nav *:focus {
-    outline: none !important;
+    outline: 0;
 }
