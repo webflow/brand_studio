@@ -3,6 +3,11 @@ Webflow.push(function () {
     $('.footer-copyright_year').text(new Date().getFullYear());
 });
 
+// IX2 Reduced Motion Beta
+$(function () {
+    document.body.setAttribute('data-wf-ix-vacation', '1')
+});
+
 // Skip-to-main script
 $(document).ready(function () {
     document.getElementById('skip-link').addEventListener('click', function (e) {
