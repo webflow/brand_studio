@@ -51,3 +51,21 @@ select {
 .nav *:focus {
     outline: 0;
 }
+
+@media (prefers-reduced-motion) {
+    
+    /* Custom classes to hide/show content */
+    .a11y-reduce-motion-show {
+        display: block !important;
+    }
+
+    .a11y-reduce-motion-hide {
+        display: none;
+    }
+
+    /* Remove transition from slick slider */
+    .slick-track {
+        -webkit-transition: none !important;
+        transition: none !important;
+    }
+}
