@@ -43,7 +43,6 @@ $(document).ready(function () {
         /* allow escape key to close insiders div */
         elem.on('keydown', function (e) {
             if (e.keyCode === 27) {
-                console.log(elem);
                 $(elem).find('.modal-close_btn').click();
             };
         });
@@ -52,7 +51,7 @@ $(document).ready(function () {
     var modalOpenButton = $('.modal-open_btn');
     modalOpenButton.on('keydown', function (e) {
         // Only activate on spacebar and enter
-        if (e.type === "keydown" && (e.which !== 13 && e.which !== 32)) {
+        if (e.which !== 13 && e.which !== 32) {
             return;
         }
 
@@ -63,7 +62,7 @@ $(document).ready(function () {
         evt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
         $(this).get(0).dispatchEvent(evt);
     });
-    modalOpenButton.on('click touchend', function () {
+    modalOpenButton.on('click', function () {
         $(this).next().show();
         findModal($(this).next());
         buttonThatOpenedModal = $(this);
@@ -72,7 +71,7 @@ $(document).ready(function () {
     var modalCloseButton = $('.modal-close_btn, .modal-close_area');
     modalCloseButton.on('keydown', function (e) {
         // Only activate on spacebar and enter
-        if (e.type === "keydown" && (e.which !== 13 && e.which !== 32)) {
+        if (e.which !== 13 && e.which !== 32) {
             return;
         }
 
@@ -83,7 +82,7 @@ $(document).ready(function () {
         evt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
         $(this).get(0).dispatchEvent(evt);
     });
-    modalCloseButton.on('click touchend', function () {
+    modalCloseButton.on('click', function () {
         $(this).closest('.modal-wrapper').hide();
         if (buttonThatOpenedModal) {
             buttonThatOpenedModal.focus();
@@ -98,7 +97,7 @@ $(document).ready(function () {
     var accordionToggleButton = $('.accordion-trigger');
     accordionToggleButton.on('keydown', function (e) {
         // Activate on spacebar and enter
-        if (e.type === "keydown" && (e.which !== 13 && e.which !== 32)) {
+        if (e.which !== 13 && e.which !== 32) {
             return;
         }
         e.preventDefault();
@@ -109,7 +108,7 @@ $(document).ready(function () {
         $(this).get(0).dispatchEvent(evt);
     });
 
-    accordionToggleButton.on('click touchend', function (e) {
+    accordionToggleButton.on('click', function (e) {
         $(this).toggleAttrVal('aria-expanded', "false", "true"); //toggle trigger attribute
         $(this).parent().find('.accordion-content').toggleAttrVal('aria-hidden', "true", "false"); //toggle content attribute
     });
