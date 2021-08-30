@@ -53,7 +53,13 @@ select {
 }
 
 @media (prefers-reduced-motion) {
-    
+
+    /* Remove transition from all to make things instant */
+    * {
+        -webkit-transition: all 0s linear 0s !important;
+        transition: all 0s linear 0s !important;
+    }
+
     /* Custom classes to hide/show content */
     .a11y-reduce-motion-show {
         display: block !important;
