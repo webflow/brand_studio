@@ -5,7 +5,11 @@ Webflow.push(function () {
 
 // Skip-to-main script
 $(document).ready(function () {
-    document.getElementById('skip-link').addEventListener('click', function (e) {
+    document.getElementById('skip-link').addEventListener('click keydown', function (e) {
+        if (e.type === "keydown" && e.which !== 13) {
+            return;
+        }
+
         e.preventDefault();
         var target = document.getElementById('main');
         target.setAttribute('tabindex', '-1');
