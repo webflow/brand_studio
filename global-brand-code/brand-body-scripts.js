@@ -5,7 +5,12 @@ Webflow.push(function () {
 
 // Skip-to-main script
 $(document).ready(function () {
-    document.getElementById('skip-link').addEventListener('click keydown', function (e) {
+    var skipLinkEle = document.getElementById('skip-link');
+    if (!skipLinkEle) {
+        return;
+    }
+
+    skipLinkEle.addEventListener('click keydown', function (e) {
         if (e.type === "keydown" && e.which !== 13) {
             return;
         }
