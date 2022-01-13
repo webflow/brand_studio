@@ -133,3 +133,8 @@ $(document).ready(function () {
         return this;
     };
 });
+
+// Global nav - load ad image and link
+$(document).ready(function () {
+    $('#g-nav-ad').load("https://cdn.jsdelivr.net/gh/webflow/brand_studio@latest/global-brand-code/nav-ad.html");
+});
