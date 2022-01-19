@@ -3,7 +3,7 @@ Webflow.push(function () {
     $('.footer-copyright_year').text(new Date().getFullYear());
 });
 
-// Skip-to-main script
+// "Skip to main" script
 $(document).ready(function () {
     var skipLinkEle = document.getElementById('skip-link');
     if (!skipLinkEle) {
