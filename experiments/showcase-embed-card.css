@@ -24,26 +24,27 @@
 .frame-viewer {
     width: 100%;
     position: relative;
-    padding-bottom: 66%;
+    padding-bottom: 67%;
     height: 0;
     overflow: hidden;
 }
 
 .frame-viewer iframe {
-    width: calc(100% * 1.51515151);
-    height: calc(100% * 1.51515151);
+    width: calc(100% * 2.2222222);
+    height: calc(100% * 2.2222222);
     position: absolute;
     top: 0;
     left: 0;
     border: 0;
     overflow: hidden;
-    -webkit-transform: scale(0.66);
-    transform: scale(0.66);
+    -webkit-transform: scale(0.45);
+    transform: scale(0.45);
     -webkit-transform-origin: 0 0;
     transform-origin: 0 0;
     background-color: white;
     border: none;
 }
+
 
 .showcase-button {
     border: 0;
