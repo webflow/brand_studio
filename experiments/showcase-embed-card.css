@@ -24,21 +24,21 @@
 .frame-viewer {
     width: 100%;
     position: relative;
-    padding-bottom: 75%;
+    padding-bottom: 70%;
     height: 0;
     overflow: hidden;
 }
 
 .frame-viewer iframe {
-    width: calc(100% * 1.33333);
-    height: calc(100% * 1.33333);
+    width: calc(100% * 1.4285714);
+    height: calc(100% * 1.4285714);
     position: absolute;
     top: 0;
     left: 0;
     border: 0;
     overflow: hidden;
-    -webkit-transform: scale(0.75);
-    transform: scale(0.75);
+    -webkit-transform: scale(0.7);
+    transform: scale(0.7);
     -webkit-transform-origin: 0 0;
     transform-origin: 0 0;
     background-color: white;
