@@ -10,6 +10,7 @@
 .mktoForm {
     width: 100% !important;
     max-width: 800px;
+    margin: 0 auto;
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-column-gap: 20px;
