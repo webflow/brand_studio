@@ -182,6 +182,15 @@ select.mktoField {
     margin: 0 !important;
 }
 
+.mktoInstruction {
+    font-size: .94rem;
+}
+
+.mktoLogicalField.mktoCheckboxList.mktoHasWidth {
+    padding: 0px !important;
+    margin-right: 8px;
+}
+
 /* FORM SPECIFIC RULES */
 #mktoForm_1012 > div:nth-child(8) > div.mktoFormCol > div.mktoFieldWrap > div.mktoHtmlText.mktoHasWidth {
     width: 100% !important
