@@ -97,7 +97,7 @@
 }
 
 .mktoForm .mktoButtonWrap.mktoSimple .mktoButton {
-    background-color: #4353FF !important;
+    background-color: #4353FF;
     background-image: none !important;
     font-size: 1rem !important;
     height: auto !important;
@@ -109,7 +109,7 @@
 }
 
 .mktoForm .mktoButtonWrap.mktoSimple .mktoButton:hover {
-    background: #3545ee !important;
+    background: #3545ee;
     border: none !important;
 }
 
