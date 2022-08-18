@@ -142,9 +142,6 @@ $(document).ready(function () {
 // Global nav - load ad image and link
 $(document).ready(function () {
 
-    // Load from Github repo
-    $('#g-nav-ad').load("https://cdn.jsdelivr.net/gh/webflow/brand_studio@latest/global-brand-code/nav-ad.html");
-
     // Load from home page
     $('#g-nav-ad-placeholder').load("https://webflow.com #g-nav-ad-live");
 });
