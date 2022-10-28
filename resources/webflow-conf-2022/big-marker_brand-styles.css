@@ -1,0 +1,1085 @@
+/*-----------------------------
+  Global Typography
+------------------------------*/
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-underline-position: under !important;
+  text-decoration-thickness: 0.06em !important;
+  text-decoration-color: inherit !important;
+  text-underline-offset: 0.1em !important;
+}
+
+body {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  color: #111;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+a,
+li,
+ul,
+.virtual-box-footer-left {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+a {
+  font-weight: 500 !important;
+  letter-spacing: -0.02em !important;
+}
+
+p,
+li,
+ul {
+  font-weight: 400 !important;
+}
+
+/*-----------------------------
+  Page Titles
+------------------------------*/
+h1,
+.ccop-banner-title-2,
+.new-stage-section-title {
+  font-weight: 400 !important;
+  font-size: 7rem !important;
+  letter-spacing: -0.06em !important;
+}
+@media only screen and (max-width: 991px) {
+  h1,
+  .ccop-banner-title-2,
+  .new-stage-section-title {
+    font-weight: 400 !important;
+    font-size: 5.5rem !important;
+  }
+}
+@media only screen and (max-width: 767px) {
+  h1,
+  .ccop-banner-title-2,
+  .new-stage-section-title {
+    font-weight: 400 !important;
+    font-size: 4rem !important;
+  }
+}
+
+/*-----------------------------
+  Nav
+------------------------------*/
+/*logo*/
+.techweek2020-header-logo {
+  max-width: 142px !important;
+}
+.new-stage-header-nav > li > a {
+  color: #f0f0f0 !important;
+}
+.new-stage-header-nav > li > a:hover {
+  text-decoration: underline !important;
+}
+.new-stage-header-nav > li > a:focus-visible {
+  outline: 2px solid #f0f0f0;
+  outline-offset: 2px;
+}
+.techweek2020-header-mobile-btn span {
+  background: #f0f0f0 !important;
+}
+.js-header-background-color {
+  background-color: #111 !important;
+}
+@media screen and (max-width: 1180px) {
+  .techweek2020-header-mobile-btn.onactive {
+    background: #282828 !important;
+  }
+  .techweek2020-header-nav li {
+    padding: 4px 40px !important;
+  }
+  .techweek2020-header-nav {
+    padding-top: 20px !important;
+  }
+  .techweek2020-header-nav li a {
+    font-size: 2rem !important;
+  }
+}
+
+/*-----------------------------
+  Buttons
+------------------------------*/
+.series-button-text-color {
+  padding: 16px 24px !important;
+  border: 1px solid transparent !important;
+  border-radius: 0px !important;
+  height: auto !important;
+  background-color: #f0f0f0 !important;
+  -webkit-transition: color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+  transition: color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+  color: #111 !important;
+  font-size: 1.125rem !important;
+  line-height: 1.3 !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+}
+
+.series-button-text-color:hover {
+  background-color: #111 !important;
+  color: #f0f0f0 !important;
+}
+
+.new-networking-nav li a.onactive {
+  border-left: #fff 2px solid !important;
+}
+
+.virtual-box-header-btn a {
+  display: inline-block;
+  padding: 16px 24px !important;
+  border: 1px solid #111 !important;
+  border-radius: 0px !important;
+  height: auto !important;
+  background-color: #111111 !important;
+  -webkit-transition: color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+  transition: color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+  color: #f0f0f0 !important;
+  font-size: 1.125rem !important;
+  line-height: 1.3 !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  width: auto !important;
+  background-image: none !important;
+}
+
+.virtual-box-header-btn a:hover {
+  background-color: transparent !important;
+  color: #111 !important;
+}
+
+.new-stage-main-chat-icon {
+  background: #111111 !important;
+}
+/*-----------------------------
+  Headers
+------------------------------*/
+.new-stage-banner-deatil {
+  padding: 140px 0 0 0 !important;
+}
+
+.ccop-banner.banner-overflow {
+  display: none !important;
+}
+/*Resource Hub*/
+.techweek2020-banner {
+  height: auto !important;
+  min-height: 500px !important;
+  background-color: #111;
+  background: url("https://uploads-ssl.webflow.com/62d1f2146087f67fb3fc980c/633f2d7ea4cec33d35f344ab_bg-resource-hub.webp")
+    no-repeat center center !important;
+  -webkit-background-size: cover !important;
+  -moz-background-size: cover !important;
+  -o-background-size: cover !important;
+  background-size: cover !important;
+}
+/*Agenda*/
+.new-stage-banner {
+  height: auto !important;
+  min-height: 500px !important;
+  background-color: #111;
+  background: url("https://uploads-ssl.webflow.com/62d1f2146087f67fb3fc980c/633f2eba7534359db92f9b63_bg-agenda.webp")
+    no-repeat center center !important;
+  -webkit-background-size: cover !important;
+  -moz-background-size: cover !important;
+  -o-background-size: cover !important;
+  background-size: cover !important;
+}
+
+.new-stage-adenda-box-time {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  color: #666666 !important;
+  font-weight: 500 !important;
+}
+
+.new-stage-adenda-box-text {
+  padding: 0 0 24px 0;
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  color: #111 !important;
+}
+
+.new-stage-section-select-box > span {
+  border-radius: 0px !important;
+}
+
+.new-stage-section-select-box > span > select {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  font-weight: 500 !important;
+  border: #111 1px solid !important;
+  border-radius: 0px !important;
+  color: #111 !important;
+}
+
+.new-stage-section-select-box > span > i > svg {
+  fill: #111 !important;
+}
+
+.new-stage-adenda-box-right-in
+  div
+  div[class*="tw-sa-"]:last-child
+  .techweek2020-agenda-user-list {
+  margin: 20px 0 10px 0 !important;
+}
+
+.new-stage-section-text-2 {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+}
+
+.new-stage-adenda-box-title,
+.new-stage-adenda-box-title h2 {
+  color: #111111 !important;
+}
+
+.techweek2020-agenda-user-list-name-2,
+.techweek2020-agenda-user-list-name-2 h3 {
+  color: #111111 !important;
+}
+
+.techweek2020-agenda-user-list-position-2 {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  color: #666 !important;
+}
+
+.new-stage-adenda-box-text a {
+  color: #111 !important;
+}
+
+.new-stage-adenda-box-text a:hover {
+  text-decoration: none !important;
+}
+
+.techweek2020-agenda-user-list-position-2 a {
+  color: #111 !important;
+}
+
+.techweek2020-agenda-user-list-position-2 a:hover {
+  text-decoration: none !important;
+}
+
+.new-stage-adenda-box-categories span {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  font-weight: 500 !important;
+  line-height: 27px !important;
+}
+
+.new-agenda-search-box-show.onactive {
+  left: 0 !important;
+}
+
+.new-stage-section-search-list {
+  max-width: 450px !important;
+  min-width: 290px !important;
+}
+
+.new-stage-section-select-list label,
+.new-stage-section-search-list label {
+  font-weight: 500 !important;
+}
+
+.new-stage-section-select-box-stack {
+  flex-wrap: nowrap !important;
+}
+
+@media screen and (max-width: 767px) {
+  .new-stage-section-select-box-stack {
+    flex-wrap: wrap !important;
+  }
+
+  .new-stage-section-select-list {
+    width: 100% !important;
+    margin-top: 10px !important;
+  }
+}
+
+/*Lounge*/
+.new-stage-main {
+  background-color: #111;
+  background: url("https://uploads-ssl.webflow.com/62d1f2146087f67fb3fc980c/633f2d7fcaf352821ac75697_bg-lounge.webp")
+    no-repeat center center !important;
+  -webkit-background-size: cover !important;
+  -moz-background-size: cover !important;
+  -o-background-size: cover !important;
+  /*background-size: cover !important;*/
+  background-attachment: fixed !important;
+}
+
+/*Expo Hall*/
+.techweek2020-tradeshow-main {
+  background-color: #111;
+  background: url("https://uploads-ssl.webflow.com/62d1f2146087f67fb3fc980c/633f2d7fb2c2578ddf7699cd_bg-expo-hall.webp")
+    no-repeat center center !important;
+  -webkit-background-size: cover !important;
+  -moz-background-size: cover !important;
+  -o-background-size: cover !important;
+  /*background-size: cover !important;*/
+  background-attachment: fixed !important;
+  padding: 45px 0 120px 0 !important;
+}
+
+.techweek2020-tradeshow-item-body-title {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  color: #f0f0f0 !important;
+  font-weight: 500 !important;
+}
+
+.techweek2020-tradeshow-item-body-in {
+  left: 32px !important;
+  right: 32px !important;
+  bottom: 24px !important;
+}
+
+.techweek2020-tradeshow-item-body-btn a {
+  position: relative;
+  display: block;
+  background-color: #f0f0f0 !important;
+  background-image: none !important;
+  width: 140px;
+  height: auto !important;
+  padding: 16px 24px !important;
+  border: 1px solid #111 !important;
+  border-radius: 0px !important;
+  text-align: center;
+  line-height: 20px;
+  font-size: 0;
+  color: #111 !important;
+  box-sizing: border-box;
+}
+
+.techweek2020-tradeshow-item-body-btn-join {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  font-weight: 500 !important;
+  padding: 0px !important;
+}
+
+.techweek2020-footer-expo {
+  background: #111 !important;
+}
+
+.techweek2020-tradeshow-main-text span:nth-child(1) {
+  font-weight: 500 !important;
+}
+
+.series-tile-group-container-title {
+  font-size: 4rem !important;
+  letter-spacing: -0.02em !important;
+}
+
+.series-tiles {
+  margin: 0 0 100px 0 !important;
+  grid-gap: 20px !important;
+}
+
+/*-----------------------------
+  Agenda Page
+------------------------------*/
+.new-stage-summit-footer {
+  background-color: #111 !important;
+}
+.techweek2020-asgct-section-3-nav li a {
+  color: #888888 !important;
+}
+.techweek2020-asgct-section-3-nav li {
+  border-bottom-color: #888888 !important;
+}
+.techweek2020-asgct-section-3-nav li.onactive a {
+  color: #111 !important;
+}
+.techweek2020-asgct-section-3-nav li.onactive {
+  border-bottom-color: #111 !important;
+}
+.new-agenda-search-box-in {
+  background: #fff !important;
+  border-radius: 0 !important;
+  border: 1px solid #111 !important;
+}
+
+.new-agenda-search-box-in input {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+}
+
+.new-stage-footer-left {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  color: #f0f0f0 !important;
+}
+
+.new-stage-section-select-box > span > select {
+  height: 60px !important;
+  padding: 0px 32px 0px 20px !important;
+  background: #ffffff !important;
+}
+
+.new-stage-section-select-box > span > i {
+  top: 25px !important;
+  z-index: 3 !important;
+}
+
+::placeholder {
+  font-weight: 400 !important;
+}
+
+.new-stage-section-select-box {
+  padding: 32px 24px 0 24px !important;
+  margin: 0 !important;
+}
+
+.new-agenda-search-box-independent {
+  padding: 40px 24px 0px 24px !important;
+}
+
+.techweek2020-asgct-section-3-nav-mobile select {
+  border: #111 solid 1px !important;
+  border-radius: 0px !important;
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  font-size: 18px !important;
+  background: #111 !important;
+  color: #f0f0f0 !important;
+  font-weight: 500 !important;
+}
+
+.techweek2020-asgct-section-3-nav-mobile {
+  margin: 32px 0 0 16px !important;
+}
+
+.techweek2020-asgct-section-3-nav-mobile i {
+  z-index: 2 !important;
+}
+
+.techweek2020-asgct-section-3-nav-mobile i svg {
+  fill: #f0f0f0 !important;
+}
+
+@media screen and (max-width: 1023px) {
+  .new-stage-section-select-box {
+    padding: 0px 16px 0 16px !important;
+    margin: 0 !important;
+  }
+
+  .new-agenda-search-box-independent {
+    padding: 20px 16px 0px 16px !important;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .new-agenda-search-box-independent {
+    width: 100% !important;
+    padding-top: 20px !important;
+  }
+
+  .new-stage-section-select-box {
+    width: 100% !important;
+  }
+
+  .new-stage-section-select-box > span {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 0px 12px 0 !important;
+  }
+}
+
+/*-----------------------------
+  Lounge Page
+------------------------------*/
+.lounge-input-send {
+  background: #111 !important;
+}
+
+/*-----------------------------
+  Expo Hall Page
+------------------------------*/
+.techweek2020-tradeshow-item {
+  border-radius: 0 !important;
+  border: 1px solid #f0f0f0 !important;
+  background-color: #111 !important;
+  transition: opacity 0.3s ease !important;
+}
+.techweek2020-tradeshow-item:hover {
+  opacity: 0.8;
+}
+
+.techweek2020-tradeshow-item-hover:focus-visible {
+  outline-offset: -6px;
+  outline: #f0f0f0 solid 3px;
+}
+
+/*-----------------------------
+  Resource Hub Page
+------------------------------*/
+.resource-left-searchbox {
+  background: #fff !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: 1px solid #111 !important;
+}
+.resource-left-searchbox input {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  font-weight: 400 !important;
+  color: #111 !important;
+  letter-spacing: -0.02em !important;
+}
+.clearcover-main-customer-title {
+  height: auto !important;
+}
+.clearcover-main-customer-long {
+  padding: 0 0 16px 0 !important;
+}
+.clearcover-main-customer-link a {
+  border: 1px solid #111 !important;
+  border-radius: 0 !important;
+  background-color: #111 !important;
+  color: #f0f0f0 !important;
+  -webkit-transition: color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+  transition: color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+.clearcover-main-customer-link a:hover {
+  opacity: 1 !important;
+  background-color: transparent !important;
+  color: #111 !important;
+}
+.clearcover-main-customer-link a b {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  font-size: 15px !important;
+  color: inherit !important;
+  font-weight: 500 !important;
+  letter-spacing: 0px !important;
+  text-transform: inherit !important;
+}
+
+/*-----------------------------
+  Community Hub
+------------------------------*/
+.new-networking-search {
+  border-radius: 0px !important;
+}
+
+.new-stage-lounge-body {
+  border-radius: 0px !important;
+  background: #f0f0f0 !important;
+}
+
+.new-stage-section-title {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  letter-spacing: -0.06em !important;
+}
+
+/*Community Hub > People*/
+.new-networking-main-title {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  font-weight: 400 !important;
+  font-size: 7rem !important;
+}
+
+.new-networking-search input {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  font-weight: 500 !important;
+}
+
+.networking-card-btn a {
+  padding: 12px 24px !important;
+  border: 1px solid #111 !important;
+  border-radius: 0px !important;
+  height: auto !important;
+  background-color: transparent !important;
+  -webkit-transition: color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+  transition: color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+  color: #111 !important;
+  font-size: 1.125rem !important;
+  line-height: 1.3 !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  width: auto !important;
+  background-image: none !important;
+}
+
+.networking-card-btn a:hover {
+  background-color: #111 !important;
+  color: #f0f0f0 !important;
+}
+
+.events-seeall {
+  width: 816px !important;
+}
+
+.events-seeall a {
+  display: inline-block;
+  padding: 16px 24px !important;
+  border: 1px solid #f0f0f0 !important;
+  border-radius: 0px !important;
+  height: auto !important;
+  background-color: #f0f0f0 !important;
+  -webkit-transition: color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+  transition: color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+  color: #111 !important;
+  font-size: 1.125rem !important;
+  line-height: 1.3 !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  width: auto !important;
+  background-image: none !important;
+}
+
+.events-seeall a:hover {
+  background-color: transparent !important;
+  color: #f0f0f0 !important;
+  border: 1px solid #f0f0f0 !important;
+}
+
+.new-networking-left > .new-stage-section-title {
+  display: none !important;
+}
+
+/*Community Hub > My Network*/
+.mhc-free-trial-successbox-in {
+  background: #f0f0f0 !important;
+  border-radius: 0px !important;
+}
+
+.mhc-free-trial-successbox-title {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  color: #111 !important;
+  font-weight: 500 !important;
+  line-height: 1.4em !important;
+}
+
+/*Community Hub > Our Partners*/
+.new-stage-section-list-in {
+  background: #f0f0f0 !important;
+  border-radius: 0px !important;
+}
+
+.new-stage-section-list-name {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  color: #111 !important;
+  font-weight: 500 !important;
+}
+
+.new-stage-section-list-text {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  font-size: 16px !important;
+  color: #111 !important;
+  line-height: 1.4em !important;
+}
+
+.new-stage-section-list-link a:nth-child(1) {
+  display: inline-block;
+  padding: 16px 24px !important;
+  border: 1px solid #111 !important;
+  border-radius: 0px !important;
+  height: auto !important;
+  background-color: #111111 !important;
+  -webkit-transition: color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+  transition: color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+  color: #f0f0f0 !important;
+  font-size: 1.125rem !important;
+  line-height: 1.3 !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  width: auto !important;
+  background-image: none !important;
+}
+
+.new-stage-section-list-link a:hover {
+  background-color: transparent !important;
+  color: #111 !important;
+}
+
+/*-----------------------------
+  Check-in Pages
+------------------------------*/
+
+.virtual-box-header-logo {
+  width: 142px;
+}
+
+.virtual-box-right-welcome-title,
+.virtual-box-right-welcome-description,
+.virtual-box-right-details-title,
+.virtual-box-right-details-subtitle,
+.tw2020-buytikets-checkout-list-title,
+.template-all-custom-filed-radio-con-title,
+.virtual-box-left-list a b {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  font-weight: 500 !important;
+}
+
+.virtual-box-right-welcome-title {
+  font-size: 4rem !important;
+}
+
+.virtual-box-left-list a,
+.virtual-checkin-section-list,
+.template-all-custom-filed-checkbox {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  font-weight: 400 !important;
+}
+
+.tw2020-buytikets-checkout-list-title {
+  color: #111 !important;
+}
+
+.virtual-box-left-list a {
+  opacity: 0.7 !important;
+}
+
+.virtual-box-left-list a.onactive {
+  opacity: 1 !important;
+}
+
+.virtual-box-right-welcome-skip a {
+  padding: 16px 24px !important;
+  border: 1px solid transparent !important;
+  border-radius: 0px !important;
+  height: auto !important;
+  background-color: #f0f0f0 !important;
+  -webkit-transition: color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+  transition: color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+  color: #111 !important;
+  font-size: 1.125rem !important;
+  line-height: 1.3 !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+}
+
+.virtual-box-right-welcome-skip a:hover {
+  border: 1px solid #f0f0f0 !important;
+  background-color: transparent !important;
+  color: #f0f0f0 !important;
+}
+
+.virtual-box {
+  background-attachment: fixed;
+}
+
+.virtual-box-right-details-box,
+.virtual-box-choose-schedule {
+  border-radius: 0px !important;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="tel"],
+input[type="url"] {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  font-weight: 400 !important;
+  border-radius: 0px !important;
+  padding: 20px !important;
+  height: auto !important;
+  border: 1px solid #ccc !important;
+}
+
+.general-registration-field-select select {
+  border: #cccccc 1px solid !important;
+  border-radius: 0px !important;
+  padding: 16px 20px !important;
+  height: auto !important;
+}
+
+.tw2020-buytikets-checkout-list-input textarea {
+  border-radius: 0px !important;
+  padding: 16px 20px !important;
+  border: #cccccc 1px solid !important;
+}
+
+input[type="submit"],
+input[type="button"] {
+  padding: 16px 24px !important;
+  border: 1px solid #111 !important;
+  border-radius: 0px !important;
+  height: auto !important;
+  background-color: #111111 !important;
+  -webkit-transition: color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+  transition: color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1),
+    background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+  color: #f0f0f0 !important;
+  font-size: 1.125rem !important;
+  line-height: 1.3 !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  width: auto !important;
+  background-image: none !important;
+}
+
+input[type="submit"]:hover,
+input[type="button"]:hover {
+  background-color: transparent !important;
+  color: #111 !important;
+}
+
+.template-custom-filed-checkbox {
+  border: #ccc 1px solid !important;
+  border-radius: 0px !important;
+}
+
+.template-custom-filed-checkbox i {
+  background: #111 !important;
+  border-radius: 0px !important;
+}
+
+.template-all-custom-filed-checkbox span {
+  border-radius: 0px !important;
+  border: solid 1px #111 !important;
+}
+
+.template-all-custom-filed-checkbox span i {
+  color: #111 !important;
+}
+
+.mhc-nano-section-connect-list-left span {
+  border-radius: 0px !important;
+  border: #ccc 1px solid !important;
+}
+
+.virtual-checkin-section-list-input {
+  border: none !important;
+}
+
+.virtual-box-choose-schedule-top-select {
+  border-radius: 0px !important;
+}
+
+.custom-field-link a {
+  color: #111 !important;
+  text-decoration: underline !important;
+}
+
+.custom-field-link a:hover {
+  text-decoration: none !important;
+}
+
+.mhc-nano-section-connect-list-left span i svg {
+  fill: #111 !important;
+}
+
+.virtual-box-right-matchmaking-list li {
+  border: #666 1px solid !important;
+  font-family: "Graphik" !important;
+  color: #666 !important;
+  font-weight: 500 !important;
+}
+
+.virtual-box-right-matchmaking-list li.onactive {
+  color: #fff !important;
+}
+
+.virtual-box-right-matchmaking-section-title {
+  font-family: "Graphik" !important;
+  color: #666 !important;
+  font-weight: 500 !important;
+}
+
+.mhc-nano-section-connect-title {
+  font-family: "Graphik" !important;
+  color: #111 !important;
+  font-weight: 500 !important;
+}
+
+.mhc-nano-section-connect-text {
+  font-family: "Graphik" !important;
+  color: #666 !important;
+}
+
+.custom-field-link {
+  line-height: 1.3 !important;
+  color: #666 !important;
+  font-family: "Graphik" !important;
+}
+
+.template-all-custom-filed-checkbox {
+  color: #666 !important;
+  line-height: 1.3 !important;
+}
+
+.template-all-custom-filed-radio-con-right {
+  margin-top: 5px !important;
+}
+
+.virtual-box-right-userbox-border {
+  border-radius: 0px !important;
+}
+
+.virtual-box-right-userbox-box {
+  border-radius: 0px !important;
+}
+
+.networking-card {
+  border-radius: 0px !important;
+}
+
+/*-----------------------------
+  Registration pages
+------------------------------*/
+#js-registration-form h1,
+#js-registration-purchase .el-header,
+.el-confirmation-bg h1 {
+  padding: 0 0 24px 0 !important;
+  font-size: 50px !important;
+  letter-spacing: -0.03em !important;
+  font-weight: 500 !important;
+}
+
+input[type="submit"].submit-btn {
+  width: 100% !important;
+  background: #111 !important;
+  border: 0 !important;
+  font-size: 1rem !important;
+}
+
+input[type="submit"].submit-btn:hover {
+  color: #fff !important;
+  background: #4353ff !important;
+  border: 0 !important;
+}
+
+@media (max-width: 880px) {
+  .el-choose-list {
+    justify-content: space-between !important;
+    flex-direction: column !important;
+    gap: 28px !important;
+  }
+}
+
+/*-----------------------------
+  Virtual Badges
+------------------------------*/
+.new-networking-social-list li {
+  margin: 0 8px !important;
+}
+
+.new-networking-social-list li {
+  width: 28px !important;
+}
+
+.networking-card-text {
+  font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+  color: #666 !important;
+}
+
+#custom-checkbox-30-label a {
+  text-decoration: underline !important;
+  color: #111 !important;
+}
+
+#custom-checkbox-30-label a:hover {
+  text-decoration: none !important;
+  color: #111 !important;
+}
+
+.js-profile-photo {
+  color: #111 !important;
+  text-decoration: underline !important;
+}
+
+.js-profile-photo:hover {
+  text-decoration: none !important;
+}
+
+/*-----------------------------
+  Add Graphik Font
+------------------------------*/
+@font-face {
+  font-family: "Graphik";
+  src: url("https://assets.website-files.com/62d1f2146087f67fb3fc980c/62d1f2146087f65408fc9845_Graphik-Medium-Web.woff2")
+      format("woff2"),
+    url("https://assets.website-files.com/62d1f2146087f67fb3fc980c/62d1f2146087f6d306fc9840_Graphik-Medium-Web.eot")
+      format("embedded-opentype"),
+    url("https://assets.website-files.com/62d1f2146087f67fb3fc980c/62d1f2146087f6c006fc9857_Graphik-Medium-Web.woff")
+      format("woff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Graphik";
+  src: url("https://assets.website-files.com/62d1f2146087f67fb3fc980c/62d1f2146087f645d9fc985e_Graphik-MediumItalic-Web.woff2")
+      format("woff2"),
+    url("https://assets.website-files.com/62d1f2146087f67fb3fc980c/62d1f2146087f655d8fc985b_Graphik-MediumItalic-Web.eot")
+      format("embedded-opentype"),
+    url("https://assets.website-files.com/62d1f2146087f67fb3fc980c/62d1f2146087f6e086fc985a_Graphik-MediumItalic-Web.woff")
+      format("woff");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Graphik";
+  src: url("https://assets.website-files.com/62d1f2146087f67fb3fc980c/62d1f2146087f67124fc983c_Graphik-Regular-Web.woff2")
+      format("woff2"),
+    url("https://assets.website-files.com/62d1f2146087f67fb3fc980c/62d1f2146087f65549fc9859_Graphik-Regular-Web.eot")
+      format("embedded-opentype"),
+    url("https://assets.website-files.com/62d1f2146087f67fb3fc980c/62d1f2146087f619acfc9842_Graphik-Regular-Web.woff")
+      format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Graphik";
+  src: url("https://assets.website-files.com/62d1f2146087f67fb3fc980c/62d1f2146087f67f06fc9862_Graphik-RegularItalic-Web.woff2")
+      format("woff2"),
+    url("https://assets.website-files.com/62d1f2146087f67fb3fc980c/62d1f2146087f6dd4afc985d_Graphik-RegularItalic-Web.eot")
+      format("embedded-opentype"),
+    url("https://assets.website-files.com/62d1f2146087f67fb3fc980c/62d1f2146087f61f0dfc985c_Graphik-RegularItalic-Web.woff")
+      format("woff");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Graphik";
+  src: url("https://assets.website-files.com/62d1f2146087f67fb3fc980c/62e94d4c58e3637291c32981_Graphik-Light.otf")
+    format("opentype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
