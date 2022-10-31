@@ -346,6 +346,22 @@ h1,
     margin: 0 0 20px 0 !important;
 }
 
+.new-stage-doc-box-btn {
+    text-transform: inherit !important;
+}
+
+.new-stage-adenda-box-btn-box.onlive {
+    padding: 0 200px 0 0 !important;
+}
+
+.techweek2020-asgct-agenda-watchnow a {
+  max-width: none !important;
+}
+
+.techweek2020-asgct-agenda-watchnow a .agenda-live-now {
+  max-width: none !important;
+}
+
 @media screen and (max-width: 767px) {
   .new-stage-section-select-box-stack {
     flex-wrap: wrap !important;
