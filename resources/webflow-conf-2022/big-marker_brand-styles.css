@@ -362,6 +362,10 @@ h1,
   max-width: none !important;
 }
 
+.techweek2020-asgct-agenda-watchnow a i {
+    border-right: #111 1px solid !important;
+}
+
 @media screen and (max-width: 1023px) {
 .new-stage-adenda-box-btn-box.onlive {
   padding: 0px !important;
