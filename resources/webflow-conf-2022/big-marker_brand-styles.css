@@ -303,6 +303,49 @@ h1,
   flex-wrap: nowrap !important;
 }
 
+.new-stage-happen-now-list-in {
+    border-radius: 0px !important;
+    border: solid 1px #111 !important;
+    box-shadow: none !important;
+}
+
+.new-stage-doc-box-btn i svg {
+    fill: currentColor !important;
+}
+
+.new-stage-doc-box {
+    bottom: 60px !important;
+}
+
+.new-stage-doc-box.onactive .new-stage-doc-box-bg {
+    background: #111 !important;
+    box-shadow: none !important;
+    height: auto !important;
+}
+
+.new-stage-doc-list-in {
+    border-radius: 0px !important;
+    box-shadow: none !important;
+    border: solid 1px #111 !important;
+    height: 149px !important;
+}
+
+.new-stage-doc-box-out {
+    margin-right: 35px !important;
+}
+
+.new-stage-doc-list-title {
+    font-family: 'Graphik', Arial, Helvetica, sans-serif !important;
+    color: #111 !important;;
+}
+
+.new-stage-doc-list-text {
+    font-family: 'Graphik', Arial, Helvetica, sans-serif !important;
+    font-weight: 500 !important;
+    color: #666 !important;
+    margin: 0 0 20px 0 !important;
+}
+
 @media screen and (max-width: 767px) {
   .new-stage-section-select-box-stack {
     flex-wrap: wrap !important;
