@@ -362,6 +362,12 @@ h1,
   max-width: none !important;
 }
 
+@media screen and (max-width: 1023px) {
+.new-stage-adenda-box-btn-box.onlive {
+  padding: 0px !important;
+  }
+}
+
 @media screen and (max-width: 767px) {
   .new-stage-section-select-box-stack {
     flex-wrap: wrap !important;
