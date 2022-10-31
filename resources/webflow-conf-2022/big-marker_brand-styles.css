@@ -320,7 +320,7 @@ h1,
 .new-stage-doc-box.onactive .new-stage-doc-box-bg {
     background: #111 !important;
     box-shadow: none !important;
-    height: auto !important;
+    height: 148px !important;
 }
 
 .new-stage-doc-list-in {
