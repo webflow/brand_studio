@@ -381,6 +381,10 @@ h1,
 .new-stage-adenda-box-btn-box.onlive {
   padding: 0px !important;
   }
+  
+.new-stage-adenda-box-right-in {
+    padding: 0 100px 0 0 !important;
+}  
 }
 
 @media screen and (max-width: 767px) {
