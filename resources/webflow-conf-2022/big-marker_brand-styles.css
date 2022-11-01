@@ -323,11 +323,16 @@ h1,
     height: auto !important;
 }
 
+.new-stage-doc-box-btn js-happening-now-link series-button-text-color {
+  height: 174px !important;
+  padding-top: 34px !important;
+}
+
 .new-stage-doc-list-in {
     border-radius: 0px !important;
     box-shadow: none !important;
     border: solid 1px #111 !important;
-    height: 149px !important;
+    height: 176px !important;
 }
 
 .new-stage-doc-box-out {
@@ -336,7 +341,9 @@ h1,
 
 .new-stage-doc-list-title {
     font-family: 'Graphik', Arial, Helvetica, sans-serif !important;
-    color: #111 !important;;
+    color: #111 !important;
+    height: 60px !important;
+    overflow: visible !important
 }
 
 .new-stage-doc-list-text {
