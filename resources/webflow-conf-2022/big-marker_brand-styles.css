@@ -323,9 +323,9 @@ h1,
     height: auto !important;
 }
 
-.new-stage-doc-box-btn js-happening-now-link series-button-text-color {
-  height: 174px !important;
-  padding-top: 34px !important;
+.new-stage-doc-box.onactive .new-stage-doc-box-btn {
+    height: 174px !important;
+    padding-top: 34px !important;
 }
 
 .new-stage-doc-list-in {
