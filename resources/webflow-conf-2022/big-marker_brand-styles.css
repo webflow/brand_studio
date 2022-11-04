@@ -837,6 +837,16 @@ h1,
   color: #111 !important;
 }
 
+.card-tab-box span {
+    font-family: 'Graphik' !important;
+    font-weight: 500 !important;
+    background-color: #111111 !important;
+}
+
+.ct-sponser {
+    background-image: none !important;
+}
+
 /*-----------------------------
   Check-in Pages
 ------------------------------*/
