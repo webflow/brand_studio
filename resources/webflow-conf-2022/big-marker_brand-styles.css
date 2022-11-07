@@ -1126,7 +1126,14 @@ input[type="submit"].submit-btn:hover {
 }
 
 .new-networking-social-list li {
-  width: 28px !important;
+  width: 24px !important;
+}
+
+.new-networking-social-list-in {
+    width: 24px !important;
+    height: 24px !important;
+    background: #111 !important;
+    padding: 5px 0 0 0 !important;
 }
 
 .networking-card-text {
@@ -1162,12 +1169,6 @@ input[type="submit"].submit-btn:hover {
   text-decoration: none !important;
 }
 
-.ns-button-chat {
-  svg[Attributes Style] {
-    width: 28 !important;
-    height: 28 !important;
-}
-}
 
 /*-----------------------------
   Add Graphik Font
