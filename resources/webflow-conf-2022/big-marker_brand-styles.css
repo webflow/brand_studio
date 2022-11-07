@@ -838,13 +838,19 @@ h1,
 }
 
 .card-tab-box span {
-    font-family: 'Graphik' !important;
+    font-family: "Graphik", Arial, Helvetica, sans-serif !important;
     font-weight: 500 !important;
     background-color: #111111 !important;
 }
 
 .ct-sponser {
     background-image: none !important;
+}
+
+.question-badge-box .networking-card-text {
+    color: #F0F0F0 !important;
+    font-family: "Graphik", Arial, Helvetica, sans-serif !important;
+    font-weight: 500!important;
 }
 
 /*-----------------------------
@@ -1128,12 +1134,21 @@ input[type="submit"].submit-btn:hover {
   color: #666 !important;
 }
 
-#custom-checkbox-30-label a {
+#custom-checkbox-33-label a {
   text-decoration: underline !important;
   color: #111 !important;
 }
 
-#custom-checkbox-30-label a:hover {
+#custom-checkbox-33-label a:hover {
+  text-decoration: none !important;
+  color: #111 !important;
+}
+
+.networking-card-text.new-stage-lounge-right-room-attendees-deatilsbox-place-title.js-event-presenter-bio a {
+  color: #111 !important;
+}
+
+.networking-card-text.new-stage-lounge-right-room-attendees-deatilsbox-place-title.js-event-presenter-bio a:hover {
   text-decoration: none !important;
   color: #111 !important;
 }
