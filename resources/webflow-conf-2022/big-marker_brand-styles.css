@@ -1169,6 +1169,10 @@ input[type="submit"].submit-btn:hover {
   text-decoration: none !important;
 }
 
+.question-badge-box {
+    padding: 8px 12px 0 12px !important;
+}
+
 
 /*-----------------------------
   Add Graphik Font
