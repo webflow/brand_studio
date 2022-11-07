@@ -1133,7 +1133,7 @@ input[type="submit"].submit-btn:hover {
     width: 24px !important;
     height: 24px !important;
     background: #111 !important;
-    padding: 5px 0 0 0 !important;
+    padding: 6px 0 0 0 !important;
 }
 
 .networking-card-text {
@@ -1171,6 +1171,11 @@ input[type="submit"].submit-btn:hover {
 
 .question-badge-box {
     padding: 8px 12px 0 12px !important;
+}
+
+.new-networking-social-list-in svg {
+    width: 12px !important;
+    height: 12px !important;
 }
 
 
