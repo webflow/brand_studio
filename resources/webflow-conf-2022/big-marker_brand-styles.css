@@ -1178,6 +1178,28 @@ input[type="submit"].submit-btn:hover {
     height: 12px !important;
 }
 
+/*-----------------------------
+  Speaker details (pop-up)
+------------------------------*/
+.channel-billing-2018-popup-title {
+    font-family: 'Graphik', Arial, Helvetica, sans-serif !important;
+    color: #111111 !important;
+    font-weight: 500 !important;
+}
+
+.channel-billing-2018-popup-date-text {
+    font-family: 'Graphik', Arial, Helvetica, sans-serif !important;
+    color: #111111 !important;
+}
+
+.channel-billing-2018-popup-date-text-3 {
+    font-family: 'Graphik', Arial, Helvetica, sans-serif!important;
+    color: #666666 !important;
+}
+
+.channel-billing-2018-popup-main-2 {
+    border-radius: 0px !important;
+}
 
 /*-----------------------------
   Add Graphik Font
