@@ -1162,6 +1162,13 @@ input[type="submit"].submit-btn:hover {
   text-decoration: none !important;
 }
 
+.ns-button-chat {
+  svg[Attributes Style] {
+    width: 28 !important;
+    height: 28 !important;
+}
+}
+
 /*-----------------------------
   Add Graphik Font
 ------------------------------*/
