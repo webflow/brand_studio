@@ -1178,6 +1178,17 @@ input[type="submit"].submit-btn:hover {
     height: 12px !important;
 }
 
+.networking-card-btn-pending-a {
+    float: none !important;
+    width: auto !important;
+    margin-bottom: 8px !important;
+}
+
+.networking-card-btn-pending-d {
+    float: none !important;
+    width: auto !important;
+}
+
 /*-----------------------------
   Speaker details (pop-up)
 ------------------------------*/
