@@ -206,6 +206,10 @@ select.mktoField {
   text-decoration: underline;
 }
 
+.mktoFormRow.full-width .mktoHasWidth {
+  width: 100% !important;
+}
+
 /* Google reCaptcha disclaimer */
 .mktoCaptchaDisclaimer {
   display: none;
@@ -216,9 +220,6 @@ select.mktoField {
   font-size: 0.9rem;
   padding: 10px 0 0 0;
   border-top: 1px solid #111;
-}
-.mktoFormRow.full-width.terms .mktoHasWidth {
-  width: 100% !important;
 }
 
 /* MOBILE */
