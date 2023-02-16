@@ -35,6 +35,10 @@
   background-color: transparent;
 }
 
+.mktoFormRow a:hover {
+  text-decoration: none;
+}
+
 .mktoFormRow.full-width {
   -ms-grid-column: span 2;
   grid-column-start: span 2;
@@ -191,30 +195,6 @@ select.mktoField {
   margin-right: 8px;
 }
 
-/* FORM SPECIFIC RULES */
-#mktoForm_1012 > div:nth-child(8) > div.mktoFormCol > div.mktoFieldWrap > div.mktoHtmlText.mktoHasWidth {
-  width: 100% !important;
-}
-
-#mktoForm_1012 > div:nth-child(n + 8) {
-  grid-column: span 2;
-  margin-top: -14px;
-}
-
-#mktoForm_1012 > div:nth-child(12) {
-  margin-top: -64px;
-}
-
-/* Checkbox with Label */
-#mktoForm_1012 > div:nth-child(9) > div.mktoFieldDescriptor.mktoFormCol > div.mktoFieldWrap {
-  display: grid;
-  grid-template-columns: auto 1fr;
-}
-
-#mktoForm_1012 > div:nth-child(9) div.mktoLogicalField.mktoCheckboxList.mktoHasWidth {
-  grid-row: 1;
-}
-
 #LblGated_Content_Opt_In__c {
   display: block;
   padding: 6px 0 0 4px;
@@ -229,6 +209,16 @@ select.mktoField {
 /* Google reCaptcha disclaimer */
 .mktoCaptchaDisclaimer {
   display: none;
+}
+
+/* Terms text wrapper styling */
+.mktoFormRow.full-width.terms {
+  font-size: 0.9rem;
+  padding: 10px 0 0 0;
+  border-top: 1px solid #111;
+}
+.mktoFormRow.full-width.terms .mktoHasWidth {
+  width: 100% !important;
 }
 
 /* MOBILE */
