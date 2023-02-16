@@ -202,11 +202,10 @@ select.mktoField {
 }
 
 .mktoHtmlText > a {
-  font-weight: 500;
   text-decoration: underline;
 }
 
-.mktoFormRow.full-width .mktoHasWidth {
+.mktoFormRow .mktoHtmlText.mktoHasWidth {
   width: 100% !important;
 }
 
