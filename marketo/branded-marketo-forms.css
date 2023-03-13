@@ -208,9 +208,14 @@ select.mktoField {
   width: 100% !important;
 }
 
-/* Google reCaptcha disclaimer */
+/* Hide server-side (from Marketo) reCaptcha disclaimer */
 .mktoCaptchaDisclaimer {
   display: none;
+}
+
+/* Hide client-side recaptcha badge */
+.grecaptcha-badge {
+  visibility: hidden;
 }
 
 /* Terms text wrapper styling */
