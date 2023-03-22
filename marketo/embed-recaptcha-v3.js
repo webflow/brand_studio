@@ -1,4 +1,4 @@
-/**
+/*
  * reCAPTCHA v3 client-side support
  * @author Sanford Whiteman
  * @version v1.1.2 2021-08-25
