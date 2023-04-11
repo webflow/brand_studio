@@ -501,6 +501,8 @@ function normalizeColor(hexCode) {
   }
   
   
+  
+  
   /*
   *Finally initializing the Gradient class, assigning a canvas to it and calling Gradient.connect() which initializes everything,
   * Use Gradient.pause() and Gradient.play() for controls.
@@ -515,5 +517,8 @@ function normalizeColor(hexCode) {
   * Gradient.updateFrequency(freq)
   */
 
-  var gradient = new Gradient()
-  gradient.initGradient('#gradient-canvas-1');
+  var gradient1 = new Gradient()
+  gradient1.initGradient('#gradient-canvas-1');
+
+  var gradient2 = new Gradient()
+  gradient2.initGradient('#gradient-canvas-2');
