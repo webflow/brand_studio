@@ -330,7 +330,7 @@ function normalizeColor(hexCode) {
             rotation: 0,
             playing: true
         }, 
-        document.querySelectorAll("canvas").length < 1 ? console.log("DID NOT LOAD HERO STRIPE CANVAS") : (
+        document.querySelectorAll("canvas").length < 1 ? console.log("Did not load Webflow glow canvas") : (
           
           this.minigl = new MiniGl(this.el, null, null, !0), 
           requestAnimationFrame(() => {
@@ -431,7 +431,7 @@ function normalizeColor(hexCode) {
                     type: "vec2"
                 }),
                 noiseSpeed: new this.minigl.Uniform({
-                    value: 11 + .3 * e
+                    value: 15 + .3 * e
                 }),
                 noiseFlow: new this.minigl.Uniform({
                     value: 6.5 + .3 * e
