@@ -1,0 +1,66 @@
+body {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    -webkit-font-smoothing: antialiased;
+    -moz-font-smoothing: antialiased;
+    -o-font-smoothing: antialiased;
+}
+
+* {
+    -moz-osx-font-smoothing: grayscale;
+    text-underline-position: under;
+}
+
+select {
+    -webkit-appearance: none;
+}
+
+/* Text Selection Color */
+::-moz-selection {
+    background: rgba(20, 110, 245, 0.95);
+    color: #FFFFFF;
+}
+
+::selection {
+    background: rgba(20, 110, 245, 0.95);
+    color: #FFFFFF;
+}
+
+/* Global Focus Outline Color - will update to use native focus(keyboard) state */
+
+*:focus {
+    outline: 2px solid #146EF5;
+    outline-offset: 2px;
+}
+
+*:focus:not(:focus-visible) {
+    outline: 0;
+}
+
+.nav *:focus {
+    outline: 0;
+}
+
+@media (prefers-reduced-motion) {
+
+    /* Remove transition from all to make things instant */
+    * {
+        -webkit-transition: all 0s linear 0s !important;
+        transition: all 0s linear 0s !important;
+    }
+
+    /* Custom classes to hide/show content */
+    .a11y-reduce-motion-show {
+        display: block !important;
+    }
+
+    .a11y-reduce-motion-hide {
+        display: none;
+    }
+
+    /* Remove transition from slick slider */
+    .slick-track {
+        -webkit-transition: none !important;
+        transition: none !important;
+    }
+}
