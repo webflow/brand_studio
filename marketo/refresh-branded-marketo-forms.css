@@ -70,18 +70,18 @@
 
 /* Equivalent to boilerplate .input-label */
 .mktoForm .mktoLabel {
-  font-family: WF Visual Sans Text, sans-serif;
+  font-family: WF Visual Sans Text, sans-serif !important;
   width: 100% !important;
-  z-index: 1;
+  z-index: 1 !important;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
-  margin-bottom: 0;
-  margin-left: 16px;
-  padding-top: 12px;
-  padding-bottom: 4px;
+  text-transform: uppercase !important;
+  margin-bottom: 0 !important;
+  margin-left: 16px !important;
+  padding-top: 12px !important;
+  padding-bottom: 4px !important;
   font-size: 0.75rem;
   font-weight: 400 !important;
-  line-height: 1.4;
+  line-height: 1.4 !important;
   position: relative;
 }
 
