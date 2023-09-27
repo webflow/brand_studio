@@ -68,7 +68,8 @@
   position: relative;
 }
 /* Remove padding for field wrap that has disclaimer text in it */
-.mktoFieldWrap:has(.mktoHtmlText) {
+.mktoFieldWrap:has(.mktoHtmlText),
+.mktoFieldWrap:has(.mktoCheckboxList) {
   padding: 0;
 }
 
@@ -154,7 +155,8 @@ select.mktoField {
 }
 
 /* Checkbox adjustments on .input */
-.mktoCheckboxList input {
+.mktoCheckboxList input,
+.mktoCheckboxList > input {
   height: 32px !important;
   margin-top: -20px;
 }
