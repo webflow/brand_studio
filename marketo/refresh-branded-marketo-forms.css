@@ -67,6 +67,10 @@
   padding-right: 1px;
   position: relative;
 }
+/* Remove padding for field wrap that has disclaimer text in it */
+.mktoFieldWrap:has(.mktoHtmlText) {
+  padding: 0;
+}
 
 /* Equivalent to boilerplate .input-label */
 .mktoForm .mktoLabel {
