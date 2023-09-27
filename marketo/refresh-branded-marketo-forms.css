@@ -156,7 +156,7 @@ select.mktoField {
 
 /* Checkbox adjustments on .input */
 .mktoCheckboxList input,
-.mktoCheckboxList > input {
+.mktoForm .mktoCheckboxList > input {
   height: 32px !important;
   margin-top: -20px;
 }
