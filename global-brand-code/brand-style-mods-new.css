@@ -28,11 +28,6 @@ select {
 
 /* Global Focus Outline Color - will update to use native focus(keyboard) state */
 
-*:focus {
-    outline: 2px solid #146EF5;
-    outline-offset: 2px;
-}
-
 *:focus:not(:focus-visible) {
     outline: 0;
 }
