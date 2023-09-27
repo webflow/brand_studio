@@ -16,7 +16,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-column-gap: 24px;
-  grid-row-gap: 28px;
+  grid-row-gap: 24px;
   grid-auto-columns: 1fr;
   font-family: WF Visual Sans Text, sans-serif !important;
 }
@@ -77,11 +77,11 @@
   text-transform: uppercase;
   margin-bottom: 0;
   margin-left: 16px;
-  padding-top: 12px;
+  padding-top: 12px !important;
   padding-bottom: 4px;
   font-size: 0.75rem;
   font-weight: 400 !important;
-  line-height: 1.4;
+  line-height: 1.4 !important;
   position: relative;
 }
 
@@ -200,7 +200,7 @@ select.mktoField {
   border: none !important;
   border-radius: 4px;
   flex: none;
-  padding: 1em 1.5em;
+  padding: 1em 1.5em !important;
   font-size: 0.9375rem !important;
   font-weight: 600 !important;
   line-height: 1.2;
