@@ -1,0 +1,26 @@
+{
+  "name": "webflow",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "NODE_ENV=dev node esbuild.config.js",
+    "build": "NODE_ENV=production node esbuild.config.js",
+    "flow": "NODE_ENV=flow node esbuild.config.js",
+    "optim": "/Users/federicovalla/Documents/Work/fooo/rs/mini/image-webp/target/debug/image-webp /Users/federicovalla/Desktop/opt"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "esbuild": "^0.19.2",
+    "esbuild-plugin-glsl": "^1.2.1"
+  },
+  "dependencies": {
+    "gsap": "^3.12.2",
+    "ogl": "^1.0.0",
+    "swiper": "^10.3.1",
+    "typed.js": "^2.0.16"
+  }
+}
