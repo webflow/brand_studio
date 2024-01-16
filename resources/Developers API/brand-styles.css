@@ -2478,7 +2478,7 @@ li {
     font-weight: 600 !important;
     text-decoration: none;
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: 4px !important;
 }
 .button.cc-white {
     -webkit-box-flex: 1;
