@@ -3472,6 +3472,7 @@ li {
     transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
     color: #fff;
     cursor: pointer;
+    border-radius: 4px;
 }
 .g-nav_menu-link_wrapper.button:hover {
     background-color: #0055d4;
