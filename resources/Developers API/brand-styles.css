@@ -2472,6 +2472,7 @@ li {
     font-weight: 500;
     text-decoration: none;
     cursor: pointer;
+    border-radius: 4px;
 }
 .button.cc-white {
     -webkit-box-flex: 1;
