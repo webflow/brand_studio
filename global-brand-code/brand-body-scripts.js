@@ -144,4 +144,6 @@ $(document).ready(function () {
 
     // Load from home page
     $('#g-nav-ad-placeholder').load("https://webflow.com #g-nav-ad-live");
+    $('#new-g-nav-ad-placeholder-product').load("https://webflow.com #new-g-nav-ad-product-live");
+    $('#new-g-nav-ad-placeholder-solutions').load("https://webflow.com #new-g-nav-ad-solutions-live");
 });
