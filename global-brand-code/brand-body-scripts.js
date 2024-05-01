@@ -147,3 +147,21 @@ $(document).ready(function () {
     $('#new-g-nav-ad-placeholder-product').load("https://webflow.com #new-g-nav-ad-product-live");
     $('#new-g-nav-ad-placeholder-solutions').load("https://webflow.com #new-g-nav-ad-solutions-live");
 });
+
+// Global nav - Experiment. Changes subnav height and width in a very flowy way
+$(document).ready(function () {
+    $('.new-g-nav_menu-dropdown_toggle').on('click', function () {
+
+        const containerElement = $(this).next().find('.new-g-nav_menu_container');
+    
+        setTimeout(function () {
+    
+            const containerWidth = containerElement.outerWidth();
+            $('.new-g-nav_menu-container-bg').width(containerWidth);
+    
+            const containerHeight = containerElement.outerHeight();
+            $('.new-g-nav_menu-container-bg').height(containerHeight);
+    
+        }, 50);
+    });
+});
