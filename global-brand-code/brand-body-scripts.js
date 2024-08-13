@@ -1,6 +1,6 @@
 // Set footer copyright year
 Webflow.push(function () {
-    $('.footer-copyright_year').text(new Date().getFullYear());
+    $('.brand-boilerplate-components--footer-copyright_year').text(new Date().getFullYear());
 });
 
 // "Skip to main" script
@@ -139,28 +139,19 @@ $(document).ready(function () {
     };
 });
 
-// Global nav - load ad image and link
-$(document).ready(function () {
-
-    // Load from home page
-    $('#g-nav-ad-placeholder').load("https://webflow.com #g-nav-ad-live");
-    $('#new-g-nav-ad-placeholder-product').load("https://webflow.com #new-g-nav-ad-product-live");
-    $('#new-g-nav-ad-placeholder-solutions').load("https://webflow.com #new-g-nav-ad-solutions-live");
-});
-
 // Global nav - Experiment. Changes subnav height and width in a very flowy way
 $(document).ready(function () {
-    $('.new-g-nav_menu-dropdown_toggle').on('click', function () {
+    $('.brand-boilerplate-components--g-nav_menu-dropdown_toggle').on('click', function () {
 
-        const containerElement = $(this).next().find('.new-g-nav_menu_container');
+        const containerElement = $(this).next().find('.brand-boilerplate-components--g-nav_menu_container');
     
         setTimeout(function () {
     
             const containerWidth = containerElement.outerWidth();
-            $('.new-g-nav_menu-container-bg').width(containerWidth);
+            $('.brand-boilerplate-components--g-nav_menu-container-bg').width(containerWidth);
     
             const containerHeight = containerElement.outerHeight();
-            $('.new-g-nav_menu-container-bg').height(containerHeight);
+            $('.brand-boilerplate-components--g-nav_menu-container-bg').height(containerHeight);
     
         }, 50);
     });
