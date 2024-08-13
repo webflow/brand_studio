@@ -1,6 +1,6 @@
 // Set footer copyright year
 Webflow.push(function () {
-    $('.brand-boilerplate-components--footer-copyright_year').text(new Date().getFullYear());
+    $('[class$="footer-copyright_year"]').text(new Date().getFullYear());
 });
 
 // "Skip to main" script
@@ -52,12 +52,12 @@ $(document).ready(function () {
         /* allow escape key to close insiders div */
         elem.on('keydown', function (e) {
             if (e.keyCode === 27) {
-                $(elem).find('.modal-close_btn').click();
+                $(elem).find('[class$="modal-close_btn"]').click();
             };
         });
     };
 
-    var modalOpenButton = $('.modal-open_btn');
+    var modalOpenButton = $('[class$="modal-open_btn"]');
     modalOpenButton.on('keydown', function (e) {
         // Only activate on spacebar and enter
         if (e.which !== 13 && e.which !== 32) {
@@ -77,7 +77,7 @@ $(document).ready(function () {
         buttonThatOpenedModal = $(this);
     });
 
-    var modalCloseButton = $('.modal-close_btn, .modal-close_area');
+    var modalCloseButton = $('[class$="modal-close_btn"], [class$="modal-close_area"]');
     modalCloseButton.on('keydown', function (e) {
         // Only activate on spacebar and enter
         if (e.which !== 13 && e.which !== 32) {
@@ -92,7 +92,7 @@ $(document).ready(function () {
         $(this).get(0).dispatchEvent(evt);
     });
     modalCloseButton.on('click', function () {
-        $(this).closest('.modal-wrapper').hide();
+        $(this).closest('[class$="modal-wrapper"]').hide();
         if (buttonThatOpenedModal) {
             buttonThatOpenedModal.focus();
             buttonThatOpenedModal = null;
@@ -141,17 +141,17 @@ $(document).ready(function () {
 
 // Global nav - Experiment. Changes subnav height and width in a very flowy way
 $(document).ready(function () {
-    $('.brand-boilerplate-components--g-nav_menu-dropdown_toggle').on('click', function () {
+    $('[class$="g-nav_menu-dropdown_toggle"]').on('click', function () {
 
-        const containerElement = $(this).next().find('.brand-boilerplate-components--g-nav_menu_container');
+        const containerElement = $(this).next().find('[class$="g-nav_menu_container"]');
     
         setTimeout(function () {
     
             const containerWidth = containerElement.outerWidth();
-            $('.brand-boilerplate-components--g-nav_menu-container-bg').width(containerWidth);
+            $('[class$="g-nav_menu-container-bg"]').width(containerWidth);
     
             const containerHeight = containerElement.outerHeight();
-            $('.brand-boilerplate-components--g-nav_menu-container-bg').height(containerHeight);
+            $('[class$="g-nav_menu-container-bg"]').height(containerHeight);
     
         }, 50);
     });
