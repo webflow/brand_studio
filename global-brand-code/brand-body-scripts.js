@@ -156,3 +156,10 @@ $(document).ready(function () {
         }, 50);
     });
 });
+
+// Global nav - load ad image and link
+$(document).ready(function () {
+    // Load from home page
+    $('#new-g-nav-ad-placeholder-product').load("https://webflow.com #new-g-nav-ad-product-live");
+    $('#new-g-nav-ad-placeholder-solutions').load("https://webflow.com #new-g-nav-ad-solutions-live");
+});
