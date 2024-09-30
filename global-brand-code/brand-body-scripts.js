@@ -139,19 +139,19 @@ $(document).ready(function () {
     };
 });
 
-// Global nav - Experiment. Changes subnav height and width in a very flowy way
+// Global nav - Changes subnav height and width in a very flowy way
 $(document).ready(function () {
-    $('[class$="g-nav_menu-dropdown_toggle"]').on('click', function () {
+    $('.brand-boilerplate-components--g-nav_menu-dropdown_toggle').on('click', function () {
 
-        const containerElement = $(this).next().find('[class$="g-nav_menu_container"]');
+        const containerElement = $(this).next().find('.brand-boilerplate-components--g-nav_menu_container');
     
         setTimeout(function () {
     
             const containerWidth = containerElement.outerWidth();
-            $('[class$="g-nav_menu-container-bg"]').width(containerWidth);
+            $('.brand-boilerplate-components--g-nav_menu-container-bg').width(containerWidth);
     
             const containerHeight = containerElement.outerHeight();
-            $('[class$="g-nav_menu-container-bg"]').height(containerHeight);
+            $('.brand-boilerplate-components--g-nav_menu-container-bg').height(containerHeight);
     
         }, 50);
     });
