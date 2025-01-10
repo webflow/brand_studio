@@ -364,8 +364,6 @@ select.mktoField {
      ========================================================================== */
 .mktoFormRow.full-width.terms {
   font-size: 0.9rem;
-  padding: 0;
-  border-top: 1px solid var(--mkto-embed-color-link);
 }
 
 .mktoFormRow.full-width.terms .mktoFieldWrap {
