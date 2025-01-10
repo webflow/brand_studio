@@ -357,7 +357,6 @@ select.mktoField {
   & .mktoFormRow .terms-statement,
   .mktoFormRow .terms-statement a {
     color: var(--mkto-embed-dark-color-text);
-    padding: 0;
   }
 }
 
@@ -380,6 +379,7 @@ select.mktoField {
   color: var(--mkto-embed-color-link);
   text-decoration: underline !important;
   background-color: transparent;
+  padding: 0;
 }
 
 .mktoFormRow a:hover {
