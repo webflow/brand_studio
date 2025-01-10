@@ -357,7 +357,7 @@ select.mktoField {
   & .mktoFormRow .terms-statement,
   & .mktoFormRow .terms-statement a,
   & .terms-statement {
-    color: var(--mkto-embed-dark-color-text);
+    color: var(--mkto-embed-dark-color-text) !important;
   }
 }
 
