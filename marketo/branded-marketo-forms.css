@@ -367,6 +367,10 @@ select.mktoField {
   font-size: 0.9rem;
 }
 
+.mktoFormRow .mktoHasWidth {
+  width: auto !important;
+}
+
 .mktoFormRow.full-width.terms .mktoFieldWrap {
   padding: 0 !important;
 }
