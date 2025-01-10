@@ -354,16 +354,15 @@ select.mktoField {
   }
 
   /* Terms Statement */
-  & .mktoFormRow .terms-statement,
-  & .mktoFormRow .terms-statement a,
-  & .terms-statement {
-    color: var(--mkto-embed-dark-color-text) !important;
+  & .terms-statement,
+  & .terms-statement a {
+    color: var(--mkto-embed-dark-color-text);
   }
 }
 
 /* Misc Styles
      ========================================================================== */
-.mktoFormRow.full-width.terms {
+.terms-statement {
   font-size: 0.9rem;
 }
 
