@@ -48,6 +48,11 @@
   flex-grow: 0;
 }
 
+.mktoFormRow:has(+ .mktoButtonRow),
+.mktoFormRow:has(+ .mktoFormRow.full-width) {
+  width: 100%;
+}
+
 .mktoFormRow.full-width,
 .mktoButtonRow {
   width: 100%;
