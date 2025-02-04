@@ -397,12 +397,6 @@ select.mktoField {
   display: none;
 }
 
-/* Contact sales last fields */
-.mktoFormRow:has(#LblHow_can_we_best_support_you__c),
-.mktoFormRow:has(#LblWhat_are_you_hoping_to_learn_about__c) {
-  width: 100%;
-}
-
 /* Terms Statement */
 .mktoFormRow.full-width.terms .mktoFormCol {
   min-height: auto;
