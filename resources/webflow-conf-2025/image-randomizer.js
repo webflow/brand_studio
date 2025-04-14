@@ -55,59 +55,55 @@ function getRandomImage(group, excludeSrc = null) {
   // If we have fewer than maxQueueLength images total, use a simpler approach to just avoid the last image
   if (totalImages <= maxQueueLength) {
     let availableImages = Array.from(images).filter(
-      (img) => img.src !== excludeSrc && !recentlyShownImages.includes(img.src)
+      (img) => img.src !== excludeSrc
     );
 
-    // If all images have been used recently, just avoid the last shown one
+    // If somehow we still have no available images, just use any image
     if (availableImages.length === 0) {
-      availableImages = Array.from(images).filter(
-        (img) => img.src !== excludeSrc
-      );
+      availableImages = Array.from(images);
     }
 
+    // Always select a random image from available ones
     const randomIndex = Math.floor(Math.random() * availableImages.length);
     const selectedImage = availableImages[randomIndex].cloneNode(true);
 
-    // Add this image to recently shown queue
-    if (!recentlyShownImages.includes(selectedImage.src)) {
-      recentlyShownImages.push(selectedImage.src);
-      // Keep queue at max length
-      if (recentlyShownImages.length > maxQueueLength) {
-        recentlyShownImages.shift();
-      }
-    }
-
-    return selectedImage;
-  }
-
-  // For larger sets of images, use the queue system
-  let randomIndex, selectedImage;
-  let attempts = 0;
-  const maxAttempts = 50; // Prevent infinite loop in edge cases
-
-  do {
-    randomIndex = Math.floor(Math.random() * totalImages);
-    selectedImage = images[randomIndex];
-    attempts++;
-
-    // If we've tried too many times, just pick any image that's not the excluded one
-    if (attempts > maxAttempts) {
-      if (selectedImage.src !== excludeSrc) {
-        break;
-      }
-    }
-  } while (
-    selectedImage.src === excludeSrc ||
-    recentlyShownImages.includes(selectedImage.src)
-  );
-
-  // Add this image to the recently shown queue for this group
-  if (!recentlyShownImages.includes(selectedImage.src)) {
+    // Update recently shown queue
     recentlyShownImages.push(selectedImage.src);
     // Keep queue at max length
     if (recentlyShownImages.length > maxQueueLength) {
       recentlyShownImages.shift();
     }
+
+    return selectedImage;
+  }
+
+  // For larger sets of images, use a modified queue system that ensures we always get an image
+  let availableImages = Array.from(images);
+
+  // First try to get an image that's not the excluded one and not recently shown
+  let filteredImages = availableImages.filter(
+    (img) => img.src !== excludeSrc && !recentlyShownImages.includes(img.src)
+  );
+
+  // If no images pass the filter, try just avoiding the excluded one
+  if (filteredImages.length === 0) {
+    filteredImages = availableImages.filter((img) => img.src !== excludeSrc);
+  }
+
+  // If still no images, use any image
+  if (filteredImages.length === 0) {
+    filteredImages = availableImages;
+  }
+
+  // Select random image from filtered list
+  const randomIndex = Math.floor(Math.random() * filteredImages.length);
+  const selectedImage = filteredImages[randomIndex];
+
+  // Update recently shown queue
+  recentlyShownImages.push(selectedImage.src);
+  // Keep queue at max length
+  if (recentlyShownImages.length > maxQueueLength) {
+    recentlyShownImages.shift();
   }
 
   return selectedImage.cloneNode(true);
@@ -231,7 +227,16 @@ function triggerRandomAnimation() {
     (cell) => !activeAutoAnimations.has(cell.id)
   );
 
-  if (availableCells.length === 0) return;
+  // Ensure we continue even if no cells are available right now
+  if (availableCells.length === 0) {
+    // Schedule the next animation attempt anyway
+    const nextInterval =
+      Math.random() *
+        ((timingConfig.maxInterval - timingConfig.minInterval) * 1000) +
+      timingConfig.minInterval * 1000;
+    setTimeout(triggerRandomAnimation, nextInterval);
+    return;
+  }
 
   // Group cells by their group attribute
   const cellsByGroup = {};
