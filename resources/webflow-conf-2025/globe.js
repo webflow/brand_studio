@@ -42,9 +42,15 @@
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: true,
+    powerPreference: "high-performance",
+    precision: "highp",
+    stencil: false,
+    depth: true,
+    logarithmicDepthBuffer: true,
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setClearColor(0x000000, 0);
+  renderer.setPixelRatio(window.devicePixelRatio);
   document.getElementById("three-container").appendChild(renderer.domElement);
 
   // Function to get color from CSS variable
@@ -104,8 +110,21 @@
   const sphere = new THREE.Mesh(geometry, material);
   scene.add(sphere);
 
+  // Function to calculate outline scale
+  function calculateOutlineScale() {
+    const container = document.getElementById("three-container");
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    const fov = camera.fov * (Math.PI / 180);
+    const distance = camera.position.z;
+    const pixelSize =
+      (2 * Math.tan(fov / 2) * distance) /
+      Math.min(containerWidth, containerHeight);
+    return 1 + (pixelSize / radius) * 0.7; // Increased from 0.5 to 0.7 for thicker outline
+  }
+
   // Add outline effect
-  const outlineScale = 1.003;
+  let outlineScale = calculateOutlineScale();
   const outlineGeometry = new THREE.SphereGeometry(radius, segments, segments);
   const outlineMaterial = new THREE.ShaderMaterial({
     uniforms: {
@@ -155,9 +174,24 @@
   window.addEventListener("load", debouncedColorUpdate);
 
   const gridOffset = 0.003;
-  const tubeRadius = 0.008;
-  const tubeSegments = 64;
-  const tubeRadialSegments = 8;
+  const tubeSegments = 96;
+  const tubeRadialSegments = 12;
+
+  // Function to calculate responsive tube radius
+  function calculateTubeRadius() {
+    const container = document.getElementById("three-container");
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    const fov = camera.fov * (Math.PI / 180);
+    const distance = camera.position.z;
+    const pixelSize =
+      (2 * Math.tan(fov / 2) * distance) /
+      Math.min(containerWidth, containerHeight);
+    return pixelSize * 0.35; // Increased from 0.25 to 0.35 for thicker lines
+  }
+
+  // Initialize tube radius
+  let tubeRadius = calculateTubeRadius();
 
   // Latitude lines using tubes
   for (let i = -9; i <= 9; i++) {
@@ -214,7 +248,7 @@
 
   // Add dots
   const dotRadius = 0.045;
-  const dotSegments = 8;
+  const dotSegments = 12;
   const dotGeometry = new THREE.SphereGeometry(
     dotRadius,
     dotSegments,
@@ -381,8 +415,40 @@
     const distance = (desiredHeight / 2 / Math.tan(vFov / 2)) * 1.25; // 80% of height
     camera.position.z = distance;
 
+    // Recalculate tube radius
+    tubeRadius = calculateTubeRadius();
+
+    // Recalculate outline scale
+    outlineScale = calculateOutlineScale();
+    outlineMesh.material.vertexShader = `
+            void main() {
+                vec3 pos = position * ${outlineScale};
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+            }
+        `;
+    outlineMesh.material.needsUpdate = true;
+
+    // Update existing tubes
+    sphere.children.forEach((child) => {
+      if (
+        child instanceof THREE.Mesh &&
+        child.geometry instanceof THREE.TubeGeometry
+      ) {
+        const curve = child.geometry.parameters.path;
+        child.geometry.dispose();
+        child.geometry = new THREE.TubeGeometry(
+          curve,
+          tubeSegments,
+          tubeRadius,
+          tubeRadialSegments,
+          curve.closed
+        );
+      }
+    });
+
     camera.updateProjectionMatrix();
     renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
   }
 
   // Initial size setup
