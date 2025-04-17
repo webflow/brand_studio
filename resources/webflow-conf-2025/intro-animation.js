@@ -106,12 +106,12 @@ gsap.registerPlugin(Observer, ScrollTrigger);
 
 // Initialize Lenis for smooth scrolling with optimized settings
 let lenis = new Lenis({
-  lerp: 0.15, // Subtle smoothing for natural feel
-  wheelMultiplier: 1, // Native 1:1 wheel speed
+  lerp: isSafari ? 0.15 : 0.1, // Keep original Safari value, use new value for others
+  wheelMultiplier: isSafari ? 1 : 0.5, // Keep original Safari value, use new value for others
   gestureOrientation: "vertical",
   normalizeWheel: true, // Ensures consistent behavior across browsers
   smoothTouch: false, // Disable touch smoothing for mobile
-  touchMultiplier: 1, // Native touch response
+  touchMultiplier: isSafari ? 1 : 0.5, // Keep original Safari value, use new value for others
   infinite: false, // Standard scroll boundaries
 });
 
@@ -612,12 +612,12 @@ document.fonts.ready.then(() => {
               // Create a new Lenis instance for smooth scrolling
               if (isSafari) {
                 lenis = new Lenis({
-                  lerp: 0.15,
-                  wheelMultiplier: 1,
+                  lerp: 0.1,
+                  wheelMultiplier: 0.5,
                   gestureOrientation: "vertical",
                   normalizeWheel: true,
                   smoothTouch: false,
-                  touchMultiplier: 1,
+                  touchMultiplier: 0.5,
                   infinite: false,
                 });
                 
@@ -707,9 +707,9 @@ document.fonts.ready.then(() => {
     Observer.create({
       target: wrapper,
       type: "wheel,touch,pointer",
-      wheelSpeed: -1,
-      dragMinimum: 3,
-      tolerance: 10,
+      wheelSpeed: isSafari ? -1 : -0.5, // Keep original Safari value, use new value for others
+      dragMinimum: isSafari ? 3 : 5, // Keep original Safari value, use new value for others
+      tolerance: isSafari ? 10 : 15, // Keep original Safari value, use new value for others
       onDown: () => {
         if (!initialAnimationComplete) return;
 
