@@ -3,6 +3,9 @@
 //--------------------------------------
 //
 
+// Add Safari detection at the top of the file
+const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
 // Check if screen is smaller than 991px to determine mobile view
 const isMobileView = window.innerWidth < 991;
 
@@ -470,63 +473,210 @@ document.fonts.ready.then(() => {
       start: "top top",
       end: "bottom top",
       onLeave: () => {
-        // Remove theme class when leaving the animated wrapper
-        const infoWrapper = document.querySelector(
-          ".scroll-wfc25-info-wrapper"
-        );
-        const navMenu = document.querySelector(".wfc25-nav");
-        if (infoWrapper) infoWrapper.classList.remove("wfc25-theme-base");
-        if (navMenu) navMenu.classList.remove("wfc25-theme-base");
-
-        isInAnimatedSection = false;
-        lenis.start();
-
-        // Hide the animated wrapper
-        gsap.set(wrapper, { display: "none" });
-
-        // Clean up animation functionality
-        if (lenis) lenis.destroy();
-        if (scrollAnimationFrame) cancelAnimationFrame(scrollAnimationFrame);
-        window.removeEventListener("scroll", forceScrollToTop);
-
-        // Kill ScrollTriggers related to animated wrapper
-        ScrollTrigger.getAll().forEach((trigger) => {
-          if (
-            trigger.vars.trigger === wrapper ||
-            (trigger.vars.trigger &&
-              trigger.vars.trigger.closest("#animated-wrapper"))
-          ) {
-            trigger.kill();
+        // Ensure clean state before proceeding
+        const cleanup = () => {
+          isInAnimatedSection = false;
+          
+          // Remove theme class when leaving the animated wrapper
+          const infoWrapper = document.querySelector(".scroll-wfc25-info-wrapper");
+          const navMenu = document.querySelector(".wfc25-nav");
+          if (infoWrapper) infoWrapper.classList.remove("wfc25-theme-base");
+          if (navMenu) navMenu.classList.remove("wfc25-theme-base");
+          
+          if (lenis) {
+            lenis.stop();
+            lenis.destroy();
           }
-        });
-
-        // Kill GSAP animations for animated wrapper elements
-        gsap.killTweensOf(wrapper);
-        gsap.killTweensOf(wrapper.querySelectorAll("*"));
-
-        // Remove Observer for animated wrapper
-        Observer.getAll().forEach((observer) => {
-          if (observer.vars.target === wrapper) {
-            observer.kill();
+          
+          // Force cleanup of all GSAP animations
+          gsap.killTweensOf(wrapper);
+          gsap.killTweensOf(wrapper.querySelectorAll("*"));
+          
+          // Kill all ScrollTriggers for this wrapper
+          ScrollTrigger.getAll().forEach(trigger => {
+            if (trigger.vars.trigger === wrapper || 
+                (trigger.vars.trigger && trigger.vars.trigger.closest("#animated-wrapper"))) {
+              trigger.kill();
+            }
+          });
+          
+          // Kill all Observers
+          Observer.getAll().forEach(observer => {
+            if (observer.vars.target === wrapper) {
+              observer.kill();
+            }
+          });
+          
+          // Safari-specific handling
+          if (isSafari) {
+            // First, ensure we're at the top
+            window.scrollTo({
+              top: 0,
+              behavior: 'instant'
+            });
+            
+            // Force scroll to top immediately
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+            
+            // Then ensure scrolling is enabled
+            document.body.style.overflow = 'visible';
+            document.documentElement.style.overflow = 'visible';
+            document.body.style.position = 'relative';
+            document.documentElement.style.position = 'relative';
+            
+            // Force immediate style updates with !important
+            wrapper.style.cssText = `
+              display: none !important;
+              visibility: hidden !important;
+              opacity: 0 !important;
+              position: absolute !important;
+              top: 0 !important;
+              left: 0 !important;
+              width: 100% !important;
+              height: 100% !important;
+              pointer-events: none !important;
+              z-index: -1 !important;
+            `;
+            
+            // Force a repaint
+            wrapper.offsetHeight;
+            
+            // Use setTimeout to ensure cleanup completes
+            setTimeout(() => {
+              // Clear all GSAP properties and set new ones
+              gsap.set(wrapper, {
+                clearProps: "all",
+                display: "none",
+                visibility: "hidden",
+                opacity: 0,
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                pointerEvents: "none",
+                zIndex: -1
+              });
+              
+              // Additional direct style manipulation
+              wrapper.style.cssText = `
+                display: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                pointer-events: none !important;
+                z-index: -1 !important;
+              `;
+              
+              // Ensure date wrapper color is reset
+              const dateWrapper = document.querySelector('.wfc-date-wrapper');
+              if (dateWrapper) {
+                dateWrapper.classList.remove('wfc25-theme-base');
+              }
+              
+              // Remove any remaining scroll locks
+              document.body.style.overflow = 'visible';
+              document.documentElement.style.overflow = 'visible';
+              document.body.style.position = 'relative';
+              document.documentElement.style.position = 'relative';
+              
+              // Re-enable touch events
+              document.body.style.touchAction = 'pan-y';
+              document.documentElement.style.touchAction = 'pan-y';
+              
+              // Force scroll to top again after cleanup
+              window.scrollTo({
+                top: 0,
+                behavior: 'instant'
+              });
+              document.documentElement.scrollTop = 0;
+              document.body.scrollTop = 0;
+              
+              // Force a final repaint
+              document.body.offsetHeight;
+              
+              // Additional check to ensure wrapper is hidden
+              if (wrapper.style.display !== 'none' || wrapper.style.visibility !== 'hidden') {
+                wrapper.style.display = 'none';
+                wrapper.style.visibility = 'hidden';
+                wrapper.style.opacity = '0';
+                wrapper.style.position = 'absolute';
+                wrapper.style.zIndex = '-1';
+              }
+              
+              // Create a new Lenis instance for smooth scrolling
+              if (isSafari) {
+                lenis = new Lenis({
+                  lerp: 0.15,
+                  wheelMultiplier: 1,
+                  gestureOrientation: "vertical",
+                  normalizeWheel: true,
+                  smoothTouch: false,
+                  touchMultiplier: 1,
+                  infinite: false,
+                });
+                
+                // Start the Lenis animation loop
+                function raf(time) {
+                  lenis.raf(time);
+                  requestAnimationFrame(raf);
+                }
+                requestAnimationFrame(raf);
+              }
+            }, 100);
+          } else {
+            gsap.set(wrapper, {
+              display: "none",
+              visibility: "hidden"
+            });
           }
-        });
-
-        // Set state as if it's a second visit
-        localStorage.setItem("hasVisitedWFC25", "true");
+          
+          // Remove event listeners
+          window.removeEventListener("scroll", forceScrollToTop);
+          if (scrollAnimationFrame) {
+            cancelAnimationFrame(scrollAnimationFrame);
+          }
+          
+          // Update storage
+          localStorage.setItem("hasVisitedWFC25", "true");
+        };
+        
+        // Safari: Use RAF to ensure synchronous style updates
+        if (isSafari) {
+          // First ensure we're at the top
+          window.scrollTo({
+            top: 0,
+            behavior: 'instant'
+          });
+          document.documentElement.scrollTop = 0;
+          document.body.scrollTop = 0;
+          
+          // Then ensure scrolling is enabled
+          document.body.style.overflow = 'visible';
+          document.documentElement.style.overflow = 'visible';
+          
+          requestAnimationFrame(() => {
+            cleanup();
+          });
+        } else {
+          cleanup();
+        }
       },
       onEnterBack: () => {
         // Only add the class back if we were past the animation point
         if (currentIndex > 0) {
-          const infoWrapper = document.querySelector(
-            ".scroll-wfc25-info-wrapper"
-          );
+          const infoWrapper = document.querySelector(".scroll-wfc25-info-wrapper");
           const navMenu = document.querySelector(".wfc25-nav");
           if (infoWrapper) infoWrapper.classList.add("wfc25-theme-base");
           if (navMenu) navMenu.classList.add("wfc25-theme-base");
         }
-
         goToTop();
-      },
+      }
     });
 
     // Create additional ScrollTrigger for handling re-entry
