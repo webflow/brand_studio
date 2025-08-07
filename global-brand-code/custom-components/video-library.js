@@ -1,6 +1,14 @@
 /**
  * Video Library - Custom video functionality for lazy loading, play/pause controls, and accessibility
  * Features: lazy loading, play/pause buttons, scroll triggers, reduced motion support
+ *
+ * Performance Optimizations for CDN Usage:
+ * - Early exit if no videos present (no DOM manipulation or event listeners)
+ * - Minimal object creation on pages without videos
+ * - Conditional resize listener only for desktop-only videos
+ * - Zero CSS class dependencies - uses only data attributes
+ *
+ * Safe for loading on every page via CDN - will not impact performance on pages without videos.
  */
 
 class VideoLibrary {
@@ -9,6 +17,7 @@ class VideoLibrary {
       rootMargin: options.rootMargin || "300px",
       threshold: options.threshold || 0,
       scrollTriggerThreshold: options.scrollTriggerThreshold || 0.5,
+      debug: options.debug || false,
       ...options,
     };
 
@@ -22,6 +31,17 @@ class VideoLibrary {
   }
 
   init() {
+    // Early exit if no videos are present - optimizes performance for pages without videos
+    const videos = document.querySelectorAll("video[data-video]");
+    if (videos.length === 0) {
+      if (this.options.debug) {
+        console.log(
+          "VideoLibrary: No videos found on page, skipping initialization."
+        );
+      }
+      return;
+    }
+
     if (this.prefersReducedMotion) {
       console.log("User prefers reduced motion. Videos will not auto-play.");
     }
@@ -33,8 +53,13 @@ class VideoLibrary {
     this.setupLazyLoading();
     this.setupVideoControls();
 
-    // Handle window resize for desktop-only videos
-    window.addEventListener("resize", () => this.removeDesktopOnlyVideos());
+    // Only add resize listener if desktop-only videos are present
+    const desktopOnlyVideos = document.querySelectorAll(
+      'video[data-video-desktop-only="true"]'
+    );
+    if (desktopOnlyVideos.length > 0) {
+      window.addEventListener("resize", () => this.removeDesktopOnlyVideos());
+    }
   }
 
   /**
@@ -334,13 +359,22 @@ class VideoLibrary {
   }
 }
 
-// Auto-initialize if DOM is already loaded
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => {
+// Auto-initialize if DOM is already loaded and videos are present
+function initializeVideoLibrary() {
+  // Quick check before instantiating to avoid unnecessary object creation
+  if (document.querySelectorAll("video[data-video]").length > 0) {
     window.videoLibrary = new VideoLibrary();
-  });
+  } else if (window.VideoLibraryConfig?.debug) {
+    console.log(
+      "VideoLibrary: No videos detected, skipping auto-initialization."
+    );
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializeVideoLibrary);
 } else {
-  window.videoLibrary = new VideoLibrary();
+  initializeVideoLibrary();
 }
 
 // Export for module usage
