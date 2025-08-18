@@ -32,34 +32,18 @@
   function handleModalClicks(e) {
     const target = e.target;
 
-    // Handle show modal buttons (using data attribute for better targeting)
-    if (target.matches("[data-modal-show]")) {
+    // Handle show modal buttons (buttons that immediately follow dialogs)
+    if (target.matches("dialog + button")) {
       e.preventDefault();
-      const dialogId = target.getAttribute("data-modal-show");
-      let dialog;
-
-      if (dialogId) {
-        // If ID is provided, use it to find the dialog
-        dialog = document.getElementById(dialogId);
-      } else {
-        // If no ID, look for previous sibling dialog (backward compatibility)
-        dialog = target.previousElementSibling;
-        while (dialog && dialog.tagName !== "DIALOG") {
-          dialog = dialog.previousElementSibling;
-        }
-      }
-
+      const dialog = target.previousElementSibling;
       if (dialog && dialog.tagName === "DIALOG") {
         dialog.showModal();
       }
       return;
     }
 
-    // Handle close modal buttons (using data attribute or fallback to any button in dialog)
-    if (
-      target.matches("[data-modal-close]") ||
-      (target.matches("dialog button") && target.closest("dialog"))
-    ) {
+    // Handle close modal buttons (any button inside a dialog)
+    if (target.matches("dialog button")) {
       e.preventDefault();
       const dialog = target.closest("dialog");
       if (dialog) {
