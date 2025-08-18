@@ -36,7 +36,19 @@
     if (target.matches("[data-modal-show]")) {
       e.preventDefault();
       const dialogId = target.getAttribute("data-modal-show");
-      const dialog = document.getElementById(dialogId);
+      let dialog;
+
+      if (dialogId) {
+        // If ID is provided, use it to find the dialog
+        dialog = document.getElementById(dialogId);
+      } else {
+        // If no ID, look for previous sibling dialog (backward compatibility)
+        dialog = target.previousElementSibling;
+        while (dialog && dialog.tagName !== "DIALOG") {
+          dialog = dialog.previousElementSibling;
+        }
+      }
+
       if (dialog && dialog.tagName === "DIALOG") {
         dialog.showModal();
       }
