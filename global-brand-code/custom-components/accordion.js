@@ -31,15 +31,15 @@
       prefersReducedMotion = false;
     }
 
-    // Handle open attribute based on its value on page load (only if they exist)
+    // Handle open attribute based on data-start-open value on page load (only if they exist)
     document.querySelectorAll("details[open]").forEach((details) => {
-      const openValue = details.getAttribute("open");
+      const startOpen = details.getAttribute("data-start-open");
 
-      if (openValue === "live-open") {
-        // Keep the open attribute but clear its value so accordion remains open
-        details.setAttribute("open", "");
+      if (startOpen === "true") {
+        // Don't alter the open attribute - leave it as is so accordion stays open
+        return;
       } else {
-        // For "designer-open", no value, or any other value, remove the attribute entirely
+        // For data-start-open="false", missing attribute, or any other value, remove the open attribute
         details.removeAttribute("open");
       }
     });
@@ -55,12 +55,16 @@
       }
 
       // Set initial collapsed state (check if GSAP is available)
-      if (typeof gsap !== "undefined") {
-        gsap.set(content, { height: 0, overflow: "hidden" });
-      } else {
-        // Fallback if GSAP is not available
-        content.style.height = "0px";
-        content.style.overflow = "hidden";
+      // Skip setting collapsed state if data-start-open="true"
+      const startOpen = details.getAttribute("data-start-open");
+      if (startOpen !== "true") {
+        if (typeof gsap !== "undefined") {
+          gsap.set(content, { height: 0, overflow: "hidden" });
+        } else {
+          // Fallback if GSAP is not available
+          content.style.height = "0px";
+          content.style.overflow = "hidden";
+        }
       }
 
       summary.addEventListener("click", (event) => {
