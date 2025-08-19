@@ -31,9 +31,17 @@
       prefersReducedMotion = false;
     }
 
-    // Force-close all <details> on page load (only if they exist)
+    // Handle open attribute based on its value on page load (only if they exist)
     document.querySelectorAll("details[open]").forEach((details) => {
-      details.removeAttribute("open");
+      const openValue = details.getAttribute("open");
+
+      if (openValue === "live-open") {
+        // Keep the open attribute but clear its value so accordion remains open
+        details.setAttribute("open", "");
+      } else {
+        // For "designer-open", no value, or any other value, remove the attribute entirely
+        details.removeAttribute("open");
+      }
     });
 
     // Process each accordion
