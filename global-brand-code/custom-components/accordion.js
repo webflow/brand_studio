@@ -59,11 +59,11 @@
       const startOpen = details.getAttribute("data-start-open");
       if (startOpen !== "true") {
         if (typeof gsap !== "undefined") {
-          gsap.set(content, { height: 0, overflow: "hidden" });
+          gsap.set(content, { height: 0, overflow: "clip" });
         } else {
           // Fallback if GSAP is not available
           content.style.height = "0px";
-          content.style.overflow = "hidden";
+          content.style.overflow = "clip";
         }
       }
 
