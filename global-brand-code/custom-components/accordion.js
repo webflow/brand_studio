@@ -85,20 +85,20 @@
             if (typeof gsap !== "undefined") {
               gsap.to(content, {
                 height: 0,
-                duration: 0.4,
-                ease: "power3.inOut",
+                duration: 0.75,
+                ease: "power2.inOut",
                 onComplete: () => {
                   details.removeAttribute("open");
                 },
               });
             } else {
               // Fallback animation without GSAP
-              content.style.transition = "height 0.4s ease-in-out";
+              content.style.transition = "height 0.75s ease-in-out";
               content.style.height = "0px";
               setTimeout(() => {
                 details.removeAttribute("open");
                 content.style.transition = "";
-              }, 400);
+              }, 750);
             }
           }
         }
@@ -116,20 +116,20 @@
             if (typeof gsap !== "undefined") {
               gsap.to(content, {
                 height: fullHeight,
-                duration: 0.4,
-                ease: "power3.out",
+                duration: 0.75,
+                ease: "power2.inOut",
                 onComplete: () => {
                   content.style.height = "auto";
                 },
               });
             } else {
               // Fallback animation without GSAP
-              content.style.transition = "height 0.4s ease-out";
+              content.style.transition = "height 0.75s ease-in-out";
               content.style.height = `${fullHeight}px`;
               setTimeout(() => {
                 content.style.height = "auto";
                 content.style.transition = "";
-              }, 400);
+              }, 750);
             }
           }
         }
