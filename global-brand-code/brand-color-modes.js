@@ -29,19 +29,11 @@
 
   // Function to set the color mode
   function setColorMode(isDark, savePreference = true, isAutoMode = false) {
-    // Add transitioning class for smooth color transitions
-    document.documentElement.classList.add("u-color-mode-transitioning");
-
     // Apply mode by toggling class on HTML element (most performant)
     document.documentElement.classList.toggle("u-mode-dark", isDark);
 
     // Swap icon URLs to match the new mode
     swapIconUrls(isDark);
-
-    // Remove transitioning class after transition completes (200ms + small buffer)
-    setTimeout(() => {
-      document.documentElement.classList.remove("u-color-mode-transitioning");
-    }, 250);
 
     // Update ALL button states if they exist on the page
     const lightButtons = document.querySelectorAll(
