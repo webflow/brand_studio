@@ -169,6 +169,9 @@ class VideoLibrary {
         source.src = source.getAttribute("data-src");
         video.load();
 
+        // Hide the corresponding picture element when video starts loading
+        this.hidePictureElement(video);
+
         video.addEventListener("canplaythrough", function onCanPlayThrough() {
           video.removeEventListener("canplaythrough", onCanPlayThrough);
           resolve();
@@ -182,6 +185,60 @@ class VideoLibrary {
         resolve(); // Already loaded or source missing
       }
     });
+  }
+
+  /**
+   * Hide the corresponding picture element for a video
+   * @param {HTMLVideoElement} video - The video element
+   */
+  hidePictureElement(video) {
+    const videoId = video.getAttribute("data-video");
+    if (!videoId) return;
+
+    // Find the picture element with matching data-video-picture attribute
+    // Use the most performant approach: check previous siblings first, then fallback to document query
+    const pictureElement = this.findPictureElement(video, videoId);
+
+    if (pictureElement) {
+      pictureElement.style.display = "none";
+      if (this.options.debug) {
+        console.log(`Hidden picture element for video: ${videoId}`);
+      }
+    }
+  }
+
+  /**
+   * Find the picture element associated with a video
+   * @param {HTMLVideoElement} video - The video element
+   * @param {string} videoId - The video ID to match
+   * @returns {HTMLElement|null} - The picture element or null if not found
+   */
+  findPictureElement(video, videoId) {
+    // First, check previous siblings (most common case based on the HTML structure)
+    let sibling = video.previousElementSibling;
+    while (sibling) {
+      if (
+        sibling.tagName === "PICTURE" &&
+        sibling.getAttribute("data-video-picture") === videoId
+      ) {
+        return sibling;
+      }
+      sibling = sibling.previousElementSibling;
+    }
+
+    // Fallback: search within the same parent container
+    const parent = video.parentElement;
+    if (parent) {
+      const pictureElement = parent.querySelector(
+        `picture[data-video-picture="${videoId}"]`
+      );
+      if (pictureElement) {
+        return pictureElement;
+      }
+    }
+
+    // Final fallback: document-wide search (least performant but most reliable)
+    return document.querySelector(`picture[data-video-picture="${videoId}"]`);
   }
 
   /**
