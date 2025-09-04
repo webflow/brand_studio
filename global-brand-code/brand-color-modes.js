@@ -44,27 +44,27 @@
 
     // Clear active class from all buttons
     lightButtons.forEach((button) => {
-      button.classList.remove("cc-active");
+      button.classList.remove("cc-active-mode");
     });
     darkButtons.forEach((button) => {
-      button.classList.remove("cc-active");
+      button.classList.remove("cc-active-mode");
     });
     autoButtons.forEach((button) => {
-      button.classList.remove("cc-active");
+      button.classList.remove("cc-active-mode");
     });
 
     // Set active class on the appropriate buttons
     if (isAutoMode) {
       autoButtons.forEach((button) => {
-        button.classList.add("cc-active");
+        button.classList.add("cc-active-mode");
       });
     } else if (isDark) {
       darkButtons.forEach((button) => {
-        button.classList.add("cc-active");
+        button.classList.add("cc-active-mode");
       });
     } else {
       lightButtons.forEach((button) => {
-        button.classList.add("cc-active");
+        button.classList.add("cc-active-mode");
       });
     }
 
@@ -111,13 +111,13 @@
 
     // Clear active class from all buttons initially
     lightButtons.forEach((button) => {
-      button.classList.remove("cc-active");
+      button.classList.remove("cc-active-mode");
     });
     darkButtons.forEach((button) => {
-      button.classList.remove("cc-active");
+      button.classList.remove("cc-active-mode");
     });
     autoButtons.forEach((button) => {
-      button.classList.remove("cc-active");
+      button.classList.remove("cc-active-mode");
     });
 
     // Set initial state based on current mode
@@ -133,15 +133,15 @@
 
     if (isAutoMode) {
       autoButtons.forEach((button) => {
-        button.classList.add("cc-active");
+        button.classList.add("cc-active-mode");
       });
     } else if (isDarkMode) {
       darkButtons.forEach((button) => {
-        button.classList.add("cc-active");
+        button.classList.add("cc-active-mode");
       });
     } else {
       lightButtons.forEach((button) => {
-        button.classList.add("cc-active");
+        button.classList.add("cc-active-mode");
       });
     }
 
