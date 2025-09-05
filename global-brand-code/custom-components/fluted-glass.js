@@ -5,13 +5,54 @@ window.addEventListener("load", () => {
 
 function initializeOptimizedShaders() {
   if (typeof THREE === "undefined") {
-    console.error("Shader Error: Three.js missing.");
     return;
   }
 
   const prefersReducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
   ).matches;
+
+  function parseColorValue(colorString, element) {
+    if (!colorString) return null;
+
+    if (colorString.startsWith("var(")) {
+      const match = colorString.match(
+        /var\(\s*(--[^,\)]+)\s*(?:,\s*([^)]+))?\s*\)/
+      );
+      if (match) {
+        const originalVarName = match[1];
+        const fallback = match[2];
+        const rootStyle = getComputedStyle(document.documentElement);
+        let resolvedValue = rootStyle.getPropertyValue(originalVarName).trim();
+
+        if (!resolvedValue) {
+          const baseName = originalVarName.replace("--", "");
+          const variations = [
+            `--${baseName}`,
+            `--${baseName.replace(/--/g, "-")}`,
+            `--${baseName.toLowerCase()}`,
+            `--${baseName.replace(/([A-Z])/g, "-$1").toLowerCase()}`,
+            `--${baseName.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase()}`,
+            `--${baseName.replace(/-/g, "").toLowerCase()}`,
+            `--${baseName.replace(/([A-Z])/g, (letter) =>
+              letter.toLowerCase()
+            )}`,
+          ];
+
+          for (const variation of variations) {
+            resolvedValue = rootStyle.getPropertyValue(variation).trim();
+            if (resolvedValue) break;
+          }
+        }
+
+        if (resolvedValue) return resolvedValue;
+        else if (fallback) return fallback.trim();
+      }
+      return null;
+    }
+
+    return colorString;
+  }
 
   const perfConfig = {
     maxInstances: 8,
@@ -35,9 +76,7 @@ function initializeOptimizedShaders() {
     let renderedCount = 0;
     for (const instance of activeInstances) {
       if (renderBudgetExceeded) break;
-      const renderStart = performance.now();
       instance.update(currentTime);
-      const renderDuration = performance.now() - renderStart;
       renderedCount++;
       if (performance.now() - frameStartTime > perfConfig.renderBudget) {
         renderBudgetExceeded = true;
@@ -316,7 +355,10 @@ function initializeOptimizedShaders() {
               u_distortion: { value: state.settings.distortion },
               u_color_one: {
                 value: new THREE.Color(
-                  container.getAttribute("data-color-one") || "#5983f8"
+                  parseColorValue(
+                    container.getAttribute("data-color-one") || "#5983f8",
+                    container
+                  ) || "#5983f8"
                 ),
               },
               u_size_one: {
@@ -325,7 +367,10 @@ function initializeOptimizedShaders() {
               },
               u_color_two: {
                 value: new THREE.Color(
-                  container.getAttribute("data-color-two") || "#c1ff5b"
+                  parseColorValue(
+                    container.getAttribute("data-color-two") || "#c1ff5b",
+                    container
+                  ) || "#c1ff5b"
                 ),
               },
               u_size_two: {
@@ -344,7 +389,10 @@ function initializeOptimizedShaders() {
               },
               u_color_three: {
                 value: new THREE.Color(
-                  container.getAttribute("data-color-three") || "#ffff5b"
+                  parseColorValue(
+                    container.getAttribute("data-color-three") || "#ffff5b",
+                    container
+                  ) || "#ffff5b"
                 ),
               },
               u_size_three: {
@@ -370,7 +418,12 @@ function initializeOptimizedShaders() {
               },
               u_background_color: {
                 value: state.settings.backgroundColor
-                  ? new THREE.Color(state.settings.backgroundColor)
+                  ? new THREE.Color(
+                      parseColorValue(
+                        state.settings.backgroundColor,
+                        container
+                      ) || state.settings.backgroundColor
+                    )
                   : new THREE.Color(0, 0, 0),
               },
               u_has_bg_color: {
@@ -576,14 +629,12 @@ function initializeOptimizedShaders() {
                           }
 
                           void main() { 
-                              // Column distortion effect
                               vec4 d = texture2D(u_column_lookup, vec2(vUv.x, 0.0)); 
                               float i = d.r * 255.0; 
                               float s = sin(i * 12.99) * 43758.5; 
                               float o = (fract(s) - 0.5) * u_distortion; 
                               vec2 distortedUV = vec2(vUv.x + o, vUv.y); 
                               
-                              // Background handling
                               vec3 backgroundColor = vec3(0.0);
                               bool hasAnyBackground = u_has_background || u_has_bg_color;
                               
@@ -596,16 +647,13 @@ function initializeOptimizedShaders() {
                                   backgroundColor = u_background_color;
                               }
 
-                              // Aspect ratio correction
                               vec2 aspectCorrected = vec2(distortedUV.x * u_aspect, distortedUV.y);
                               vec2 blob1Corrected = vec2(u_blob1_pos.x * u_aspect, u_blob1_pos.y);
                               vec2 blob2Corrected = vec2(u_blob2_pos.x * u_aspect, u_blob2_pos.y);
                               vec2 blob3Corrected = vec2(u_blob3_pos.x * u_aspect, u_blob3_pos.y);
                               
-                              // Mobile scaling
                               float mobileScale = u_aspect < 1.0 ? 0.8 : 1.0;
 
-                              // Calculate shape intensities
                               float intensity1 = 0.0;
                               if(u_use_blob_one) {
                                   intensity1 = getShapeIntensity(aspectCorrected, blob1Corrected, u_size_one * mobileScale, u_time, u_shape_type_one);
@@ -623,7 +671,6 @@ function initializeOptimizedShaders() {
                               
                               float maxIntensity = max(max(intensity1, intensity2), intensity3);
                               
-                              // Handle background-only areas
                               if (maxIntensity <= 0.0) {
                                   if (hasAnyBackground) {
                                       vec3 c = backgroundColor; 
@@ -636,21 +683,17 @@ function initializeOptimizedShaders() {
                                   return;
                               }
                               
-                              // Alpha compositing - like layering PNG images with transparent gradients
                               vec3 blendedColor = vec3(0.0);
                               float totalAlpha = 0.0;
                               
-                              // Start with transparent background
                               vec3 currentColor = vec3(0.0);
                               float currentAlpha = 0.0;
                               
-                              // Layer Shape 1 (bottom) - alpha composite over transparent
                               if (intensity1 > 0.0) {
                                   currentColor = u_color_one;
                                   currentAlpha = intensity1;
                               }
                               
-                              // Layer Shape 2 over Shape 1 using alpha compositing
                               if (intensity2 > 0.0) {
                                   float srcAlpha = intensity2;
                                   float dstAlpha = currentAlpha;
@@ -662,7 +705,6 @@ function initializeOptimizedShaders() {
                                   }
                               }
                               
-                              // Layer Shape 3 over everything using alpha compositing
                               if (intensity3 > 0.0) {
                                   float srcAlpha = intensity3;
                                   float dstAlpha = currentAlpha;
@@ -677,7 +719,6 @@ function initializeOptimizedShaders() {
                               blendedColor = currentColor;
                               maxIntensity = currentAlpha;
                               
-                              // Final color mixing with background
                               vec3 finalColor;
                               if (hasAnyBackground) {
                                   finalColor = mix(backgroundColor, blendedColor, maxIntensity);
@@ -685,7 +726,6 @@ function initializeOptimizedShaders() {
                                   finalColor = blendedColor;
                               }
                               
-                              // Add noise texture
                               vec3 c = finalColor; 
                               float g = (random(vUv * 0.5) - 0.5) * u_noise * 0.12; 
                               c += g; 
@@ -840,15 +880,8 @@ function initializeOptimizedShaders() {
                 state.uniforms.u_blob2_pos.value.copy(blobs.b2);
                 state.uniforms.u_blob3_pos.value.copy(blobs.b3);
                 state.uniforms.u_time.value = timeInSeconds;
-                const renderStart = performance.now();
                 state.renderer.render(state.scene, state.camera);
-                const renderDuration = performance.now() - renderStart;
                 animState.lastRenderTime = time;
-                if (renderDuration > 45) {
-                  console.warn(
-                    `Shader render took ${renderDuration.toFixed(1)}ms`
-                  );
-                }
               },
               setVisible: (visible) => {
                 if (visible && !animState.isVisible) {
@@ -912,7 +945,6 @@ function initializeOptimizedShaders() {
             break;
         }
       } catch (e) {
-        console.error("Shader init error:", e);
         onComplete(null);
       }
     };
