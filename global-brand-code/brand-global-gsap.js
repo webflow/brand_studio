@@ -7,7 +7,6 @@ document.addEventListener("DOMContentLoaded", () => {
 // Split Text Animation
 document.fonts.ready.then(() => {
   if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
-    console.warn("GSAP or ScrollTrigger not loaded. Skipping animations.");
     return;
   }
   const prefersReducedMotion = window.matchMedia(
@@ -27,7 +26,6 @@ document.fonts.ready.then(() => {
         "p, h1, h2, h3, h4, h5, h6"
       );
       if (elementsToSplit.length === 0) {
-        console.warn("No headings found inside container");
         return;
       }
 
@@ -69,7 +67,6 @@ document.fonts.ready.then(() => {
 // Scrolltrigger Refresh
 document.addEventListener("DOMContentLoaded", function () {
   if (typeof ScrollTrigger === "undefined") {
-    console.warn("ScrollTrigger not loaded. Cannot set up refresh observer.");
     return;
   }
 
