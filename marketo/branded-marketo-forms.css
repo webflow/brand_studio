@@ -271,7 +271,7 @@ select.mktoField {
   background-image: none !important;
   box-shadow: none;
 }
-.mktoForm .mktoButtonWrap.mktoSimple .mktoButton:focus {
+.mktoForm .mktoButtonWrap.mktoSimple .mktoButton:focus-visible {
   outline-color: var(--mkto-embed-color-button) !important;
   outline-offset: 2px;
   outline-style: solid;
