@@ -44,6 +44,67 @@
       }
     });
 
+    // Helper function to animate accordion opening
+    function animateOpen(details, content) {
+      const fullHeight = content.scrollHeight;
+
+      if (prefersReducedMotion) {
+        // Instant open for reduced motion
+        content.style.height = "auto";
+      } else {
+        // Animate opening
+        if (typeof gsap !== "undefined") {
+          gsap.to(content, {
+            height: fullHeight,
+            duration: 0.45,
+            ease: "power2.inOut",
+            onComplete: () => {
+              content.style.height = "auto";
+            },
+          });
+        } else {
+          // Fallback animation without GSAP
+          content.style.transition = "height 0.45s ease-in-out";
+          content.style.height = `${fullHeight}px`;
+          setTimeout(() => {
+            content.style.height = "auto";
+            content.style.transition = "";
+          }, 450);
+        }
+      }
+    }
+
+    // Helper function to animate accordion closing
+    function animateClose(details, content) {
+      if (prefersReducedMotion) {
+        // Instant close for reduced motion
+        details.removeAttribute("open");
+      } else {
+        // Animate closing
+        content.style.height = `${content.scrollHeight}px`;
+        content.offsetHeight; // force reflow
+
+        if (typeof gsap !== "undefined") {
+          gsap.to(content, {
+            height: 0,
+            duration: 0.45,
+            ease: "power2.inOut",
+            onComplete: () => {
+              details.removeAttribute("open");
+            },
+          });
+        } else {
+          // Fallback animation without GSAP
+          content.style.transition = "height 0.45s ease-in-out";
+          content.style.height = "0px";
+          setTimeout(() => {
+            details.removeAttribute("open");
+            content.style.transition = "";
+          }, 450);
+        }
+      }
+    }
+
     // Process each accordion
     detailsElements.forEach((details) => {
       const summary = details.querySelector("summary");
@@ -53,6 +114,10 @@
       if (!summary || !content) {
         return;
       }
+
+      // Check if this accordion is within an .accordion-card_wrap parent
+      const cardWrap = details.closest(".accordion-card_wrap");
+      const isCardAccordion = cardWrap !== null;
 
       // Set initial collapsed state (check if GSAP is available)
       // Skip setting collapsed state if data-start-open="true"
@@ -67,73 +132,68 @@
         }
       }
 
-      summary.addEventListener("click", (event) => {
-        const isClosing = details.hasAttribute("open");
+      if (isCardAccordion) {
+        // For accordions within .accordion-card_wrap, use hover/focus behavior
+        let isHovered = false;
+        let isFocused = false;
 
-        if (isClosing) {
-          // Prevent native close
+        // Hover events on the card wrap
+        cardWrap.addEventListener("mouseenter", () => {
+          isHovered = true;
+          if (!details.hasAttribute("open")) {
+            details.setAttribute("open", "");
+            animateOpen(details, content);
+          }
+        });
+
+        cardWrap.addEventListener("mouseleave", () => {
+          isHovered = false;
+          if (!isFocused && details.hasAttribute("open")) {
+            animateClose(details, content);
+          }
+        });
+
+        // Focus events on the card wrap (for keyboard navigation)
+        cardWrap.addEventListener("focusin", () => {
+          isFocused = true;
+          if (!details.hasAttribute("open")) {
+            details.setAttribute("open", "");
+            animateOpen(details, content);
+          }
+        });
+
+        cardWrap.addEventListener("focusout", (event) => {
+          // Check if focus is moving to an element outside the card wrap
+          if (!cardWrap.contains(event.relatedTarget)) {
+            isFocused = false;
+            if (!isHovered && details.hasAttribute("open")) {
+              animateClose(details, content);
+            }
+          }
+        });
+
+        // Disable click behavior on summary for card accordions
+        summary.addEventListener("click", (event) => {
           event.preventDefault();
+        });
+      } else {
+        // Regular accordion behavior (click to toggle)
+        summary.addEventListener("click", (event) => {
+          const isClosing = details.hasAttribute("open");
 
-          if (prefersReducedMotion) {
-            // Instant close for reduced motion
-            details.removeAttribute("open");
-          } else {
-            // Animate closing
-            content.style.height = `${content.scrollHeight}px`;
-            content.offsetHeight; // force reflow
-
-            if (typeof gsap !== "undefined") {
-              gsap.to(content, {
-                height: 0,
-                duration: 0.45,
-                ease: "power2.inOut",
-                onComplete: () => {
-                  details.removeAttribute("open");
-                },
-              });
-            } else {
-              // Fallback animation without GSAP
-              content.style.transition = "height 0.45s ease-in-out";
-              content.style.height = "0px";
-              setTimeout(() => {
-                details.removeAttribute("open");
-                content.style.transition = "";
-              }, 450);
-            }
+          if (isClosing) {
+            // Prevent native close
+            event.preventDefault();
+            animateClose(details, content);
           }
-        }
-      });
+        });
 
-      details.addEventListener("toggle", () => {
-        if (details.open) {
-          const fullHeight = content.scrollHeight;
-
-          if (prefersReducedMotion) {
-            // Instant open for reduced motion
-            content.style.height = "auto";
-          } else {
-            // Animate opening
-            if (typeof gsap !== "undefined") {
-              gsap.to(content, {
-                height: fullHeight,
-                duration: 0.45,
-                ease: "power2.inOut",
-                onComplete: () => {
-                  content.style.height = "auto";
-                },
-              });
-            } else {
-              // Fallback animation without GSAP
-              content.style.transition = "height 0.45s ease-in-out";
-              content.style.height = `${fullHeight}px`;
-              setTimeout(() => {
-                content.style.height = "auto";
-                content.style.transition = "";
-              }, 450);
-            }
+        details.addEventListener("toggle", () => {
+          if (details.open) {
+            animateOpen(details, content);
           }
-        }
-      });
+        });
+      }
     });
   }
 
