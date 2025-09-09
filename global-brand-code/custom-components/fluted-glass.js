@@ -5,13 +5,58 @@ window.addEventListener("load", () => {
 
 function initializeOptimizedShaders() {
   if (typeof THREE === "undefined") {
-    console.error("Shader Error: Three.js missing.");
     return;
   }
+  //  iOS DETECTION
+  const isIOS =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
   const prefersReducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
   ).matches;
+
+  function parseColorValue(colorString, element) {
+    if (!colorString) return null;
+
+    if (colorString.startsWith("var(")) {
+      const match = colorString.match(
+        /var\(\s*(--[^,\)]+)\s*(?:,\s*([^)]+))?\s*\)/
+      );
+      if (match) {
+        const originalVarName = match[1];
+        const fallback = match[2];
+        const rootStyle = getComputedStyle(document.documentElement);
+        let resolvedValue = rootStyle.getPropertyValue(originalVarName).trim();
+
+        if (!resolvedValue) {
+          const baseName = originalVarName.replace("--", "");
+          const variations = [
+            `--${baseName}`,
+            `--${baseName.replace(/--/g, "-")}`,
+            `--${baseName.toLowerCase()}`,
+            `--${baseName.replace(/([A-Z])/g, "-$1").toLowerCase()}`,
+            `--${baseName.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase()}`,
+            `--${baseName.replace(/-/g, "").toLowerCase()}`,
+            `--${baseName.replace(/([A-Z])/g, (letter) =>
+              letter.toLowerCase()
+            )}`,
+          ];
+
+          for (const variation of variations) {
+            resolvedValue = rootStyle.getPropertyValue(variation).trim();
+            if (resolvedValue) break;
+          }
+        }
+
+        if (resolvedValue) return resolvedValue;
+        else if (fallback) return fallback.trim();
+      }
+      return null;
+    }
+
+    return colorString;
+  }
 
   const perfConfig = {
     maxInstances: 8,
@@ -35,9 +80,7 @@ function initializeOptimizedShaders() {
     let renderedCount = 0;
     for (const instance of activeInstances) {
       if (renderBudgetExceeded) break;
-      const renderStart = performance.now();
       instance.update(currentTime);
-      const renderDuration = performance.now() - renderStart;
       renderedCount++;
       if (performance.now() - frameStartTime > perfConfig.renderBudget) {
         renderBudgetExceeded = true;
@@ -144,39 +187,46 @@ function initializeOptimizedShaders() {
         return;
       }
 
-      try {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.width = 512;
-        canvas.height = 512;
+      // Try canvas blur first (works on desktop/Android)
+      if (!isIOS) {
+        try {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          canvas.width = 512;
+          canvas.height = 512;
 
-        const tempImg = new Image();
-        tempImg.crossOrigin = "anonymous";
+          const tempImg = new Image();
+          tempImg.crossOrigin = "anonymous";
 
-        tempImg.onload = function () {
-          ctx.filter = "blur(15px)";
-          ctx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
+          tempImg.onload = function () {
+            ctx.filter = "blur(15px)";
+            ctx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
 
-          const loader = new THREE.TextureLoader();
-          loader.load(canvas.toDataURL(), (blurredTexture) => {
-            blurredTexture.wrapS = THREE.ClampToEdgeWrapping;
-            blurredTexture.wrapT = THREE.ClampToEdgeWrapping;
-            blurredTexture.minFilter = THREE.LinearFilter;
-            blurredTexture.magFilter = THREE.LinearFilter;
-            resolve(blurredTexture);
-          });
-        };
+            const loader = new THREE.TextureLoader();
+            loader.load(canvas.toDataURL(), (blurredTexture) => {
+              blurredTexture.wrapS = THREE.ClampToEdgeWrapping;
+              blurredTexture.wrapT = THREE.ClampToEdgeWrapping;
+              blurredTexture.minFilter = THREE.LinearFilter;
+              blurredTexture.magFilter = THREE.LinearFilter;
+              resolve(blurredTexture);
+            });
+          };
 
-        tempImg.onerror = () => {
-          resolve(originalTexture);
-        };
+          tempImg.onerror = () => {
+            resolve(originalTexture);
+          };
 
-        if (originalTexture.image && originalTexture.image.src) {
-          tempImg.src = originalTexture.image.src;
-        } else {
+          if (originalTexture.image && originalTexture.image.src) {
+            tempImg.src = originalTexture.image.src;
+          } else {
+            resolve(originalTexture);
+          }
+        } catch (error) {
           resolve(originalTexture);
         }
-      } catch (error) {
+      } else {
+        // iOS fallback: Apply blur effect in the main shader instead
+        console.log("iOS detected - will apply blur in shader");
         resolve(originalTexture);
       }
     });
@@ -316,7 +366,10 @@ function initializeOptimizedShaders() {
               u_distortion: { value: state.settings.distortion },
               u_color_one: {
                 value: new THREE.Color(
-                  container.getAttribute("data-color-one") || "#5983f8"
+                  parseColorValue(
+                    container.getAttribute("data-color-one") || "#5983f8",
+                    container
+                  ) || "#5983f8"
                 ),
               },
               u_size_one: {
@@ -325,7 +378,10 @@ function initializeOptimizedShaders() {
               },
               u_color_two: {
                 value: new THREE.Color(
-                  container.getAttribute("data-color-two") || "#c1ff5b"
+                  parseColorValue(
+                    container.getAttribute("data-color-two") || "#c1ff5b",
+                    container
+                  ) || "#c1ff5b"
                 ),
               },
               u_size_two: {
@@ -344,7 +400,10 @@ function initializeOptimizedShaders() {
               },
               u_color_three: {
                 value: new THREE.Color(
-                  container.getAttribute("data-color-three") || "#ffff5b"
+                  parseColorValue(
+                    container.getAttribute("data-color-three") || "#ffff5b",
+                    container
+                  ) || "#ffff5b"
                 ),
               },
               u_size_three: {
@@ -370,7 +429,12 @@ function initializeOptimizedShaders() {
               },
               u_background_color: {
                 value: state.settings.backgroundColor
-                  ? new THREE.Color(state.settings.backgroundColor)
+                  ? new THREE.Color(
+                      parseColorValue(
+                        state.settings.backgroundColor,
+                        container
+                      ) || state.settings.backgroundColor
+                    )
                   : new THREE.Color(0, 0, 0),
               },
               u_has_bg_color: {
@@ -378,6 +442,7 @@ function initializeOptimizedShaders() {
                   state.settings.backgroundColor !== null &&
                   state.settings.backgroundColor !== "",
               },
+              u_is_ios: { value: isIOS },
             };
 
             state.material = new THREE.ShaderMaterial({
@@ -415,6 +480,7 @@ function initializeOptimizedShaders() {
                           uniform bool u_has_background;
                           uniform vec3 u_background_color;
                           uniform bool u_has_bg_color;
+                          uniform bool u_is_ios;
                           varying vec2 vUv;
 
                           float random(vec2 st) { 
@@ -573,39 +639,53 @@ function initializeOptimizedShaders() {
                               } else {
                                   return noiseBlob(pos, center, size, time);
                               }
-                          }
+                          }           
 
                           void main() { 
-                              // Column distortion effect
                               vec4 d = texture2D(u_column_lookup, vec2(vUv.x, 0.0)); 
                               float i = d.r * 255.0; 
                               float s = sin(i * 12.99) * 43758.5; 
                               float o = (fract(s) - 0.5) * u_distortion; 
                               vec2 distortedUV = vec2(vUv.x + o, vUv.y); 
                               
-                              // Background handling
                               vec3 backgroundColor = vec3(0.0);
                               bool hasAnyBackground = u_has_background || u_has_bg_color;
                               
-                              if (u_has_background) {
-                                  vec2 backgroundUV = vUv;
-                                  backgroundUV.x += o * 0.1;
-                                  vec2 clampedBackgroundUV = clamp(backgroundUV, vec2(0.0), vec2(1.0));
-                                  backgroundColor = texture2D(u_background_texture, clampedBackgroundUV).rgb * 0.85;    
-                              } else if (u_has_bg_color) {
-                                  backgroundColor = u_background_color;
+                          if (u_has_background) {
+                              vec2 backgroundUV = vUv;
+                              backgroundUV.x += o * 0.1;
+                              vec2 clampedBackgroundUV = clamp(backgroundUV, vec2(0.0), vec2(1.0));
+                              
+                              if (u_is_ios) {
+                                  vec3 blurResult = vec3(0.0);
+                                  float blurTotal = 0.0;
+                                  vec2 texelSize = vec2(1.0 / 512.0);
+                                  
+                              for(float x = -6.0; x <= 6.0; x += 1.0) {
+                                  for(float y = -6.0; y <= 6.0; y += 1.0) {
+                                      vec2 offset = vec2(x, y) * texelSize * 3.0;
+                                          vec2 sampleUV = clampedBackgroundUV + offset;
+                                          if(sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0) {
+                                              blurResult += texture2D(u_background_texture, sampleUV).rgb;
+                                              blurTotal += 1.0;
+                                          }
+                                      }
+                                  }
+                                  backgroundColor = (blurResult / blurTotal) * 0.85;
+                              } else {
+                                  backgroundColor = texture2D(u_background_texture, clampedBackgroundUV).rgb * 0.85;
                               }
+                          } else if (u_has_bg_color) {
+                              backgroundColor = u_background_color;
+                          }
 
-                              // Aspect ratio correction
                               vec2 aspectCorrected = vec2(distortedUV.x * u_aspect, distortedUV.y);
                               vec2 blob1Corrected = vec2(u_blob1_pos.x * u_aspect, u_blob1_pos.y);
                               vec2 blob2Corrected = vec2(u_blob2_pos.x * u_aspect, u_blob2_pos.y);
                               vec2 blob3Corrected = vec2(u_blob3_pos.x * u_aspect, u_blob3_pos.y);
                               
-                              // Mobile scaling
                               float mobileScale = u_aspect < 1.0 ? 0.8 : 1.0;
 
-                              // Calculate shape intensities
                               float intensity1 = 0.0;
                               if(u_use_blob_one) {
                                   intensity1 = getShapeIntensity(aspectCorrected, blob1Corrected, u_size_one * mobileScale, u_time, u_shape_type_one);
@@ -623,7 +703,6 @@ function initializeOptimizedShaders() {
                               
                               float maxIntensity = max(max(intensity1, intensity2), intensity3);
                               
-                              // Handle background-only areas
                               if (maxIntensity <= 0.0) {
                                   if (hasAnyBackground) {
                                       vec3 c = backgroundColor; 
@@ -636,21 +715,17 @@ function initializeOptimizedShaders() {
                                   return;
                               }
                               
-                              // Alpha compositing - like layering PNG images with transparent gradients
                               vec3 blendedColor = vec3(0.0);
                               float totalAlpha = 0.0;
                               
-                              // Start with transparent background
                               vec3 currentColor = vec3(0.0);
                               float currentAlpha = 0.0;
                               
-                              // Layer Shape 1 (bottom) - alpha composite over transparent
                               if (intensity1 > 0.0) {
                                   currentColor = u_color_one;
                                   currentAlpha = intensity1;
                               }
                               
-                              // Layer Shape 2 over Shape 1 using alpha compositing
                               if (intensity2 > 0.0) {
                                   float srcAlpha = intensity2;
                                   float dstAlpha = currentAlpha;
@@ -662,7 +737,6 @@ function initializeOptimizedShaders() {
                                   }
                               }
                               
-                              // Layer Shape 3 over everything using alpha compositing
                               if (intensity3 > 0.0) {
                                   float srcAlpha = intensity3;
                                   float dstAlpha = currentAlpha;
@@ -677,7 +751,6 @@ function initializeOptimizedShaders() {
                               blendedColor = currentColor;
                               maxIntensity = currentAlpha;
                               
-                              // Final color mixing with background
                               vec3 finalColor;
                               if (hasAnyBackground) {
                                   finalColor = mix(backgroundColor, blendedColor, maxIntensity);
@@ -685,7 +758,6 @@ function initializeOptimizedShaders() {
                                   finalColor = blendedColor;
                               }
                               
-                              // Add noise texture
                               vec3 c = finalColor; 
                               float g = (random(vUv * 0.5) - 0.5) * u_noise * 0.12; 
                               c += g; 
@@ -840,15 +912,8 @@ function initializeOptimizedShaders() {
                 state.uniforms.u_blob2_pos.value.copy(blobs.b2);
                 state.uniforms.u_blob3_pos.value.copy(blobs.b3);
                 state.uniforms.u_time.value = timeInSeconds;
-                const renderStart = performance.now();
                 state.renderer.render(state.scene, state.camera);
-                const renderDuration = performance.now() - renderStart;
                 animState.lastRenderTime = time;
-                if (renderDuration > 45) {
-                  console.warn(
-                    `Shader render took ${renderDuration.toFixed(1)}ms`
-                  );
-                }
               },
               setVisible: (visible) => {
                 if (visible && !animState.isVisible) {
@@ -912,7 +977,6 @@ function initializeOptimizedShaders() {
             break;
         }
       } catch (e) {
-        console.error("Shader init error:", e);
         onComplete(null);
       }
     };

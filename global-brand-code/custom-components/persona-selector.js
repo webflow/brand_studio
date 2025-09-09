@@ -23,6 +23,8 @@
     // State
     dropdowns: [],
     activeOption: null,
+    readyCallbacks: [],
+    isReady: false,
 
     /**
      * Initialize the PersonaSelect library
@@ -32,6 +34,7 @@
 
       // Early return if no dropdowns found - nothing to initialize
       if (this.dropdowns.length === 0) {
+        this.executeReadyCallbacks(); // Still fire callbacks even if no dropdowns
         return;
       }
 
@@ -41,6 +44,9 @@
       this.bindEvents();
       this.updateAllDropdowns();
       this.updateContentVisibility();
+
+      // Execute any queued ready callbacks
+      this.executeReadyCallbacks();
     },
 
     /**
@@ -593,6 +599,46 @@
           }
         }.bind(this)
       );
+    },
+
+    /**
+     * Register a callback to run when PersonaSelect is ready
+     * @param {Function} callback - Function to call when ready
+     */
+    onReady: function (callback) {
+      if (typeof callback !== "function") {
+        console.warn("PersonaSelect.onReady: callback must be a function");
+        return;
+      }
+
+      if (this.isReady) {
+        // Already initialized, execute immediately
+        try {
+          callback(this);
+        } catch (error) {
+          console.error("PersonaSelect ready callback error:", error);
+        }
+      } else {
+        // Queue the callback for when ready
+        this.readyCallbacks.push(callback);
+      }
+    },
+
+    /**
+     * Execute all queued ready callbacks
+     */
+    executeReadyCallbacks: function () {
+      this.isReady = true;
+      this.readyCallbacks.forEach(
+        function (callback) {
+          try {
+            callback(this);
+          } catch (error) {
+            console.error("PersonaSelect ready callback error:", error);
+          }
+        }.bind(this)
+      );
+      this.readyCallbacks = []; // Clear the queue
     },
   };
 
