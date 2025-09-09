@@ -43,7 +43,6 @@ document.fonts.ready.then(() => {
                 trigger: container,
                 start: "top 60%",
                 end: "bottom 60%",
-                markers: true,
                 scrub: 0.8,
               },
             });
