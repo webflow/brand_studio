@@ -41,8 +41,9 @@ document.fonts.ready.then(() => {
             let tl = gsap.timeline({
               scrollTrigger: {
                 trigger: container,
-                start: "top 80%",
-                end: "bottom 80%",
+                start: "top 60%",
+                end: "bottom 60%",
+                markers: true,
                 scrub: 0.8,
               },
             });
