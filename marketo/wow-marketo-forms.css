@@ -233,8 +233,8 @@ select.mktoField {
 .mktoField[type="checkbox"]:checked::after {
   opacity: 1 !important;
 }
-.mktoField[type="checkbox"]:focus,
-.mktoField[type="checkbox"]:focus-visible {
+.mktoField[type="checkbox"]:focus::before,
+.mktoField[type="checkbox"]:focus-visible::before {
   outline-color: var(--mkto-embed-color-button) !important;
   outline-offset: 2px !important;
   outline-style: solid !important;
