@@ -73,11 +73,12 @@ class VideoLibrary {
           // Hide the video but keep the poster visible
           video.style.display = "none";
 
-          // Hide associated playback controls wrapper using data attributes only
+          // Hide associated playback controls wrapper using DOM relationship
           const videoId = video.getAttribute("data-video");
-          const playbackWrapper = document.querySelector(
-            `[data-video-playback="wrapper"][data-video="${videoId}"]`
-          );
+          const videoContainer = video.parentElement;
+          const playbackWrapper = videoContainer
+            ? videoContainer.querySelector('[data-video-playback="wrapper"]')
+            : null;
 
           if (playbackWrapper) {
             playbackWrapper.style.display = "none";
@@ -113,11 +114,12 @@ class VideoLibrary {
         .forEach((video) => {
           video.style.display = "";
 
-          // Show associated playback controls wrapper using data attributes only
+          // Show associated playback controls wrapper using DOM relationship
           const videoId = video.getAttribute("data-video");
-          const playbackWrapper = document.querySelector(
-            `[data-video-playback="wrapper"][data-video="${videoId}"]`
-          );
+          const videoContainer = video.parentElement;
+          const playbackWrapper = videoContainer
+            ? videoContainer.querySelector('[data-video-playback="wrapper"]')
+            : null;
 
           if (playbackWrapper) {
             playbackWrapper.style.display = "";
@@ -346,14 +348,31 @@ class VideoLibrary {
    */
   handlePlaybackButtons(video) {
     const videoId = video.getAttribute("data-video");
+    const videoContainer = video.parentElement;
 
-    // Find play and pause buttons using data attributes only
-    const playButton = document.querySelector(
-      `[data-video-playback="play"][data-video="${videoId}"]`
-    );
-    const pauseButton = document.querySelector(
-      `[data-video-playback="pause"][data-video="${videoId}"]`
-    );
+    // Find play and pause buttons within the same container first, then fallback to document search
+    let playButton = videoContainer
+      ? videoContainer.querySelector(
+          `[data-video-playback="play"][data-video="${videoId}"]`
+        )
+      : null;
+    let pauseButton = videoContainer
+      ? videoContainer.querySelector(
+          `[data-video-playback="pause"][data-video="${videoId}"]`
+        )
+      : null;
+
+    // Fallback to document-wide search if not found in container
+    if (!playButton) {
+      playButton = document.querySelector(
+        `[data-video-playback="play"][data-video="${videoId}"]`
+      );
+    }
+    if (!pauseButton) {
+      pauseButton = document.querySelector(
+        `[data-video-playback="pause"][data-video="${videoId}"]`
+      );
+    }
 
     if (!playButton || !pauseButton) return;
 
