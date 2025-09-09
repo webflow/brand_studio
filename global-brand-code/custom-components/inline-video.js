@@ -73,17 +73,38 @@ class VideoLibrary {
           // Hide the video but keep the poster visible
           video.style.display = "none";
 
-          // Hide associated play/pause buttons using data attributes only
+          // Hide associated playback controls wrapper using data attributes only
           const videoId = video.getAttribute("data-video");
-          const playButton = document.querySelector(
-            `[data-video-playback="play"][data-video="${videoId}"]`
-          );
-          const pauseButton = document.querySelector(
-            `[data-video-playback="pause"][data-video="${videoId}"]`
+          const playbackWrapper = document.querySelector(
+            `[data-video-playback="wrapper"][data-video="${videoId}"]`
           );
 
-          if (playButton) playButton.style.display = "none";
-          if (pauseButton) pauseButton.style.display = "none";
+          if (playbackWrapper) {
+            playbackWrapper.style.display = "none";
+            playbackWrapper.style.visibility = "hidden";
+            playbackWrapper.setAttribute("aria-hidden", "true");
+          } else {
+            // Fallback: hide individual buttons if wrapper not found
+            const playButton = document.querySelector(
+              `[data-video-playback="play"][data-video="${videoId}"]`
+            );
+            const pauseButton = document.querySelector(
+              `[data-video-playback="pause"][data-video="${videoId}"]`
+            );
+
+            if (playButton) {
+              playButton.style.display = "none";
+              playButton.style.visibility = "hidden";
+              playButton.setAttribute("aria-hidden", "true");
+              playButton.setAttribute("tabindex", "-1");
+            }
+            if (pauseButton) {
+              pauseButton.style.display = "none";
+              pauseButton.style.visibility = "hidden";
+              pauseButton.setAttribute("aria-hidden", "true");
+              pauseButton.setAttribute("tabindex", "-1");
+            }
+          }
         });
     } else {
       // Show videos and controls on larger screens
@@ -92,17 +113,38 @@ class VideoLibrary {
         .forEach((video) => {
           video.style.display = "";
 
-          // Show associated play/pause buttons using data attributes only
+          // Show associated playback controls wrapper using data attributes only
           const videoId = video.getAttribute("data-video");
-          const playButton = document.querySelector(
-            `[data-video-playback="play"][data-video="${videoId}"]`
-          );
-          const pauseButton = document.querySelector(
-            `[data-video-playback="pause"][data-video="${videoId}"]`
+          const playbackWrapper = document.querySelector(
+            `[data-video-playback="wrapper"][data-video="${videoId}"]`
           );
 
-          if (playButton) playButton.style.display = "";
-          if (pauseButton) pauseButton.style.display = "";
+          if (playbackWrapper) {
+            playbackWrapper.style.display = "";
+            playbackWrapper.style.visibility = "";
+            playbackWrapper.setAttribute("aria-hidden", "false");
+          } else {
+            // Fallback: show individual buttons if wrapper not found
+            const playButton = document.querySelector(
+              `[data-video-playback="play"][data-video="${videoId}"]`
+            );
+            const pauseButton = document.querySelector(
+              `[data-video-playback="pause"][data-video="${videoId}"]`
+            );
+
+            if (playButton) {
+              playButton.style.display = "";
+              playButton.style.visibility = "";
+              playButton.setAttribute("aria-hidden", "false");
+              playButton.removeAttribute("tabindex");
+            }
+            if (pauseButton) {
+              pauseButton.style.display = "";
+              pauseButton.style.visibility = "";
+              pauseButton.setAttribute("aria-hidden", "false");
+              pauseButton.removeAttribute("tabindex");
+            }
+          }
         });
     }
   }
@@ -315,10 +357,31 @@ class VideoLibrary {
 
     if (!playButton || !pauseButton) return;
 
-    // Helper function to toggle button visibility
+    // Helper function to toggle button visibility with proper accessibility
     const toggleButtonVisibility = (isPlaying) => {
-      playButton.style.display = isPlaying ? "none" : "flex";
-      pauseButton.style.display = isPlaying ? "flex" : "none";
+      if (isPlaying) {
+        // Hide play button, show pause button
+        playButton.style.display = "none";
+        playButton.style.visibility = "hidden";
+        playButton.setAttribute("aria-hidden", "true");
+        playButton.setAttribute("tabindex", "-1");
+
+        pauseButton.style.display = "flex";
+        pauseButton.style.visibility = "visible";
+        pauseButton.setAttribute("aria-hidden", "false");
+        pauseButton.removeAttribute("tabindex");
+      } else {
+        // Show play button, hide pause button
+        playButton.style.display = "flex";
+        playButton.style.visibility = "visible";
+        playButton.setAttribute("aria-hidden", "false");
+        playButton.removeAttribute("tabindex");
+
+        pauseButton.style.display = "none";
+        pauseButton.style.visibility = "hidden";
+        pauseButton.setAttribute("aria-hidden", "true");
+        pauseButton.setAttribute("tabindex", "-1");
+      }
     };
 
     // Set initial button state
