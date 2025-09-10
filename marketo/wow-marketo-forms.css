@@ -308,7 +308,7 @@ select.mktoField {
 /* Dark Mode Styles
      ========================================================================== */
  
-html.u-mode-dark {
+html.u-mode-dark, [data-brand-mode="dark"] {
   /* Text and Field Styles */
   & .mktoLabel,
   & .mktoInstruction {
