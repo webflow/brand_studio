@@ -23,6 +23,7 @@
 
       // Setup individual dialog listeners only for click-outside functionality
       dialogs.forEach(setupDialogClickOutside);
+      setupDialogFormGuard(dialog);
     } catch (error) {
       console.warn("Modal initialization failed:", error);
     }
@@ -61,6 +62,44 @@
         dialog.close();
       }
     });
+  }
+   // NEW: Prevent dialog from closing on invalid form submit
+   function setupDialogFormGuard(dialog) {
+    // Use capture to beat the browser's default method="dialog" close
+    dialog.addEventListener(
+      "submit",
+      function (e) {
+        const form = e.target;
+        if (!(form instanceof HTMLFormElement)) return;
+
+        // Respect developer intent to skip validation
+        const submitter =
+          e.submitter ||
+          (document.activeElement && document.activeElement.form === form
+            ? document.activeElement
+            : null);
+
+        const skipValidation =
+          form.noValidate ||
+          (submitter &&
+            (submitter.formNoValidate ||
+              submitter.hasAttribute("formnovalidate")));
+
+        if (skipValidation) return;
+
+        // If invalid, prevent the submit (this also prevents method="dialog" auto-close)
+        if (!form.checkValidity()) {
+          e.preventDefault();
+          e.stopPropagation();
+          form.reportValidity();
+
+          // Focus first invalid control for good UX
+          const firstInvalid = form.querySelector(":invalid");
+          if (firstInvalid) firstInvalid.focus({ preventScroll: false });
+        }
+      },
+      true
+    );
   }
 
   // Initialize when DOM is ready
