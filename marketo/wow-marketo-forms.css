@@ -460,11 +460,12 @@ html.u-mode-dark .mktoForm:not([data-brand-mode="light"]), [data-brand-mode="dar
   background-color: var(--mkto-embed-dark-color-background);
   color: var(--mkto-embed-dark-color-text);
 }
-&   .select2-container--default .select2-results__option--selected {
+& .select2-container--default .select2-results__option--selected {
   background-color: var(--mkto-embed-dark-color-text);
   color: var(--mkto-embed-dark-color-background);
 }
-#   .select2-container--default .select2-selection__choice__remove {
+& .select2-container--default .select2-selection__choice__remove,
+  .select2-container--default .select2-selection--multiple .select2-selection__choice__remove  {
   color: #080808 !important;
 }
 & .select2-selection__clear {
