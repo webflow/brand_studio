@@ -404,7 +404,7 @@ html.u-mode-dark .mktoForm:not([data-brand-mode="light"]), [data-brand-mode="dar
 }
 
 .mktoFormRow .mktoHasWidth {
-  width: auto !important;
+  width: 100% !important;
 }
 
 .mktoFormRow.full-width.terms .mktoFieldWrap {
