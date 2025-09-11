@@ -295,13 +295,18 @@ select.mktoField {
   outline-width: 2px !important;
 }
 
-.mktoHtmlText > a, .mktoFormRow a {
+.mktoHtmlText > a,
+.mktoFormRow a {
+  color: var(--mkto-embed-color-link);
+  text-decoration: none !important;
+  background-color: transparent;
+  padding: 0;
+}
+
+.mktoFormRow a:hover {
   text-decoration: none !important;
 }
 
-.mktoHtmlText > a:hover, .mktoFormRow a:hover {
-  text-decoration: none !important;
-}
 
 /* Error Styles
      ========================================================================== */
@@ -403,7 +408,7 @@ html.u-mode-dark .mktoForm:not([data-brand-mode="light"]), [data-brand-mode="dar
   font-size: 0.9rem;
 }
 
-.mktoFormRow .mktoHasWidth {
+.mktoFormRow a {
   width: 100% !important;
 }
 
@@ -411,17 +416,6 @@ html.u-mode-dark .mktoForm:not([data-brand-mode="light"]), [data-brand-mode="dar
   padding: 0 !important;
 }
 
-.mktoHtmlText > a,
-.mktoFormRow a {
-  color: var(--mkto-embed-color-link);
-  text-decoration: underline !important;
-  background-color: transparent;
-  padding: 0;
-}
-
-.mktoFormRow a:hover {
-  text-decoration: none !important;
-}
 
 /* Fully hide a conditionally hidden field */
 .mktoFormRow:has(.mktoPlaceholder) {
