@@ -468,6 +468,10 @@ html.u-mode-dark .mktoForm:not([data-brand-mode="light"]), [data-brand-mode="dar
   .select2-container--default .select2-selection--multiple .select2-selection__choice__remove  {
   color: #080808 !important;
 }
+& .select2-container--default .select2-selection__choice__remove:hover,
+  .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover  {
+  color: #fff !important;
+}
 & .select2-selection__clear {
   color: #fff !important;
 }
