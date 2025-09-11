@@ -28,6 +28,7 @@
   --mkto-embed-dark-color-checkbox-checked: #ffffff;
   --mkto-embed-dark-color-checkbox-background: #171717;
   --mkto-embed-dark-color-checkbox-border: #5a5a5a;
+  --mkto-embed-dark-color-placeholder: #898989;
 }
 
 /* Form Layout
@@ -134,6 +135,9 @@
   box-shadow: 0 0 0 0 transparent;  
   transition: border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1), background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
+.mktoField::placeholder {
+  color: var(--mkto-embed-color-placeholder);
+}
 .mktoField .mktoHasWidth {
   width: 100% !important;
  }
@@ -156,6 +160,9 @@ select.mktoField {
   background-position: 98% 50%;
   background-size: 24px;
   background-repeat: no-repeat;
+}
+select.mktoField:has(option:checked[value=""]) {
+  color: var(--mkto-embed-color-placeholder);
 }
 
 /* Autofill Styles
@@ -340,6 +347,10 @@ html.u-mode-dark .mktoForm:not([data-brand-mode="light"]), [data-brand-mode="dar
     border-color: var(--mkto-embed-dark-color-border) !important;
     background-color: var(--mkto-embed-dark-color-background);
     color: var(--mkto-embed-dark-color-text) !important;
+  }
+
+  & .mktoField::placeholder {
+    color: var(--mkto-embed-dark-color-placeholder) !important;
   }
 
   & .mktoField:hover,
