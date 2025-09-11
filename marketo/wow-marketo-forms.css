@@ -456,12 +456,15 @@ html.u-mode-dark .mktoForm:not([data-brand-mode="light"]), [data-brand-mode="dar
 
 /* Responsive Styles
      ========================================================================== */
-@media screen and (max-width: 489px) {
+@media screen and (max-width: 480px) {
   .mktoForm {
     gap: 16px;
   }
-
   .mktoFormRow {
     width: 100%;
+  }
+  .mktoField {
+    height: auto !important;
+    padding: 1.25rem !important;
   }
 }
