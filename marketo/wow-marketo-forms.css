@@ -79,7 +79,7 @@
 .mktoForm .mktoFieldWrap {
   width: 100% !important;
   margin-bottom: 0px;
-  padding: 1px 1px 44px;
+  padding: 0px !important;
   position: relative;
 }
 
@@ -95,10 +95,12 @@
   width: 100% !important;
   z-index: 1 !important;
   position: relative;
-  font-size: .9rem !important;
-  line-height: 1.4em !important;
-  font-weight: 500 !important;
+  font-size: .75rem !important;
+  line-height: 1.2em !important;
+  font-weight: 550 !important;
   letter-spacing: 0em !important;  
+  margin-bottom: .25rem !important;
+  text-transform: uppercase !important;
 }
 
 
@@ -113,6 +115,7 @@
 
 /* Form Fields
      ========================================================================== */
+
 .mktoField {
   font-family: var(--mkto-embed-font-family);
   height: auto;  
@@ -130,7 +133,9 @@
   box-shadow: 0 0 0 0 transparent;  
   transition: border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1), background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
-
+.mktoField.mktoHasWidth {
+  width: auto !important;
+ }
 .mktoField:hover {
   box-shadow: none !important;
   border-color: var(--mkto-embed-color-border-hover) !important;
@@ -243,7 +248,7 @@ select.mktoField {
   outline-width: 2px !important;
 }
 
-/* Button Styles
+/* Button and Link Styles
      ========================================================================== */
 .mktoButtonWrap.mktoSimple {
   margin: 0 !important;
@@ -287,6 +292,14 @@ select.mktoField {
   outline-offset: 2px !important;
   outline-style: solid !important;
   outline-width: 2px !important;
+}
+
+.mktoHtmlText > a, .mktoFormRow a {
+  text-decoration: none !important;
+}
+
+.mktoHtmlText > a:hover, .mktoFormRow a:hover {
+  text-decoration: none !important;
 }
 
 /* Error Styles
@@ -369,12 +382,12 @@ html.u-mode-dark .mktoForm:not([data-brand-mode="light"]), [data-brand-mode="dar
   }
 
   & .mktoField[type="checkbox"]::after {
-    color: #000 !important;
+    color: #080808 !important;
   }
 
   /* Select */
   & select.mktoField {
-    background-image: url("https://cdn.prod.website-files.com/657c9ab740a8ad783888272b/657c9ab740a8ad7838882779_select-arrow-white.svg") !important;
+    background-image: url("https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/686294e363eb7e215bd23386_arrow-white.svg") !important;
   }
 
   /* Terms Statement */
