@@ -97,10 +97,11 @@
   position: relative;
   font-size: .75rem !important;
   line-height: 1.2em !important;
-  font-weight: 550 !important;
+  font-weight: 500 !important;
   letter-spacing: 0em !important;  
   margin-bottom: .25rem !important;
   text-transform: uppercase !important;
+  opacity: .6 !important;
 }
 
 
@@ -134,7 +135,7 @@
   transition: border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1), background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 .mktoField.mktoHasWidth {
-  width: auto !important;
+  width: 100% !important;
  }
 .mktoField:hover {
   box-shadow: none !important;
