@@ -133,12 +133,22 @@
       }
 
       if (isCardAccordion) {
-        // For accordions within .accordion-card_wrap, use hover/focus behavior
+        // For accordions within .accordion-card_wrap
         let isHovered = false;
         let isFocused = false;
+        let isDesktop = window.innerWidth > 991;
 
-        // Hover events on the card wrap
+        // Function to check if we're on desktop viewport
+        function updateViewport() {
+          isDesktop = window.innerWidth > 991;
+        }
+
+        // Listen for viewport changes
+        window.addEventListener("resize", updateViewport);
+
+        // Hover events on the card wrap (desktop only)
         cardWrap.addEventListener("mouseenter", () => {
+          if (!isDesktop) return;
           isHovered = true;
           if (!details.hasAttribute("open")) {
             details.setAttribute("open", "");
@@ -147,14 +157,16 @@
         });
 
         cardWrap.addEventListener("mouseleave", () => {
+          if (!isDesktop) return;
           isHovered = false;
           if (!isFocused && details.hasAttribute("open")) {
             animateClose(details, content);
           }
         });
 
-        // Focus events on the card wrap (for keyboard navigation)
+        // Focus events on the card wrap (for keyboard navigation, desktop only)
         cardWrap.addEventListener("focusin", () => {
+          if (!isDesktop) return;
           isFocused = true;
           if (!details.hasAttribute("open")) {
             details.setAttribute("open", "");
@@ -163,6 +175,7 @@
         });
 
         cardWrap.addEventListener("focusout", (event) => {
+          if (!isDesktop) return;
           // Check if focus is moving to an element outside the card wrap
           if (!cardWrap.contains(event.relatedTarget)) {
             isFocused = false;
@@ -172,9 +185,28 @@
           }
         });
 
-        // Disable click behavior on summary for card accordions
+        // Click behavior for card accordions
         summary.addEventListener("click", (event) => {
-          event.preventDefault();
+          if (isDesktop) {
+            // On desktop, disable click behavior (use hover instead)
+            event.preventDefault();
+          } else {
+            // On mobile/tablet, use standard click behavior
+            const isClosing = details.hasAttribute("open");
+
+            if (isClosing) {
+              // Prevent native close
+              event.preventDefault();
+              animateClose(details, content);
+            }
+          }
+        });
+
+        // Toggle event for mobile/tablet click behavior
+        details.addEventListener("toggle", () => {
+          if (!isDesktop && details.open) {
+            animateOpen(details, content);
+          }
         });
       } else {
         // Regular accordion behavior (click to toggle)
