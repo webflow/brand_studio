@@ -151,15 +151,16 @@ function initializeOptimizedShaders() {
     return texture;
   }
 
-  function loadBackgroundTexture(imageUrl) {
+  async function loadBackgroundTexture(imageUrl) {
     return new Promise((resolve) => {
       if (!imageUrl) {
-        resolve(null);
+        resolve({ texture: null, aspect: 1.0 });
         return;
       }
       const testImg = new Image();
       testImg.crossOrigin = "anonymous";
       testImg.onload = function () {
+        const imageAspect = this.width / this.height;
         const loader = new THREE.TextureLoader();
         loader.setCrossOrigin("anonymous");
         loader.load(
@@ -169,23 +170,27 @@ function initializeOptimizedShaders() {
             texture.wrapT = THREE.ClampToEdgeWrapping;
             texture.minFilter = THREE.LinearFilter;
             texture.magFilter = THREE.LinearFilter;
-            resolve(texture);
+            resolve({ texture, aspect: imageAspect });
           },
           undefined,
-          () => resolve(createFallbackTexture())
+          () => resolve({ texture: createFallbackTexture(), aspect: 1.0 })
         );
       };
-      testImg.onerror = () => resolve(createFallbackTexture());
+      testImg.onerror = () =>
+        resolve({ texture: createFallbackTexture(), aspect: 1.0 });
       testImg.src = imageUrl;
     });
   }
 
-  function createHeavyBlurTexture(originalTexture) {
+  async function createHeavyBlurTexture(textureData) {
     return new Promise((resolve) => {
-      if (!originalTexture) {
-        resolve(null);
+      if (!textureData || !textureData.texture) {
+        resolve({ texture: null, aspect: 1.0 });
         return;
       }
+
+      const originalTexture = textureData.texture;
+      const originalAspect = textureData.aspect;
 
       // Try canvas blur first (works on desktop/Android)
       if (!isIOS) {
@@ -208,26 +213,24 @@ function initializeOptimizedShaders() {
               blurredTexture.wrapT = THREE.ClampToEdgeWrapping;
               blurredTexture.minFilter = THREE.LinearFilter;
               blurredTexture.magFilter = THREE.LinearFilter;
-              resolve(blurredTexture);
+              resolve({ texture: blurredTexture, aspect: originalAspect });
             });
           };
 
           tempImg.onerror = () => {
-            resolve(originalTexture);
+            resolve({ texture: originalTexture, aspect: originalAspect });
           };
 
           if (originalTexture.image && originalTexture.image.src) {
             tempImg.src = originalTexture.image.src;
           } else {
-            resolve(originalTexture);
+            resolve({ texture: originalTexture, aspect: originalAspect });
           }
         } catch (error) {
-          resolve(originalTexture);
+          resolve({ texture: originalTexture, aspect: originalAspect });
         }
       } else {
-        // iOS fallback: Apply blur effect in the main shader instead
-        console.log("iOS detected - will apply blur in shader");
-        resolve(originalTexture);
+        resolve({ texture: originalTexture, aspect: originalAspect });
       }
     });
   }
@@ -302,12 +305,11 @@ function initializeOptimizedShaders() {
             );
             state.lookupTexture = generateLookupTexture(boundaries);
 
-            state.backgroundTexture = await loadBackgroundTexture(
+            state.backgroundTextureData = await loadBackgroundTexture(
               state.settings.backgroundImage
             );
-
-            state.blurredBackgroundTexture = await createHeavyBlurTexture(
-              state.backgroundTexture
+            state.blurredBackgroundData = await createHeavyBlurTexture(
+              state.backgroundTextureData
             );
 
             setTimeout(() => runStep(1), 20);
@@ -423,9 +425,14 @@ function initializeOptimizedShaders() {
                   parseInt(container.getAttribute("data-shape-type-three")) ||
                   0,
               },
-              u_background_texture: { value: state.blurredBackgroundTexture },
+              u_background_texture: {
+                value: state.blurredBackgroundData.texture,
+              },
               u_has_background: {
-                value: state.blurredBackgroundTexture !== null,
+                value: state.blurredBackgroundData.texture !== null,
+              },
+              u_background_aspect: {
+                value: state.blurredBackgroundData.aspect,
               },
               u_background_color: {
                 value: state.settings.backgroundColor
@@ -478,6 +485,7 @@ function initializeOptimizedShaders() {
                           uniform int u_shape_type_three;
                           uniform sampler2D u_background_texture;
                           uniform bool u_has_background;
+                          uniform float u_background_aspect;
                           uniform vec3 u_background_color;
                           uniform bool u_has_bg_color;
                           uniform bool u_is_ios;
@@ -651,33 +659,52 @@ function initializeOptimizedShaders() {
                               vec3 backgroundColor = vec3(0.0);
                               bool hasAnyBackground = u_has_background || u_has_bg_color;
                               
-                          if (u_has_background) {
-                              vec2 backgroundUV = vUv;
-                              backgroundUV.x += o * 0.1;
-                              vec2 clampedBackgroundUV = clamp(backgroundUV, vec2(0.0), vec2(1.0));
-                              
-                              if (u_is_ios) {
-                                  vec3 blurResult = vec3(0.0);
-                                  float blurTotal = 0.0;
-                                  vec2 texelSize = vec2(1.0 / 512.0);
+                              if (u_has_background) {
+                                  // Calculate cover-fit UV coordinates
+                                  vec2 backgroundUV = vUv;
+                                  backgroundUV.x += o * 0.1;
                                   
-                              for(float x = -6.0; x <= 6.0; x += 1.0) {
-                                  for(float y = -6.0; y <= 6.0; y += 1.0) {
-                                      vec2 offset = vec2(x, y) * texelSize * 3.0;
-                                          vec2 sampleUV = clampedBackgroundUV + offset;
-                                          if(sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0) {
-                                              blurResult += texture2D(u_background_texture, sampleUV).rgb;
-                                              blurTotal += 1.0;
+                                  float containerAspect = u_aspect;
+                                  float imageAspect = u_background_aspect;
+                                  
+                                  vec2 scale = vec2(1.0);
+                                  vec2 offset = vec2(0.0);
+                                  
+                                  if (containerAspect > imageAspect) {
+                                      // Container is wider than image - scale by width
+                                      scale.y = containerAspect / imageAspect;
+                                      offset.y = (1.0 - scale.y) * 0.5;
+                                  } else {
+                                      // Container is taller than image - scale by height  
+                                      scale.x = imageAspect / containerAspect;
+                                      offset.x = (1.0 - scale.x) * 0.5;
+                                  }
+                                  
+                                  vec2 coverUV = (backgroundUV - offset) / scale;
+                                  vec2 clampedBackgroundUV = clamp(coverUV, vec2(0.0), vec2(1.0));
+                                  
+                                  if (u_is_ios) {
+                                      vec3 blurResult = vec3(0.0);
+                                      float blurTotal = 0.0;
+                                      vec2 texelSize = vec2(1.0 / 512.0);
+                                      
+                                      for(float x = -6.0; x <= 6.0; x += 1.0) {
+                                          for(float y = -6.0; y <= 6.0; y += 1.0) {
+                                              vec2 offset = vec2(x, y) * texelSize * 3.0;
+                                              vec2 sampleUV = clampedBackgroundUV + offset;
+                                              if(sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0) {
+                                                  blurResult += texture2D(u_background_texture, sampleUV).rgb;
+                                                  blurTotal += 1.0;
+                                              }
                                           }
                                       }
+                                      backgroundColor = (blurResult / blurTotal) * 0.85;
+                                  } else {
+                                      backgroundColor = texture2D(u_background_texture, clampedBackgroundUV).rgb * 0.85;
                                   }
-                                  backgroundColor = (blurResult / blurTotal) * 0.85;
-                              } else {
-                                  backgroundColor = texture2D(u_background_texture, clampedBackgroundUV).rgb * 0.85;
+                              } else if (u_has_bg_color) {
+                                  backgroundColor = u_background_color;
                               }
-                          } else if (u_has_bg_color) {
-                              backgroundColor = u_background_color;
-                          }
 
                               vec2 aspectCorrected = vec2(distortedUV.x * u_aspect, distortedUV.y);
                               vec2 blob1Corrected = vec2(u_blob1_pos.x * u_aspect, u_blob1_pos.y);
