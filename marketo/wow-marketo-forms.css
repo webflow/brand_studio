@@ -326,6 +326,7 @@ text-decoration: none !important;
 
   .select2.select2-container {
     width: 100% !important;
+    margin: 0 !important;
   }
   .select2-container--default .select2-selection--multiple {
     border: 1px solid var(--mkto-embed-color-border);
