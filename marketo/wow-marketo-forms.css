@@ -204,10 +204,8 @@ html.u-mode-dark,
     background-image: url("https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/686294e363eb7e215bd23386_arrow-white.svg") !important;
   }
 }
-[data-brand-mode="light"] {
-  select.mktoField {
-    background-image: url("https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/686294e363eb7e215bd23387_arrow-black.svg") !important;
-  }
+[data-brand-mode="light"] select.mktoField {
+  background-image: url("https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/686294e363eb7e215bd23387_arrow-black.svg") !important;
 }
 select.mktoField:has(option:checked[value=""]) {
   color: var(--mkto-embed-color-placeholder);
