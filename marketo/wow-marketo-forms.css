@@ -5,7 +5,6 @@
   --mkto-embed-color-button: #146ef5;
   --mkto-embed-color-button-hover: #0055d4;
   --mkto-embed-color-error: #146ef5;
-  --mkto-embed-color-link: #080808;
   --mkto-embed-color-placeholder: #757575;
 
   /* Typography */
@@ -20,12 +19,14 @@
   --mkto-embed-checkbox-background: #ffffff;
   --mkto-embed-checkbox-border: #d8d8d8;
   --mkto-embed-color-placeholder: #757575;
+  --mkto-embed-color-link: #080808;
 }
 
 /* Page-wide Dark Mode OR per-form dark override */
 html.u-mode-dark,
 [data-brand-mode="dark"] {
   --mkto-embed-color-text: #ffffff;
+  --mkto-embed-color-link: #ffffff;
   --mkto-embed-color-border: #5a5a5a;
   --mkto-embed-color-border-hover: #d8d8d8;
   --mkto-embed-color-background: #171717;
@@ -40,6 +41,7 @@ html.u-mode-dark,
 /* Optional: force light even when page is dark */
 [data-brand-mode="light"] {
   --mkto-embed-color-text: #080808;
+  --mkto-embed-color-link: #080808;
   --mkto-embed-color-border: #d8d8d8;
   --mkto-embed-color-border-hover: #898989;
   --mkto-embed-color-background: #ffffff;
@@ -480,6 +482,13 @@ span.select2-search.select2-search--inline {
 
 /* Misc Styles
     ========================================================================== */
+.mktoForm div,
+.mktoForm span,
+.mktoForm label,
+.mktoForm p {
+  color: var(--mkto-embed-color-text);
+}
+
 .terms-statement {
   font-size: 0.9rem;
 }
