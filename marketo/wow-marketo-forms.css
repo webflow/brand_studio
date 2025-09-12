@@ -101,8 +101,7 @@ line-height: 1.2em !important;
 font-weight: 500 !important;
 letter-spacing: 0em !important;  
 margin-bottom: .25rem !important;
-text-transform: uppercase !important;
-opacity: .6 !important;
+text-transform: none !important;
 }
 
 
@@ -150,6 +149,11 @@ outline-color: var(--mkto-embed-color-button) !important;
 outline-offset: 2px !important;
 outline-style: solid !important;
 outline-width: 2px !important;
+}
+.mktoForm textarea.mktoField, .mktoForm textarea[rows="2"] {
+  resize: vertical !important;
+  height: auto !important;
+  padding: .75rem !important;
 }
 
 /* Select Fields
