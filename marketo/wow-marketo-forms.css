@@ -20,36 +20,35 @@
   --mkto-embed-checkbox-background: #ffffff;
   --mkto-embed-checkbox-border: #d8d8d8;
   --mkto-embed-color-placeholder: #757575;
+}
 
+/* Page-wide Dark Mode OR per-form dark override */
+html.u-mode-dark,
+[data-brand-mode="dark"] {
+  --mkto-embed-color-text: #ffffff;
+  --mkto-embed-color-border: #5a5a5a;
+  --mkto-embed-color-border-hover: #d8d8d8;
+  --mkto-embed-color-background: #171717;
+  --mkto-embed-checkbox-checked: #ffffff;
+  --mkto-embed-checkbox-background: #171717;
+  --mkto-embed-checkbox-border: #5a5a5a;
+  --mkto-embed-color-placeholder: #898989;
 
-  /* Page-wide Dark Mode OR per-form dark override */
-  html.u-mode-dark,
-  [data-brand-mode="dark"] {
-    --mkto-embed-color-text: #ffffff;
-    --mkto-embed-color-border: #5a5a5a;
-    --mkto-embed-color-border-hover: #d8d8d8;
-    --mkto-embed-color-background: #171717;
-    --mkto-embed-checkbox-checked: #ffffff;
-    --mkto-embed-checkbox-background: #171717;
-    --mkto-embed-checkbox-border: #5a5a5a;
-    --mkto-embed-color-placeholder: #898989;
+  color-scheme: dark;
+}
 
-    color-scheme: dark;
-  }
+/* Optional: force light even when page is dark */
+[data-brand-mode="light"] {
+  --mkto-embed-color-text: #080808;
+  --mkto-embed-color-border: #d8d8d8;
+  --mkto-embed-color-border-hover: #898989;
+  --mkto-embed-color-background: #ffffff;
+  --mkto-embed-checkbox-checked: #080808;
+  --mkto-embed-checkbox-background: #ffffff;
+  --mkto-embed-checkbox-border: #d8d8d8;
+  --mkto-embed-color-placeholder: #757575;
 
-  /* Optional: force light even when page is dark */
-  [data-brand-mode="light"] {
-    --mkto-embed-color-text: #080808;
-    --mkto-embed-color-border: #d8d8d8;
-    --mkto-embed-color-border-hover: #898989;
-    --mkto-embed-color-background: #ffffff;
-    --mkto-embed-checkbox-checked: #080808;
-    --mkto-embed-checkbox-background: #ffffff;
-    --mkto-embed-checkbox-border: #d8d8d8;
-    --mkto-embed-color-placeholder: #757575;
-
-    color-scheme: light;
-  }
+  color-scheme: light;
 }
 
 /* Form Layout
@@ -276,7 +275,7 @@ select.mktoField:has(option:checked[value=""]) {
   transform: rotate(45deg);
   transition: opacity 0.2s ease-in-out;
   width: 5px;
-  color: --mkto-embed-checkbox-background !important;
+  color: var(--mkto-embed-checkbox-background) !important;
 }
 
 .mktoField[type="checkbox"]:checked::after {
