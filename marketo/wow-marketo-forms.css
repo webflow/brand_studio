@@ -9,7 +9,7 @@
 --mkto-embed-color-placeholder: #757575;
 
 /* Typography */
---mkto-embed-font-family: "WF Visual Sans Text", sans-serif;
+--mkto-embed-font-family: "WF Visual Sans Variable", sans-serif;
 
 /* Light Mode Theme */
 --mkto-embed-color-text: #080808;
@@ -41,6 +41,7 @@ display: flex;
 flex-wrap: wrap;
 gap: 24px;
 font-family: var(--mkto-embed-font-family) !important;
+font-variation-settings: "wght" 400, "opsz" 20;
 }
 
 .mktoFormRow {
@@ -98,7 +99,8 @@ z-index: 1 !important;
 position: relative;
 font-size: .9rem !important;
 line-height: 1.2em !important;
-font-weight: 500 !important;
+font-weight: 550 !important;
+font-variation-settings: "wght" 550, "opsz" 20;
 letter-spacing: 0em !important;  
 margin-bottom: .5rem !important;
 text-transform: none !important;
@@ -123,6 +125,7 @@ height: auto;
 font-size: 1rem !important;
 line-height: 1.5em !important;
 font-weight: 400 !important;
+font-variation-settings: "wght" 400, "opsz" 20;
 letter-spacing: 0em !important;    
 width: 100% !important;
 color: var(--mkto-embed-color-text);
@@ -278,7 +281,8 @@ border-radius: 4px;
 flex: none;
 padding: 1em 1.5em !important;
 font-size: 1rem !important;
-font-weight: 600 !important;
+font-weight: 500 !important;
+font-variation-settings: "wght" 500, "opsz" 20;
 line-height: 1.2;
 text-decoration: none;
 transition: box-shadow 0.3s cubic-bezier(0.165, 0.84, 0.44, 1), background-color 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
