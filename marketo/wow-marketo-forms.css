@@ -564,7 +564,7 @@ display: none;
 }
 
 /* Terms Statement */
-.mktoFormRow.full-width.terms .mktoFormCol {
+.mktoFormRow.full-width.terms .mktoFormCol, .mktoFormCol {
 min-height: auto;
 float: none;
 margin: 0 !important;
