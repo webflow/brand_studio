@@ -402,8 +402,7 @@ select.mktoField:has(option:checked[value=""]) {
   height: 30px;
 }
 
-.select2-container--default .select2-selection--multiple .select2-selection__choice__remove,
-.select2-container--default .select2-selection--multiple .select2-selection__choice__remove span {
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
   border-right: 1px solid var(--mkto-embed-color-border);
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
@@ -411,7 +410,9 @@ select.mktoField:has(option:checked[value=""]) {
   padding: 0 8px;
   height: 100%;
 }
-
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove span {
+  color: var(--mkto-embed-color-background); 
+}
 .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover,
 .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:focus {
   background-color: var(--mkto-embed-color-button-hover);
