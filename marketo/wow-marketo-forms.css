@@ -151,7 +151,6 @@ outline-style: solid !important;
 outline-width: 2px !important;
 }
 .mktoForm textarea.mktoField, .mktoForm textarea[rows="2"] {
-  resize: vertical !important;
   height: auto !important;
   padding: .75rem !important;
 }
@@ -549,6 +548,9 @@ width: 100% !important;
 padding: 0 !important;
 }
 
+.mktoHtmlText.mktoHasWidth {
+width: 100% !important;
+}
 
 /* Fully hide a conditionally hidden field */
 .mktoFormRow:has(.mktoPlaceholder) {
