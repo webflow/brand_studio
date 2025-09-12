@@ -553,6 +553,7 @@ width: 100% !important;
 padding: 0 !important;
 }
 
+.mktoFormCol .mktoHtmlText.mktoHasWidth, 
 .mktoHtmlText.mktoHasWidth {
 width: 100% !important;
 }
