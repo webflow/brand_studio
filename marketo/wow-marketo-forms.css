@@ -418,6 +418,10 @@ select.mktoField:has(option:checked[value=""]) {
   background-color: var(--mkto-embed-color-button-hover);
   color: #fff;
 }
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover span,
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:focus span {
+  color: #fff;
+} 
 
 .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
   padding-right: 8px;
@@ -425,15 +429,17 @@ select.mktoField:has(option:checked[value=""]) {
   padding-top: 4px;
   color: var(--mkto-embed-color-background);
 }
-
-.select2-container--default .select2-results__option--selected {
-  background-color: var(--mkto-embed-color-text);
-  color: var(--mkto-embed-color-background);
+.select2-container--default .select2-results__option--selectable {
+  background-color: var(--mkto-embed-color-background);
+  color: var(--mkto-embed-color-text);
 }
-
 .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
   background-color: var(--mkto-embed-color-button);
   color: white;
+}
+.select2-container--default .select2-results__option--selected {
+  background-color: var(--mkto-embed-color-text);
+  color: var(--mkto-embed-color-background);
 }
 
 .select2-container .select2-search--inline .select2-search__field {
