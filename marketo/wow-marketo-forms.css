@@ -96,11 +96,11 @@ font-family: var(--mkto-embed-font-family) !important;
 width: 100% !important;
 z-index: 1 !important;
 position: relative;
-font-size: .75rem !important;
+font-size: .9rem !important;
 line-height: 1.2em !important;
 font-weight: 500 !important;
 letter-spacing: 0em !important;  
-margin-bottom: .25rem !important;
+margin-bottom: .5rem !important;
 text-transform: none !important;
 }
 
