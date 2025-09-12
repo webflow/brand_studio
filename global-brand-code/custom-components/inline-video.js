@@ -1,16 +1,3 @@
-/**
- * Video Library - Custom video functionality for lazy loading, play/pause controls, and accessibility
- * Features: lazy loading, play/pause buttons, scroll triggers, reduced motion support
- *
- * Performance Optimizations for CDN Usage:
- * - Early exit if no videos present (no DOM manipulation or event listeners)
- * - Minimal object creation on pages without videos
- * - Conditional resize listener only for desktop-only videos
- * - Zero CSS class dependencies - uses only data attributes
- *
- * Safe for loading on every page via CDN - will not impact performance on pages without videos.
- */
-
 class VideoLibrary {
   constructor(options = {}) {
     this.options = {
@@ -52,7 +39,7 @@ class VideoLibrary {
     // Initialize video functionality
     this.setupLazyLoading();
     this.setupVideoControls();
-
+    this.setupHoverPlay();
     // Only add resize listener if desktop-only videos are present
     const desktopOnlyVideos = document.querySelectorAll(
       'video[data-video-desktop-only="true"]'
@@ -186,6 +173,12 @@ class VideoLibrary {
     videos.forEach((video) => {
       const scrollInPlay =
         video.getAttribute("data-video-scroll-in-play") === "true";
+      const hoverPlay = video.getAttribute("data-video-hover") === "true";
+
+      // If it's a hover-play video, do nothing here. Its logic is handled in setupHoverPlay.
+      if (hoverPlay) {
+        return;
+      }
 
       if (this.prefersReducedMotion) {
         video.pause();
@@ -213,9 +206,6 @@ class VideoLibrary {
         source.src = source.getAttribute("data-src");
         video.load();
 
-        // Hide the corresponding picture element when video starts loading
-        this.hidePictureElement(video);
-
         video.addEventListener("canplaythrough", function onCanPlayThrough() {
           video.removeEventListener("canplaythrough", onCanPlayThrough);
           resolve();
@@ -232,21 +222,37 @@ class VideoLibrary {
   }
 
   /**
-   * Hide the corresponding picture element for a video
+   * Show the corresponding picture element for a video (with opacity transition)
+   * @param {HTMLVideoElement} video - The video element
+   */
+  showPictureElement(video) {
+    const videoId = video.getAttribute("data-video");
+    if (!videoId) return;
+
+    const pictureElement = this.findPictureElement(video, videoId);
+
+    if (pictureElement) {
+      pictureElement.style.opacity = "1";
+      if (this.options.debug) {
+        console.log(`Faded in picture element for video: ${videoId}`);
+      }
+    }
+  }
+
+  /**
+   * Hide the corresponding picture element for a video (with opacity transition)
    * @param {HTMLVideoElement} video - The video element
    */
   hidePictureElement(video) {
     const videoId = video.getAttribute("data-video");
     if (!videoId) return;
 
-    // Find the picture element with matching data-video-picture attribute
-    // Use the most performant approach: check previous siblings first, then fallback to document query
     const pictureElement = this.findPictureElement(video, videoId);
 
     if (pictureElement) {
-      pictureElement.style.display = "none";
+      pictureElement.style.opacity = "0";
       if (this.options.debug) {
-        console.log(`Hidden picture element for video: ${videoId}`);
+        console.log(`Faded out picture element for video: ${videoId}`);
       }
     }
   }
@@ -297,12 +303,72 @@ class VideoLibrary {
   }
 
   /**
+   * Setup hover-to-play functionality for videos with data-video-hover="true"
+   */
+  setupHoverPlay() {
+    const hoverVideos = document.querySelectorAll(
+      'video[data-video-hover="true"]'
+    );
+
+    hoverVideos.forEach((video) => {
+      const videoId = video.getAttribute("data-video");
+      if (!videoId) return;
+
+      const trigger = video.closest(`[data-video-trigger="${videoId}"]`);
+
+      if (trigger) {
+        // ✅ ADJUSTED: Target the individual play and pause buttons directly
+        // This leaves the wrapper element untouched.
+        const videoContainer = video.parentElement;
+        if (videoContainer) {
+          const playButton = videoContainer.querySelector(
+            `[data-video-playback="play"][data-video="${videoId}"]`
+          );
+          const pauseButton = videoContainer.querySelector(
+            `[data-video-playback="pause"][data-video="${videoId}"]`
+          );
+
+          // Make the buttons inaccessible since hover is the primary interaction.
+          if (playButton) {
+            playButton.setAttribute("aria-hidden", "true");
+            playButton.setAttribute("tabindex", "-1");
+          }
+          if (pauseButton) {
+            pauseButton.setAttribute("aria-hidden", "true");
+            pauseButton.setAttribute("tabindex", "-1");
+          }
+        }
+
+        // On mouse enter, explicitly hide poster, then lazy load and play
+        trigger.addEventListener("mouseenter", async () => {
+          if (this.prefersReducedMotion) return;
+          try {
+            this.hidePictureElement(video); // This ensures the poster is hidden on EVERY hover
+            await this.lazyLoadVideo(video);
+            video.currentTime = 0;
+            video.play();
+          } catch (error) {
+            console.error(`Error playing hover video ${videoId}:`, error);
+          }
+        });
+
+        // On mouse leave, pause the video AND show the poster
+        trigger.addEventListener("mouseleave", () => {
+          video.pause();
+          this.showPictureElement(video);
+        });
+      }
+    });
+  }
+  /**
    * Setup autoplay for videos that should play immediately when loaded
    * @param {HTMLVideoElement} video - The video element
    */
   setupAutoplay(video) {
     video.addEventListener("canplaythrough", () => {
       if (!this.prefersReducedMotion) {
+        // ✅ FIX: Hide the poster before playing for standard autoplay videos
+        this.hidePictureElement(video);
         video.play().catch(console.error);
       }
     });
@@ -323,19 +389,25 @@ class VideoLibrary {
 
               // If reduced motion is preferred, don't play the video
               if (!this.prefersReducedMotion) {
+                // ✅ FIX: Hide the poster before playing for scroll-in-play videos
+                this.hidePictureElement(video);
                 video.currentTime = 0;
                 video.play();
               }
             } catch (error) {
               console.error(error);
             }
-          } else {
-            // Pause on scroll out for scroll-in-play videos
+          }
+          // On scroll out, pause the video and show the poster
+          else {
             video.pause();
+            this.showPictureElement(video);
           }
         });
       },
-      { threshold: this.options.scrollTriggerThreshold }
+      {
+        threshold: this.options.scrollTriggerThreshold,
+      }
     );
 
     observer.observe(video);
@@ -411,6 +483,7 @@ class VideoLibrary {
       event.stopPropagation();
       try {
         await this.lazyLoadVideo(video);
+        this.hidePictureElement(video); // Hide poster on manual play
         video.play();
         toggleButtonVisibility(true);
       } catch (error) {
@@ -444,6 +517,7 @@ class VideoLibrary {
     try {
       await this.lazyLoadVideo(video);
       if (!this.prefersReducedMotion) {
+        this.hidePictureElement(video);
         video.currentTime = 0;
         video.play();
       }

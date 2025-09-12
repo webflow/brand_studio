@@ -1,4 +1,3 @@
-//---- Accordions ----
 (function () {
   "use strict";
 
