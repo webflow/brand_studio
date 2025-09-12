@@ -1,159 +1,186 @@
 /* Variables
   ========================================================================== */
 :root {
-/* Brand Colors */
---mkto-embed-color-button: #146ef5;
---mkto-embed-color-button-hover: #0055d4;
---mkto-embed-color-error: #146ef5;
---mkto-embed-color-link: #080808;
---mkto-embed-color-placeholder: #757575;
+  /* Brand Colors */
+  --mkto-embed-color-button: #146ef5;
+  --mkto-embed-color-button-hover: #0055d4;
+  --mkto-embed-color-error: #146ef5;
+  --mkto-embed-color-link: #080808;
+  --mkto-embed-color-placeholder: #757575;
 
-/* Typography */
---mkto-embed-font-family: "WF Visual Sans Variable", sans-serif;
+  /* Typography */
+  --mkto-embed-font-family: "WF Visual Sans Variable", sans-serif;
 
-/* Light Mode Theme */
---mkto-embed-color-text: #080808;
---mkto-embed-color-border: #d8d8d8;
---mkto-embed-color-border-hover: #898989;
---mkto-embed-color-background: #ffffff;
---mkto-embed-checkbox-checked: #080808;
---mkto-embed-checkbox-background: #ffffff;
---mkto-embed-checkbox-border: #d8d8d8;
+  /* Light Mode Theme (default) */
+  --mkto-embed-color-text: #080808;
+  --mkto-embed-color-border: #d8d8d8;
+  --mkto-embed-color-border-hover: #898989;
+  --mkto-embed-color-background: #ffffff;
+  --mkto-embed-checkbox-checked: #080808;
+  --mkto-embed-checkbox-background: #ffffff;
+  --mkto-embed-checkbox-border: #d8d8d8;
+  --mkto-embed-color-placeholder: #757575;
 
-/* Dark Mode Theme */
---mkto-embed-dark-color-text: #ffffff;
---mkto-embed-dark-color-border: #5a5a5a;
---mkto-embed-dark-color-border-hover: #d8d8d8;
---mkto-embed-dark-color-background: #171717;
---mkto-embed-dark-color-checkbox-checked: #ffffff;
---mkto-embed-dark-color-checkbox-background: #171717;
---mkto-embed-dark-color-checkbox-border: #5a5a5a;
---mkto-embed-dark-color-placeholder: #898989;
+
+  /* Page-wide Dark Mode OR per-form dark override */
+  html.u-mode-dark,
+  [data-brand-mode="dark"] {
+    --mkto-embed-color-text: #ffffff;
+    --mkto-embed-color-border: #5a5a5a;
+    --mkto-embed-color-border-hover: #d8d8d8;
+    --mkto-embed-color-background: #171717;
+    --mkto-embed-checkbox-checked: #ffffff;
+    --mkto-embed-checkbox-background: #171717;
+    --mkto-embed-checkbox-border: #5a5a5a;
+    --mkto-embed-color-placeholder: #898989;
+
+    color-scheme: dark;
+  }
+
+  /* Optional: force light even when page is dark */
+  [data-brand-mode="light"] {
+    --mkto-embed-color-text: #080808;
+    --mkto-embed-color-border: #d8d8d8;
+    --mkto-embed-color-border-hover: #898989;
+    --mkto-embed-color-background: #ffffff;
+    --mkto-embed-checkbox-checked: #080808;
+    --mkto-embed-checkbox-background: #ffffff;
+    --mkto-embed-checkbox-border: #d8d8d8;
+    --mkto-embed-color-placeholder: #757575;
+
+    color-scheme: light;
+  }
 }
 
 /* Form Layout
     ========================================================================== */
 .mktoForm {
-width: 100% !important;
-margin: 0 auto;
-padding: 0 !important;
-display: flex;
-flex-wrap: wrap;
-gap: 24px;
-font-family: var(--mkto-embed-font-family) !important;
-font-variation-settings: "wght" 400, "opsz" 20;
+  width: 100% !important;
+  margin: 0 auto;
+  padding: 0 !important;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  font-family: var(--mkto-embed-font-family) !important;
+  font-variation-settings: "wght" 400, "opsz" 20;
 }
 
 .mktoFormRow {
-width: calc(50% - 12px);
-flex-shrink: 0;
-flex-grow: 0;
+  width: calc(50% - 12px);
+  flex-shrink: 0;
+  flex-grow: 0;
 }
 
 .mktoFormRow:has(+ .mktoButtonRow),
 .mktoFormRow:has(+ .mktoFormRow.full-width),
 .mktoFormRow:has(+ .mktoFormRow[style="display: none;"]) {
-flex-grow: 1;
+  flex-grow: 1;
 }
 
 .mktoFormRow.full-width,
 .mktoButtonRow {
-width: 100%;
+  width: 100%;
 }
 
 /* Hide unnecessary Marketo elements */
 .mktoForm .mktoOffset,
 .mktoForm .mktoGutter {
-display: none;
+  display: none;
 }
 
 .mktoForm .mktoRequiredField .mktoAsterix {
-display: none !important;
+  display: none !important;
 }
 
 /* Field Containers
     ========================================================================== */
-.mktoFormRow > .mktoFieldDescriptor.mktoFormCol {
-width: 100%;
-margin-bottom: 0px !important;
+.mktoFormRow>.mktoFieldDescriptor.mktoFormCol {
+  width: 100%;
+  margin-bottom: 0px !important;
 }
 
 .mktoForm .mktoFieldWrap {
-width: 100% !important;
-margin-bottom: 0px;
-padding: 0px !important;
-position: relative;
+  width: 100% !important;
+  margin-bottom: 0px;
+  padding: 0px !important;
+  position: relative;
 }
 
 .mktoFieldWrap:has(.mktoHtmlText),
 .mktoFieldWrap:has(.mktoCheckboxList) {
-padding: 0;
+  padding: 0;
 }
 
 /* Labels
     ========================================================================== */
 .mktoForm .mktoLabel {
-font-family: var(--mkto-embed-font-family) !important;
-width: 100% !important;
-z-index: 1 !important;
-position: relative;
-font-size: .9rem !important;
-line-height: 1.2em !important;
-font-weight: 550 !important;
-font-variation-settings: "wght" 550, "opsz" 20;
-letter-spacing: 0em !important;  
-margin-bottom: .5rem !important;
-text-transform: none !important;
+  font-family: var(--mkto-embed-font-family) !important;
+  width: 100% !important;
+  z-index: 1 !important;
+  position: relative;
+  font-size: .9rem !important;
+  line-height: 1.2em !important;
+  font-weight: 550 !important;
+  font-variation-settings: "wght" 550, "opsz" 20;
+  letter-spacing: 0em !important;
+  margin-bottom: .5rem !important;
+  text-transform: none !important;
 }
 
 
 
 .mktoForm .mktoLabel.sr-only {
-height: 0px;
-width: 0px;
-opacity: 0;
-position: absolute;
-overflow: hidden;
+  height: 0px;
+  width: 0px;
+  opacity: 0;
+  position: absolute;
+  overflow: hidden;
 }
 
 /* Form Fields
     ========================================================================== */
 
 .mktoField {
-font-family: var(--mkto-embed-font-family);
-height: auto;  
-font-size: 1rem !important;
-line-height: 1.5em !important;
-font-weight: 400 !important;
-font-variation-settings: "wght" 400, "opsz" 20;
-letter-spacing: 0em !important;    
-width: 100% !important;
-color: var(--mkto-embed-color-text);
-background-color: var(--mkto-embed-color-background);
-border: 1px solid var(--mkto-embed-color-border) !important;
-border-radius: .25rem !important;
-padding: 1.5rem !important;
-margin-bottom: 0px;
-box-shadow: 0 0 0 0 transparent;  
-transition: border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1), background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+  font-family: var(--mkto-embed-font-family);
+  height: auto;
+  font-size: 1rem !important;
+  line-height: 1.5em !important;
+  font-weight: 400 !important;
+  font-variation-settings: "wght" 400, "opsz" 20;
+  letter-spacing: 0em !important;
+  width: 100% !important;
+  color: var(--mkto-embed-color-text);
+  background-color: var(--mkto-embed-color-background);
+  border: 1px solid var(--mkto-embed-color-border) !important;
+  border-radius: .25rem !important;
+  padding: 1.5rem !important;
+  margin-bottom: 0px;
+  box-shadow: 0 0 0 0 transparent;
+  transition: border-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1), background-color 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
+
 .mktoField::placeholder {
-color: var(--mkto-embed-color-placeholder);
+  color: var(--mkto-embed-color-placeholder);
 }
+
 .mktoField .mktoHasWidth {
-width: 100% !important;
+  width: 100% !important;
 }
+
 .mktoField:hover {
-box-shadow: none !important;
-border-color: var(--mkto-embed-color-border-hover) !important;
+  box-shadow: none !important;
+  border-color: var(--mkto-embed-color-border-hover) !important;
 }
+
 .mktoField:focus {
-outline-color: var(--mkto-embed-color-button) !important;
-outline-offset: 2px !important;
-outline-style: solid !important;
-outline-width: 2px !important;
+  outline-color: var(--mkto-embed-color-button) !important;
+  outline-offset: 2px !important;
+  outline-style: solid !important;
+  outline-width: 2px !important;
 }
-.mktoForm textarea.mktoField, .mktoForm textarea[rows="2"] {
+
+.mktoForm textarea.mktoField,
+.mktoForm textarea[rows="2"] {
   height: auto !important;
   padding: .75rem !important;
 }
@@ -161,14 +188,15 @@ outline-width: 2px !important;
 /* Select Fields
     ========================================================================== */
 select.mktoField {
-appearance: none;
-background-image: url("https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/686294e363eb7e215bd23387_arrow-black.svg");
-background-position: 98% 50%;
-background-size: 24px;
-background-repeat: no-repeat;
+  appearance: none;
+  background-image: url("https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/686294e363eb7e215bd23387_arrow-black.svg");
+  background-position: 98% 50%;
+  background-size: 24px;
+  background-repeat: no-repeat;
 }
+
 select.mktoField:has(option:checked[value=""]) {
-color: var(--mkto-embed-color-placeholder);
+  color: var(--mkto-embed-color-placeholder);
 }
 
 /* Autofill Styles
@@ -178,331 +206,33 @@ color: var(--mkto-embed-color-placeholder);
 .mktoField:-webkit-autofill:focus,
 .mktoField:-webkit-autofill:active,
 .mktoField:-internal-autofill-selected {
-background-color: var(--mkto-embed-color-background) !important;
-color: var(--mkto-embed-color-text) !important;
--webkit-box-shadow: 0 0 0 50px var(--mkto-embed-color-background) inset !important;
-box-shadow: 0 0 0 50px var(--mkto-embed-color-background) inset !important;
--webkit-text-fill-color: var(--mkto-embed-color-text) !important;
-caret-color: var(--mkto-embed-color-text) !important;
+  background-color: var(--mkto-embed-color-background) !important;
+  color: var(--mkto-embed-color-text) !important;
+  -webkit-box-shadow: 0 0 0 50px var(--mkto-embed-color-background) inset !important;
+  box-shadow: 0 0 0 50px var(--mkto-embed-color-background) inset !important;
+  -webkit-text-fill-color: var(--mkto-embed-color-text) !important;
+  caret-color: var(--mkto-embed-color-text) !important;
 }
 
 /* Checkbox Styles
     ========================================================================== */
 
 .mktoInstruction {
-font-size: 0.94rem;
-position: relative;
+  font-size: 0.94rem;
+  position: relative;
 }
 
 .mktoForm .mktoFieldWrap .mktoInstruction {
-display: initial !important;
+  display: initial !important;
 }
 
 .mktoLogicalField.mktoCheckboxList.mktoHasWidth {
-width: auto !important;
-padding: 0px !important;
-margin-right: 14px;
+  width: auto !important;
+  padding: 0px !important;
+  margin-right: 14px;
 }
 
 .mktoField[type="checkbox"] {
-appearance: none;
-width: 20px;
-height: 20px;
-margin: 0;
-position: absolute;
-inset: 0;
-background: transparent !important;
-border: none !important;
-outline: none !important;
-}
-
-.mktoField[type="checkbox"]::before {
-content: "";
-width: 20px;
-height: 20px;
-position: absolute;
-top: 0;
-left: 0;
-border: 1px solid var(--mkto-embed-checkbox-border);
-background-color: var(--mkto-embed-checkbox-background);
-transition: background 0.2s ease-in-out;
-border-radius: 4px;
-cursor: pointer;
-}
-
-.mktoField[type="checkbox"]:checked::before {
-border-color: var(--mkto-embed-checkbox-checked);
-background-color: var(--mkto-embed-checkbox-checked);
-}
-
-.mktoField[type="checkbox"]::after {
-content: "";
-border: 1px solid;
-border-left: 0;
-border-top: 0;
-height: 10px;
-opacity: 0;
-position: absolute;
-top: 4px;
-left: 8px;
-transform: rotate(45deg);
-transition: opacity 0.2s ease-in-out;
-width: 5px;
-color: #fff !important;
-}
-
-.mktoField[type="checkbox"]:checked::after {
-opacity: 1 !important;
-}
-.mktoField[type="checkbox"]:focus::before,
-.mktoField[type="checkbox"]:focus-visible::before {
-outline-color: var(--mkto-embed-color-button) !important;
-outline-offset: 2px !important;
-outline-style: solid !important;
-outline-width: 2px !important;
-}
-
-/* Button and Link Styles
-    ========================================================================== */
-.mktoButtonWrap.mktoSimple {
-margin: 0 !important;
-}
-
-.mktoForm .mktoButtonWrap.mktoSimple .mktoButton {
-font-family: var(--mkto-embed-font-family) !important;
-height: auto !important;
-border: none !important;
-color: #fff;
-text-align: center;
-cursor: pointer;
-background-color: var(--mkto-embed-color-button) !important;
-background-image: none !important;
-border-radius: 4px;
-flex: none;
-padding: 1em 1.5em !important;
-font-size: 1rem !important;
-font-weight: 500 !important;
-font-variation-settings: "wght" 500, "opsz" 20;
-line-height: 1.2;
-text-decoration: none;
-transition: box-shadow 0.3s cubic-bezier(0.165, 0.84, 0.44, 1), background-color 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-display: inline-block;
-box-shadow: 0 4px 4px rgba(8, 8, 8, 0.08), 0 1px 2px rgba(8, 8, 8, 0.2), inset 0 6px 12px rgba(255, 255, 255, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.2);
-}
-
-.mktoForm .mktoButtonWrap.mktoSimple .mktoButton:hover {
-border: none !important;
-background-color: var(--mkto-embed-color-button-hover) !important;
-box-shadow: 0 1px 1px rgba(8, 8, 8, 0.08), 0 1px 1px rgba(8, 8, 8, 0.2), inset 0 6px 12px rgba(255, 255, 255, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.2);
-}
-
-.mktoForm .mktoButtonWrap.mktoSimple .mktoButton:active {
-background-image: none !important;
-box-shadow: none;
-}
-/* Button Focus State */
-.mktoForm .mktoButtonWrap.mktoSimple .mktoButton:focus-visible,
-.mktoForm .mktoButtonWrap.mktoSimple .mktoButton:focus {
-outline-color: var(--mkto-embed-color-button) !important;
-outline-offset: 2px !important;
-outline-style: solid !important;
-outline-width: 2px !important;
-}
-
-.mktoHtmlText > a,
-.mktoFormRow a {
-color: var(--mkto-embed-color-link);
-text-decoration: none !important;
-background-color: transparent;
-padding: 0;
-}
-
-.mktoFormRow a:hover {
-text-decoration: none !important;
-}
-
-/* Select Multiple Styles
-    ========================================================================== */
-
-  .select2.select2-container {
-    width: 100% !important;
-    margin: 0 !important;
-  }
-  .select2-container--default .select2-selection--multiple {
-    border: 1px solid var(--mkto-embed-color-border);
-    border-radius: 4px;
-    padding: 1.5rem;
-    display: flex;
-    flex-wrap: wrap;
-  }
-  .select2-container .select2-selection--multiple .select2-selection__rendered {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin: 0;
-  }
-  .select2-search__field {
-    font-size: 1rem !important;
-  }
-  .select2-container--default .select2-selection--multiple {
-    background-color: var(--mkto-embed-color-background);
-    border: 1px solid var(--mkto-embed-color-border);
-  }
-  .select2-container--default .select2-selection--multiple .select2-selection__choice {
-    background-color: var(--mkto-embed-color-text);
-    border: 1px solid var(--mkto-embed-color-border);
-    border-radius: 4px;
-    padding-left: 32px;
-    color: var(--mkto-embed-color-background);
-    margin: 0;
-    height: 30px;
-  }
-  .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-    border-right: 1px solid var(--mkto-embed-color-border);
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-    color: #fff;
-    padding: 0 8px;
-    height: 100%;
-  }
-  .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover, 
-  .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:focus {
-    background-color: var(--mkto-embed-color-button-hover);
-    color: #fff;
-  }
-  .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
-    padding-right: 8px;
-    display: inline-block;
-    padding-top: 4px;
-  }
-  .select2-container--default .select2-results__option--selected {
-    background-color: var(--mkto-embed-color-text);
-    color: #fff;
-  }
-  .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
-    background-color: var(--mkto-embed-color-button);
-    color: white;
-  }
-  .select2-container .select2-search--inline .select2-search__field {
-    height: 30px;
-  }
-  .select2-search__field::placeholder, .select2-search__field {
-    font-family: WF Visual Sans, Arial, sans-serif !important;
-  }
-  .select2-container .select2-search--inline .select2-search__field {
-    height: 36px;
-  }
-  .select2-results__options li {
-    margin-bottom: 0;	
-  }
-  .select2-results__option {
-    padding: 10px;
-  }
-  .select2-container {
-    margin-bottom: 0.5em !important;
-  }
-  span.select2-search.select2-search--inline {
-    height: 36px;
-  }
-  .select2-container--default .select2-selection--multiple .select2-selection__clear {
-    font-size: 18px;
-    line-height: 1;
-  }
-
-
-/* Error Styles
-    ========================================================================== */
-.mktoForm .mktoError .mktoErrorMsg {
-background-color: var(--mkto-embed-color-error) !important;
-background-image: none !important;
-color: #fff !important;
-border: var(--mkto-embed-color-error) solid 1px !important;
-text-shadow: none !important;
-box-shadow: 1px 2px 6px -1px rgba(0, 0, 0, 0.55) !important;
-padding: 10px !important;
-font-family: var(--mkto-embed-font-family) !important;
-}
-
-.mktoForm .mktoError .mktoErrorArrow {
-background-color: var(--mkto-embed-color-error) !important;
-border: var(--mkto-embed-color-error) solid 1px !important;
-}
-
-/* Dark Mode Styles
-    ========================================================================== */
-
-html.u-mode-dark .mktoForm:not([data-brand-mode="light"]), [data-brand-mode="dark"] {
-/* Text and Field Styles */
-& .mktoLabel,
-& .mktoInstruction {
-  color: var(--mkto-embed-dark-color-text) !important;
-}
-& .mktoField {
-  border-color: var(--mkto-embed-dark-color-border) !important;
-  background-color: var(--mkto-embed-dark-color-background);
-  color: var(--mkto-embed-dark-color-text) !important;
-}
-& .mktoField::placeholder {
-  color: var(--mkto-embed-dark-color-placeholder) !important;
-}
-& select.mktoField:has(option:checked[value=""]) {
-  color: var(--mkto-embed-dark-color-placeholder) !important;
-} 
-& .mktoField:hover,
-& .mktoField:focus {
-  border-color: var(--mkto-embed-dark-color-border-hover) !important;
-}
-& .select2-container--default .select2-selection--multiple {
-  border: 1px solid var(--mkto-embed-dark-color-border);
-}
-& .select2-container--default .select2-selection--multiple {
-  background-color: var(--mkto-embed-dark-color-background);
-  border: 1px solid var(--mkto-embed-dark-color-border);
-}
-& .select2-container--default .select2-selection--multiple .select2-selection__choice {
-  background-color: var(--mkto-embed-dark-color-text);
-  border: 1px solid var(--mkto-embed-dark-color-text);
-  color: var(--mkto-embed-dark-color-background);
-}
-& .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
-  background-color: var(--mkto-embed-dark-color-background);
-  color: var(--mkto-embed-dark-color-text);
-}
-& .select2-container--default .select2-results__option--selected {
-  background-color: var(--mkto-embed-dark-color-text);
-  color: var(--mkto-embed-dark-color-background);
-}
-& .select2-container--default .select2-selection__choice__remove,
-  .select2-container--default .select2-selection--multiple .select2-selection__choice__remove  {
-  color: #080808 !important;
-}
-& .select2-container--default .select2-selection__choice__remove:hover,
-  .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover  {
-  color: #fff !important;
-}
-& .select2-selection__clear {
-  color: #fff !important;
-}
-
-/* Autofill */
-& .mktoField:-webkit-autofill,
-& .mktoField:-webkit-autofill:hover,
-& .mktoField:-webkit-autofill:focus,
-& .mktoField:-webkit-autofill:active,
-& .mktoField:-internal-autofill-selected {
-  background-color: var(--mkto-embed-dark-color-background) !important;
-  color: var(--mkto-embed-dark-color-text) !important;
-  -webkit-box-shadow: 0 0 0 50px var(--mkto-embed-dark-color-background) inset !important;
-  box-shadow: 0 0 0 50px var(--mkto-embed-dark-color-background) inset !important;
-  -webkit-text-fill-color: var(--mkto-embed-dark-color-text) !important;
-  caret-color: var(--mkto-embed-dark-color-text) !important;
-}
-
-/* Checkbox */
-
-& .mktoField[type="checkbox"] {
-  -webkit-appearance: none;
-  -moz-appearance: none;
   appearance: none;
   width: 20px;
   height: 20px;
@@ -514,92 +244,303 @@ html.u-mode-dark .mktoForm:not([data-brand-mode="light"]), [data-brand-mode="dar
   outline: none !important;
 }
 
-& .mktoField[type="checkbox"]::before {
-  border-color: var(--mkto-embed-dark-color-checkbox-border) !important;
-  background-color: var(--mkto-embed-dark-color-checkbox-background) !important;
+.mktoField[type="checkbox"]::before {
+  content: "";
+  width: 20px;
+  height: 20px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 1px solid var(--mkto-embed-checkbox-border);
+  background-color: var(--mkto-embed-checkbox-background);
+  transition: background 0.2s ease-in-out;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
-& .mktoField[type="checkbox"]:checked::before {
-  border-color: var(--mkto-embed-dark-color-checkbox-checked) !important;
-  background-color: var(--mkto-embed-dark-color-checkbox-checked) !important;
+.mktoField[type="checkbox"]:checked::before {
+  border-color: var(--mkto-embed-checkbox-checked);
+  background-color: var(--mkto-embed-checkbox-checked);
 }
 
-& .mktoField[type="checkbox"]::after {
-  color: #080808 !important;
+.mktoField[type="checkbox"]::after {
+  content: "";
+  border: 1px solid;
+  border-left: 0;
+  border-top: 0;
+  height: 10px;
+  opacity: 0;
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  transform: rotate(45deg);
+  transition: opacity 0.2s ease-in-out;
+  width: 5px;
+  color: --mkto-embed-checkbox-background !important;
 }
 
-/* Select */
-& select.mktoField {
-  background-image: url("https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/686294e363eb7e215bd23386_arrow-white.svg") !important;
+.mktoField[type="checkbox"]:checked::after {
+  opacity: 1 !important;
 }
 
-/* Terms Statement */
-& .terms-statement,
-& .terms-statement a {
-  color: var(--mkto-embed-dark-color-text);
+.mktoField[type="checkbox"]:focus::before,
+.mktoField[type="checkbox"]:focus-visible::before {
+  outline-color: var(--mkto-embed-color-button) !important;
+  outline-offset: 2px !important;
+  outline-style: solid !important;
+  outline-width: 2px !important;
 }
+
+/* Button and Link Styles
+    ========================================================================== */
+.mktoButtonWrap.mktoSimple {
+  margin: 0 !important;
 }
+
+.mktoForm .mktoButtonWrap.mktoSimple .mktoButton {
+  font-family: var(--mkto-embed-font-family) !important;
+  height: auto !important;
+  border: none !important;
+  color: #fff;
+  text-align: center;
+  cursor: pointer;
+  background-color: var(--mkto-embed-color-button) !important;
+  background-image: none !important;
+  border-radius: 4px;
+  flex: none;
+  padding: 1em 1.5em !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  font-variation-settings: "wght" 500, "opsz" 20;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: box-shadow 0.3s cubic-bezier(0.165, 0.84, 0.44, 1), background-color 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+  display: inline-block;
+  box-shadow: 0 4px 4px rgba(8, 8, 8, 0.08), 0 1px 2px rgba(8, 8, 8, 0.2), inset 0 6px 12px rgba(255, 255, 255, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+}
+
+.mktoForm .mktoButtonWrap.mktoSimple .mktoButton:hover {
+  border: none !important;
+  background-color: var(--mkto-embed-color-button-hover) !important;
+  box-shadow: 0 1px 1px rgba(8, 8, 8, 0.08), 0 1px 1px rgba(8, 8, 8, 0.2), inset 0 6px 12px rgba(255, 255, 255, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+}
+
+.mktoForm .mktoButtonWrap.mktoSimple .mktoButton:active {
+  background-image: none !important;
+  box-shadow: none;
+}
+
+/* Button Focus State */
+.mktoForm .mktoButtonWrap.mktoSimple .mktoButton:focus-visible,
+.mktoForm .mktoButtonWrap.mktoSimple .mktoButton:focus {
+  outline-color: var(--mkto-embed-color-button) !important;
+  outline-offset: 2px !important;
+  outline-style: solid !important;
+  outline-width: 2px !important;
+}
+
+.mktoHtmlText>a,
+.mktoFormRow a {
+  color: var(--mkto-embed-color-link);
+  text-decoration: none !important;
+  background-color: transparent;
+  padding: 0;
+}
+
+.mktoFormRow a:hover {
+  text-decoration: none !important;
+}
+
+/* Select Multiple Styles
+    ========================================================================== */
+
+.select2.select2-container {
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.select2-container--default .select2-selection--multiple {
+  border: 1px solid var(--mkto-embed-color-border);
+  border-radius: 4px;
+  padding: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.select2-container .select2-selection--multiple .select2-selection__rendered {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+}
+
+.select2-search__field {
+  font-size: 1rem !important;
+}
+
+.select2-container--default .select2-selection--multiple {
+  background-color: var(--mkto-embed-color-background);
+  border: 1px solid var(--mkto-embed-color-border);
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+  background-color: var(--mkto-embed-color-text);
+  border: 1px solid var(--mkto-embed-color-border);
+  border-radius: 4px;
+  padding-left: 32px;
+  color: var(--mkto-embed-color-background);
+  margin: 0;
+  height: 30px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+  border-right: 1px solid var(--mkto-embed-color-border);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  color: #fff;
+  padding: 0 8px;
+  height: 100%;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover,
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:focus {
+  background-color: var(--mkto-embed-color-button-hover);
+  color: #fff;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+  padding-right: 8px;
+  display: inline-block;
+  padding-top: 4px;
+}
+
+.select2-container--default .select2-results__option--selected {
+  background-color: var(--mkto-embed-color-text);
+  color: var(--mkto-embed-color-background);
+}
+
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+  background-color: var(--mkto-embed-color-button);
+  color: white;
+}
+
+.select2-container .select2-search--inline .select2-search__field {
+  height: 30px;
+}
+
+.select2-search__field::placeholder,
+.select2-search__field {
+  font-family: WF Visual Sans, Arial, sans-serif !important;
+}
+
+.select2-container .select2-search--inline .select2-search__field {
+  height: 36px;
+}
+
+.select2-results__options li {
+  margin-bottom: 0;
+}
+
+.select2-results__option {
+  padding: 10px;
+}
+
+.select2-container {
+  margin-bottom: 0.5em !important;
+}
+
+span.select2-search.select2-search--inline {
+  height: 36px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__clear {
+  font-size: 18px;
+  line-height: 1;
+}
+
+
+/* Error Styles
+    ========================================================================== */
+.mktoForm .mktoError .mktoErrorMsg {
+  background-color: var(--mkto-embed-color-error) !important;
+  background-image: none !important;
+  color: #fff !important;
+  border: var(--mkto-embed-color-error) solid 1px !important;
+  text-shadow: none !important;
+  box-shadow: 1px 2px 6px -1px rgba(0, 0, 0, 0.55) !important;
+  padding: 10px !important;
+  font-family: var(--mkto-embed-font-family) !important;
+}
+
+.mktoForm .mktoError .mktoErrorArrow {
+  background-color: var(--mkto-embed-color-error) !important;
+  border: var(--mkto-embed-color-error) solid 1px !important;
+}
+
 /* Misc Styles
     ========================================================================== */
 .terms-statement {
-font-size: 0.9rem;
+  font-size: 0.9rem;
 }
 
 .mktoFormRow a {
-width: 100% !important;
+  width: 100% !important;
 }
 
 .mktoFormRow.full-width.terms .mktoFieldWrap {
-padding: 0 !important;
+  padding: 0 !important;
 }
 
-.mktoFormCol .mktoHtmlText.mktoHasWidth, 
+.mktoFormCol .mktoHtmlText.mktoHasWidth,
 .mktoHtmlText.mktoHasWidth {
-width: 100% !important;
+  width: 100% !important;
 }
 
 /* Fully hide a conditionally hidden field */
 .mktoFormRow:has(.mktoPlaceholder) {
-display: none;
+  display: none;
 }
 
 /* Terms Statement */
-.mktoFormRow.full-width.terms .mktoFormCol, .mktoFormCol {
-min-height: auto;
-float: none;
-margin: 0 !important;
+.mktoFormRow.full-width.terms .mktoFormCol,
+.mktoFormCol {
+  min-height: auto;
+  float: none;
+  margin: 0 !important;
 }
 
 .mktoFormRow.full-width.terms .mktoHasWidth {
-width: 100% !important;
+  width: 100% !important;
 }
 
 .mktoForm:has(.terms-statement) {
-position: relative;
+  position: relative;
 }
 
 .mktoFormRow:has(.terms-statement) {
-width: 100%;
+  width: 100%;
 }
 
 /* Hide reCAPTCHA
     ========================================================================== */
 .mktoCaptchaDisclaimer,
 .grecaptcha-badge {
-visibility: hidden;
+  visibility: hidden;
 }
 
 /* Responsive Styles
     ========================================================================== */
 @media screen and (max-width: 480px) {
-.mktoForm {
-  gap: 16px;
-}
-.mktoFormRow {
-  width: 100%;
-}
-.mktoField {
-  height: auto !important;
-  padding: 1.25rem !important;
-}
+  .mktoForm {
+    gap: 16px;
+  }
+
+  .mktoFormRow {
+    width: 100%;
+  }
+
+  .mktoField {
+    height: auto !important;
+    padding: 1.25rem !important;
+  }
 }
