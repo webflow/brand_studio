@@ -7,10 +7,21 @@ function initializeOptimizedShaders() {
   if (typeof THREE === "undefined") {
     return;
   }
-  //  iOS DETECTION
+
+  // SAFARI DETECTION (iOS + macOS + Windows)
   const isIOS =
     /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+  const isSafari =
+    /^((?!chrome|android|crios|fxios|edgios).)*safari/i.test(
+      navigator.userAgent
+    ) || isIOS;
+
+  const isWebKitSafari =
+    !!(window.safari && window.safari.pushNotification) ||
+    /constructor/i.test(window.HTMLElement) ||
+    isIOS;
 
   const prefersReducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
@@ -192,7 +203,8 @@ function initializeOptimizedShaders() {
       const originalTexture = textureData.texture;
       const originalAspect = textureData.aspect;
 
-      if (!isIOS) {
+      // Use manual blur for ALL Safari browsers (iOS + macOS)
+      if (!isSafari) {
         try {
           const canvas = document.createElement("canvas");
           const ctx = canvas.getContext("2d");
@@ -448,7 +460,7 @@ function initializeOptimizedShaders() {
                   state.settings.backgroundColor !== null &&
                   state.settings.backgroundColor !== "",
               },
-              u_is_ios: { value: isIOS },
+              u_is_safari: { value: isSafari },
             };
 
             state.material = new THREE.ShaderMaterial({
@@ -487,7 +499,7 @@ function initializeOptimizedShaders() {
                           uniform float u_background_aspect;
                           uniform vec3 u_background_color;
                           uniform bool u_has_bg_color;
-                          uniform bool u_is_ios;
+                          uniform bool u_is_safari;
                           varying vec2 vUv;
 
                           float random(vec2 st) { 
@@ -682,7 +694,7 @@ function initializeOptimizedShaders() {
                                   vec2 coverUV = (backgroundUV - offset) / scale;
                                   vec2 clampedBackgroundUV = clamp(coverUV, vec2(0.0), vec2(1.0));
                                   
-                                  if (u_is_ios) {
+                                  if (u_is_safari) {
                                       vec3 blurResult = vec3(0.0);
                                       float blurTotal = 0.0;
                                       vec2 texelSize = vec2(1.0 / 512.0);
