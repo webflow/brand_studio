@@ -1,11 +1,11 @@
-// ---- Color Mode Management ----
+// ---- Color Mode Management (Deferred) ----
+// Note: Initial color mode should be set inline in <head> to prevent flicker
 
 (function () {
   // Function to swap icon URLs between Light and Dark modes
   function swapIconUrls(isDark) {
     const iconElements = document.querySelectorAll("[data-component='icon']");
     const modeToUse = isDark ? "Dark" : "Light";
-    const modeToReplace = isDark ? "Light" : "Dark";
 
     iconElements.forEach((img) => {
       if (img.tagName.toLowerCase() === "img" && img.src) {
@@ -79,30 +79,19 @@
     }
   }
 
-  // Check if user preference exists in localStorage
-  const savedMode = localStorage.getItem("darkMode");
-  let prefersDark;
-  let usingOSPreference = false;
+  // Initialize when DOM is ready
+  function initializeColorModeUI() {
+    // Get current state from what was already set inline
+    const isDarkMode =
+      document.documentElement.classList.contains("u-mode-dark");
+    const savedMode = localStorage.getItem("darkMode");
+    const isAutoMode = savedMode === null;
+    let usingOSPreference = isAutoMode;
 
-  // If user has explicitly set a preference (via the buttons), use that
-  if (savedMode !== null) {
-    prefersDark = savedMode === "true";
-  }
-  // Otherwise, check the OS preference
-  else {
-    // Check if the browser supports prefers-color-scheme media query
-    const prefersColorScheme = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    );
-    prefersDark = prefersColorScheme.matches;
-    usingOSPreference = true;
-  }
+    // Ensure icons are set correctly on initial load
+    swapIconUrls(isDarkMode);
 
-  // Apply mode immediately (before page render to prevent flash)
-  setColorMode(prefersDark, !usingOSPreference, usingOSPreference);
-
-  // Set up event listeners for buttons once DOM is loaded
-  window.addEventListener("DOMContentLoaded", function () {
+    // Get all button elements
     const lightButtons = document.querySelectorAll(
       '[data-mode-button="light"]'
     );
@@ -120,17 +109,7 @@
       button.classList.remove("cc-active-mode");
     });
 
-    // Set initial state based on current mode
-    const isDarkMode =
-      document.documentElement.classList.contains("u-mode-dark");
-
-    // Ensure icons are set correctly on initial load
-    swapIconUrls(isDarkMode);
-
-    // Check if we're currently using OS preference (no saved mode)
-    const savedMode = localStorage.getItem("darkMode");
-    const isAutoMode = savedMode === null;
-
+    // Set initial button states based on current mode
     if (isAutoMode) {
       autoButtons.forEach((button) => {
         button.classList.add("cc-active-mode");
@@ -186,5 +165,13 @@
         setColorMode(e.matches, false);
       }
     });
-  });
+  }
+
+  // Initialize the UI when DOM is ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializeColorModeUI);
+  } else {
+    // DOM already loaded
+    initializeColorModeUI();
+  }
 })();
