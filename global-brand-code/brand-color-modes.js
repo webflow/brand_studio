@@ -9,6 +9,10 @@
 
     iconElements.forEach((img) => {
       if (img.tagName.toLowerCase() === "img" && img.src) {
+        // Skip swapping if icon mode override is set to true
+        if (img.getAttribute("data-icon-mode-override") === "true") {
+          return;
+        }
         // Check if the src starts with the CloudFront URL (remove @ if present)
         const cleanSrc = img.src.replace(/^@/, "");
         if (
