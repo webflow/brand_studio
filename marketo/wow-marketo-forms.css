@@ -188,6 +188,25 @@ html.u-mode-dark,
   padding: .75rem !important;
 }
 
+.mktoForm .mktoFormRow {
+  order: 1;
+}
+
+.mktoForm .mktoFormRow:has(input[name='How_can_we_best_support_you__c']) {
+  order: 2;
+}
+
+/* button row comes after the checkbox */
+.mktoForm .mktoButtonRow {
+  order: 3;
+}
+
+/* the terms/legal row is already after the button in the HTML —
+ give it an order too, or it'll snap back up to order 0 */
+.mktoForm .mktoFormRow.terms {
+  order: 4;
+}
+
 /* Select Fields
     ========================================================================== */
 select.mktoField {
@@ -236,6 +255,10 @@ select.mktoField:has(option:checked[value=""]) {
 
 .mktoForm .mktoFieldWrap .mktoInstruction {
   display: initial !important;
+}
+
+.mktoForm .mktoRadioList > label, .mktoForm .mktoCheckboxList > label {
+  margin-left: 2rem !important;
 }
 
 .mktoLogicalField.mktoCheckboxList.mktoHasWidth {
