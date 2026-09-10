@@ -245,7 +245,6 @@ select.mktoField:has(option:checked[value=""]) {
 .mktoLogicalField.mktoCheckboxList.mktoHasWidth {
   width: auto !important;
   padding: 0px !important;
-  margin-right: 14px;
 }
 
 .mktoField[type="checkbox"] {
