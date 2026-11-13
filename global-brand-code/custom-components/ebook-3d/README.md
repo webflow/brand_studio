@@ -18,14 +18,14 @@ The page always ships a normal `<img>`. This script only upgrades it. If anythin
 </div>
 ```
 
-The cover should be US Letter (8.5:11), at least 1700×2200 px. Other ratios are center-cropped, never stretched.
+The book takes the cover's own shape: any width/height ratio from 0.5 (tall) to 1.6 (wide). A cover outside that range is center-cropped to the nearest limit. Use at least 1700 px on the long side for a sharp texture.
 
-**2. CSS.** Put this in the page `<head>`. It sizes the stage and sets the static image at the same angle as the 3D book, so the swap does not jump.
+**2. CSS.** Put this in the page `<head>`. It sizes the stage and sets the static image at the same angle and size as the 3D book, so the swap does not jump. The image sits in a 74% × 72% box with `object-fit: contain`, so any cover ratio fits the way the 3D book does.
 
 ```css
 .ebook-stage { position: relative; width: 100%; aspect-ratio: 4 / 5; max-height: 92vh; touch-action: pan-y; -webkit-user-select: none; user-select: none; }
 @media (max-width: 800px) { .ebook-stage { max-height: 62vh; } }
-.ebook-stage img { position: absolute; left: 50%; top: 50%; height: 72%; width: auto; max-width: none; aspect-ratio: 8.5 / 11; object-fit: cover; pointer-events: none;
+.ebook-stage img { position: absolute; left: 50%; top: 50%; width: 74%; height: 72%; max-width: none; object-fit: contain; pointer-events: none;
   transform: translate(-50%, -50%) perspective(1000px) rotateY(-0.68rad) rotateX(-0.2rad); }
 ```
 
@@ -45,6 +45,8 @@ The cover should be US Letter (8.5:11), at least 1700×2200 px. Other ratios are
 Replace `COMMIT_SHA` with the commit that contains this file. Replace `sha384-HASH` with the output of `npm run sri`.
 
 ## Behavior
+
+The lighting adapts to the cover: covers with large white areas get brighter, more even light, and covers with large black areas get less reflection. The paper grain is sized for the book's on-screen size.
 
 The script starts after the page has loaded and the browser is idle, so it does not delay the largest-contentful-paint image. It pauses when the book is off screen or the tab is hidden.
 

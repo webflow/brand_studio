@@ -17,13 +17,15 @@ import {
 const SELECTOR = '[data-ebook-3d]';
 
 /* ---------- Settings (inches for size, radians for angles) ---------- */
-const W = 8.5, H = 11, T = 0.21;               // US Letter cover; T = total thickness at the spine
+const W = 8.5, T = 0.21;                       // book width and total thickness at the spine
+let H = 11;                                    // book height: W / the cover's own ratio, set once the cover has loaded (one book per page)
+const RATIO_MIN = 0.5, RATIO_MAX = 1.6;        // width/height range the book accepts; covers outside it are center-cropped to the nearest limit
 const REST = { y: -0.68, x: 0.06 };            // resting pose: shows the page edge
 const CAM_TILT = 0.14;                         // camera looks slightly down so the floor shadow is visible
 const RANGE = { y: 0.20, x: 0.12 };            // small tilt range from the pointer
 const AMBIENT = { y: 0.10, x: 0.05 };          // idle sway
 // Light levels are tuned so a head-on cover renders close to its source color.
-const ENV_BASE = 0.45, SPOT_BASE = 2.1, FLOOR_Y = -6.4;
+const ENV_BASE = 0.45, SPOT_BASE = 2.1;
 // Satin: a narrow glint, not a veil.
 const FINISH = { roughness: .28, clearcoat: 0, clearcoatRoughness: .5, sheen: .1, sheenRoughness: .5, bump: 1.3, tooth: .85, specular: .25 };
 
@@ -33,10 +35,10 @@ const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a)
 const range = (a, b, n) => Array.from({ length: n + 1 }, (_, i) => a + (b - a) * i / n);
 
 /* ---------- Procedural textures ---------- */
-let grainCanvas;
+let grainCanvas, grainMul, grainScr;
 function grainTexture() {            // paper surface: fine tooth + fibres + soft mottling; bump map and printed into the cover color
   const n = 512, c = document.createElement('canvas'); c.width = c.height = n;
-  const g = c.getContext('2d'), d = g.createImageData(n, n);
+  const g = c.getContext('2d', { willReadFrequently: true }), d = g.createImageData(n, n);
   for (let i = 0; i < n * n; i++) { const v = 128 + (Math.random() - .5) * 90; d.data.set([v, v, v, 255], i * 4); }
   g.putImageData(d, 0, 0);
   // Soften by scaling down and back up (ctx.filter is not supported in Safari).
@@ -55,8 +57,17 @@ function grainTexture() {            // paper surface: fine tooth + fibres + sof
   const mg = m.getContext('2d'), md = mg.createImageData(32, 32);
   for (let i = 0; i < 1024; i++) { const v = 128 + (Math.random() - .5) * 60; md.data.set([v, v, v, 255], i * 4); }
   mg.putImageData(md, 0, 0);
-  g.globalAlpha = .35; g.globalCompositeOperation = 'overlay'; g.drawImage(m, 0, 0, n, n);
-  grainCanvas = c;
+  g.globalAlpha = .12; g.globalCompositeOperation = 'overlay'; g.drawImage(m, 0, 0, n, n);   // soft mottling: kept faint, it turns into big clouds when scaled up
+  // Two more versions of the grain for the cover color. A single `overlay` blend changes nothing on pure white or pure black,
+  // so flat white and black areas would show no paper at all. `multiply` adds faint darker flecks on white, `screen` faint lighter flecks on black.
+  // The raw grain has low contrast (it is soft and sits near mid-gray), so its contrast is stretched first.
+  const grainPixels = g.getImageData(0, 0, n, n).data;   // read once
+  const mk = fn => { const o = document.createElement('canvas'); o.width = o.height = n; const og = o.getContext('2d'), od = og.createImageData(n, n), sd = grainPixels;
+    for (let i = 0; i < n * n; i++) { const v = fn(Math.max(0, Math.min(1, (sd[i * 4] / 255 - .5) * 5 + .5))); od.data[i * 4] = od.data[i * 4 + 1] = od.data[i * 4 + 2] = v; od.data[i * 4 + 3] = 255; }
+    og.putImageData(od, 0, 0); return o; };
+  grainMul = mk(v => 255 * (1 - 0.12 * Math.max(0, (.5 - v) * 2)));     // darker where the grain is low, up to 12%
+  grainScr = mk(v => 255 * 0.09 * Math.max(0, (v - .5) * 2));           // lighter where the grain is high, up to 9%
+  grainCanvas = c;                   // also baked into the cover color (see coverCanvas)
   const t = new CanvasTexture(c);
   t.wrapS = t.wrapT = RepeatWrapping; t.repeat.set(0.7, 0.875); t.anisotropy = 4;   // about one texel per pixel or coarser: finer grain aliases into faint streaks on dark covers
   return t;
@@ -173,36 +184,45 @@ function buildBook(mats) {
 function loadImage(url) {
   return new Promise((res, rej) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => res(i); i.onerror = () => rej(new Error('cover image failed to load (CORS or network)')); i.src = url; });
 }
-function coverCanvas(img, maxWidth) {
-  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height, AR = W / H;
-  let sx = 0, sy = 0, sw = iw, sh = ih;                 // center-crop to 8.5:11 so any upload keeps the book's shape
+function coverRatio(img) {                              // the book's width/height: the cover's own ratio, within limits
+  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+  return Math.min(RATIO_MAX, Math.max(RATIO_MIN, iw / ih));
+}
+const GRAIN_PX = 2.2;                                     // target size of one paper-grain speck on screen, in device pixels
+function coverCanvas(img, maxWidth, shownPx) {          // shownPx: about how many device pixels wide the cover will be on screen
+  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height, AR = coverRatio(img);
+  let sx = 0, sy = 0, sw = iw, sh = ih;                 // no crop unless the cover is outside the allowed ratio range
   if (iw / ih > AR) { sw = ih * AR; sx = (iw - sw) / 2; } else { sh = iw / AR; sy = (ih - sh) / 2; }
   const cw = Math.min(Math.round(sw), maxWidth), ch = Math.round(cw / AR);
   const c = document.createElement('canvas'); c.width = cw; c.height = ch;
   const g = c.getContext('2d'); g.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
   const spine = averageColor(g, cw, ch);
-  const lum = overallLuminance(g.canvas);
-  if (grainCanvas) {                                    // overlay keeps the average color and brightness
-    const pat = g.createPattern(grainCanvas, 'repeat');
-    pat.setTransform(new DOMMatrix().scale(cw / 2048 * 6));   // coarse grain: fine grain vanishes when the cover is shrunk
-    g.globalCompositeOperation = 'overlay'; g.globalAlpha = FINISH.tooth * .6; g.fillStyle = pat; g.fillRect(0, 0, cw, ch);
+  const stats = coverStats(g.canvas);                   // measured before the grain is added
+  if (grainCanvas) {
+    // A speck is about 2 pixels of the grain image. Size the specks for the cover's on-screen size, not its texture size:
+    // grain finer than about 3 device pixels is averaged away when the cover is shrunk and turned.
+    const scale = (GRAIN_PX / 2) * cw / Math.max(120, shownPx || 400);
+    const paint = (src, op, alpha) => { const pat = g.createPattern(src, 'repeat'); pat.setTransform(new DOMMatrix().scale(scale)); g.globalCompositeOperation = op; g.globalAlpha = alpha; g.fillStyle = pat; g.fillRect(0, 0, cw, ch); };
+    paint(grainCanvas, 'overlay', FINISH.tooth * .6);   // mid-tones: keeps the average color and brightness
+    paint(grainMul, 'multiply', FINISH.tooth * .75);    // white areas: faint darker flecks
+    paint(grainScr, 'screen', FINISH.tooth * .75);      // black areas: faint lighter flecks
     g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
   }
-  return { canvas: c, spine, lum };
+  return { canvas: c, spine, ...stats };
 }
-function overallLuminance(src) {                        // 0 (black) to 1 (white), from an 8×8 downsample
+function coverStats(src) {                              // from a 32×32 downsample: mean brightness and the share of near-white and near-black
   try {
-    const t = document.createElement('canvas'); t.width = t.height = 8;
-    const tg = t.getContext('2d'); tg.drawImage(src, 0, 0, 8, 8);
-    const d = tg.getImageData(0, 0, 8, 8).data; let s = 0;
-    for (let i = 0; i < d.length; i += 4) s += .2126 * d[i] + .7152 * d[i + 1] + .0722 * d[i + 2];
-    return s / 64 / 255;
-  } catch { return .5; }
+    const t = document.createElement('canvas'); t.width = t.height = 32;
+    const tg = t.getContext('2d', { willReadFrequently: true }); tg.drawImage(src, 0, 0, 32, 32);
+    const d = tg.getImageData(0, 0, 32, 32).data; let s = 0, w = 0, k = 0;
+    for (let i = 0; i < d.length; i += 4) { const L = (.2126 * d[i] + .7152 * d[i + 1] + .0722 * d[i + 2]) / 255; s += L; if (L > .85) w++; else if (L < .1) k++; }
+    return { lum: s / 1024, whiteShare: w / 1024, darkShare: k / 1024 };
+  } catch { return { lum: .5, whiteShare: 0, darkShare: 0 }; }
 }
 function averageColor(g, cw, ch) {                      // fallback spine color: average of the left 3% of the cover
   try {
     const t = document.createElement('canvas'); t.width = t.height = 1;
-    const tg = t.getContext('2d'); tg.drawImage(g.canvas, 0, 0, Math.max(1, cw * .03), ch, 0, 0, 1, 1);
+    const tg = t.getContext('2d', { willReadFrequently: true }); tg.drawImage(g.canvas, 0, 0, Math.max(1, cw * .03), ch, 0, 0, 1, 1);
     const [r, gg, b] = tg.getImageData(0, 0, 1, 1).data; return `rgb(${r},${gg},${b})`;
   } catch { return '#444'; }
 }
@@ -279,6 +299,9 @@ async function boot(stage, poster) {
     edge:  new MeshStandardMaterial({ side: DoubleSide, roughness: .92, map: edgeTex, bumpMap: edgeTex, bumpScale: 3 }),
     core:  new MeshStandardMaterial({ side: DoubleSide, roughness: .85, color: 0xf2f0ea }),   // plain paper: cover stock edge, inside faces
   };
+  await yieldMain();
+  const img = await imgPromise;                                           // throws if the image cannot be used by WebGL; the poster stays
+  H = W / coverRatio(img);                                                // the book takes the cover's own shape
   const pivot = new Group(); pivot.add(buildBook(mats)); scene.add(pivot);
 
   if (lowEnd) {                                                           // weak device: skip shadow maps, use a flat CSS shadow
@@ -295,13 +318,20 @@ async function boot(stage, poster) {
     shadowLight([-2.5, 13, -5], 32);   // main shadow: wide and very soft
     shadowLight([0.5, 14, -1.5], 12);  // tighter shadow right under the book
     const floor = new Mesh(new PlaneGeometry(80, 80), new ShadowMaterial({ opacity: .2 }));
-    floor.rotation.x = -Math.PI / 2; floor.position.y = FLOOR_Y; floor.receiveShadow = true; scene.add(floor);
+    floor.rotation.x = -Math.PI / 2; floor.position.y = -(H / 2 + 0.9); floor.receiveShadow = true; scene.add(floor);   // the floor sits about 0.9 in below the book
   }
 
   await yieldMain();
-  const img = await imgPromise;                                           // throws if the image cannot be used by WebGL; the poster stays
-  const { canvas: coverSrc, spine, lum } = coverCanvas(img, coarse || lowEnd ? 1024 : 2048);
+  const dprCap = lowEnd ? 1.25 : coarse ? 1.5 : 2;
+  const shownPx = (stage.clientWidth || 360) * Math.min(devicePixelRatio, dprCap) * 0.62;   // the book is about 62% of the stage width
+  const { canvas: coverSrc, spine, lum, whiteShare, darkShare } = coverCanvas(img, coarse || lowEnd ? 1024 : 2048, shownPx);
   await yieldMain();
+  // Light balance follows the cover (a mid-tone cover keeps all three at 1, the values the look was tuned on).
+  // White areas look gray under strong directional light, so white-heavy covers get more even light: more environment, less spotlight.
+  // Black areas get lifted by reflections, so black-heavy covers get less reflection.
+  const envK = Math.min(2.2, (1 + 2.2 * whiteShare) * (1 - 0.1 * darkShare)), spotK = Math.max(.25, 1 - 1.5 * whiteShare), specK = Math.max(.25, 1 - 1.2 * darkShare);
+  scene.environmentIntensity = ENV_BASE * envK; spot.intensity = SPOT_BASE * spotK;
+  mats.cover.specularIntensity = mats.spine.specularIntensity = FINISH.specular * specK;
   // Relief on a near-black cover shows up as faint streaks in the reflections, so scale it down as the cover gets darker.
   mats.cover.bumpScale = mats.spine.bumpScale = FINISH.bump * (0.35 + 0.65 * Math.min(1, lum * 2.5));
   const coverTex = new Texture(coverSrc); coverTex.colorSpace = SRGBColorSpace;
@@ -312,7 +342,6 @@ async function boot(stage, poster) {
   mats.spine.color.copy(spineColor).multiplyScalar(.85);                  // spine reads slightly darker than the cover
 
   /* ----- sizing ----- */
-  const dprCap = lowEnd ? 1.25 : coarse ? 1.5 : 2;
   let dpr = 1, booted = false, readyMs = 0;
   const resize = () => {
     const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return;
@@ -322,7 +351,7 @@ async function boot(stage, poster) {
     const visH = Math.max(H / .72, (W * 1.35) / camera.aspect);           // fit the book with margin for tilt
     const dist = visH / (2 * Math.tan(MathUtils.degToRad(camera.fov / 2)));
     camera.position.set(0, dist * Math.sin(CAM_TILT), dist * Math.cos(CAM_TILT));
-    camera.lookAt(0, -1.2, 0);                                            // aim a bit low so the floor shadow stays in frame
+    camera.lookAt(0, -H * 0.109, 0);                                      // aim a bit low so the floor shadow stays in frame
     camera.updateProjectionMatrix();
     if (booted && !running) draw(performance.now());                      // paused or reduced motion: keep the still frame correct
   };
@@ -383,7 +412,7 @@ async function boot(stage, poster) {
     if (stats) {
       frames++; acc += dt; cpuAcc += rt; cpuMax = Math.max(cpuMax, rt); worst = Math.max(worst, dt * 1000);
       if (acc > .5) {
-        stats.textContent = `ebook-3d ${lowEnd ? '(low-end tier)' : coarse ? '(touch tier)' : '(desktop tier)'}\nready in ${readyMs} ms · ${(frames / acc) | 0} fps\ncanvas ${canvas.width}×${canvas.height}px · DPR ${dpr.toFixed(2)}\ntexture ${coverSrc.width}×${coverSrc.height}\nrender CPU avg ${(cpuAcc / frames).toFixed(1)} / max ${cpuMax.toFixed(1)} ms\nworst frame ${worst | 0} ms\n${renderer.info.render.calls} draw calls · ${(renderer.info.render.triangles / 1000).toFixed(1)}k triangles`;
+        stats.textContent = `ebook-3d ${lowEnd ? '(low-end tier)' : coarse ? '(touch tier)' : '(desktop tier)'}\nready in ${readyMs} ms · ${(frames / acc) | 0} fps\nbook ${(W / H).toFixed(3)} w/h · light env×${envK.toFixed(2)} spot×${spotK.toFixed(2)} spec×${specK.toFixed(2)}\ncanvas ${canvas.width}×${canvas.height}px · DPR ${dpr.toFixed(2)}\ntexture ${coverSrc.width}×${coverSrc.height}\nrender CPU avg ${(cpuAcc / frames).toFixed(1)} / max ${cpuMax.toFixed(1)} ms\nworst frame ${worst | 0} ms\n${renderer.info.render.calls} draw calls · ${(renderer.info.render.triangles / 1000).toFixed(1)}k triangles`;
         frames = 0; acc = 0; cpuAcc = 0; cpuMax = 0; worst = 0;
       }
     }
