@@ -36,15 +36,18 @@ const range = (a, b, n) => Array.from({ length: n + 1 }, (_, i) => a + (b - a) *
 
 /* ---------- Procedural textures ---------- */
 let grainCanvas, grainMul, grainScr;
-function grainTexture() {            // paper surface: fine tooth + fibres + soft mottling; bump map and printed into the cover color
+function grainTexture() {            // paper surface: fine tooth + fibres; bump map and printed into the cover color
   const n = 512, c = document.createElement('canvas'); c.width = c.height = n;
   const g = c.getContext('2d', { willReadFrequently: true }), d = g.createImageData(n, n);
-  for (let i = 0; i < n * n; i++) { const v = 128 + (Math.random() - .5) * 90; d.data.set([v, v, v, 255], i * 4); }
+  // High-pass noise: random noise minus its 3x3 average. It has fine specks and no soft blobs.
+  // (Blurred noise, or a low-frequency "mottling" layer, turns into blotchy clouds on screen.)
+  const N = new Float32Array(n * n); for (let i = 0; i < n * n; i++) N[i] = Math.random() - .5;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    let s9 = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) s9 += N[((y + dy + n) % n) * n + ((x + dx + n) % n)];
+    const v = 128 + (N[y * n + x] - s9 / 9) * 95, k = (y * n + x) * 4;
+    d.data[k] = d.data[k + 1] = d.data[k + 2] = v; d.data[k + 3] = 255;
+  }
   g.putImageData(d, 0, 0);
-  // Soften by scaling down and back up (ctx.filter is not supported in Safari).
-  const half = document.createElement('canvas'); half.width = half.height = n / 2;
-  const hg = half.getContext('2d'); hg.imageSmoothingQuality = 'high'; hg.drawImage(c, 0, 0, n / 2, n / 2);
-  g.imageSmoothingQuality = 'high'; g.drawImage(half, 0, 0, n, n);
   g.lineCap = 'round';
   for (let i = 0; i < 1400; i++) {   // short fibres, drawn wrapped so the tile repeats cleanly
     const x = Math.random() * n, y = Math.random() * n, a = Math.random() * 6.28, l = 6 + Math.random() * 16;
@@ -53,23 +56,18 @@ function grainTexture() {            // paper surface: fine tooth + fibres + sof
       g.beginPath(); g.moveTo(x + ox, y + oy); g.lineTo(x + ox + Math.cos(a) * l, y + oy + Math.sin(a) * l); g.stroke();
     }
   }
-  const m = document.createElement('canvas'); m.width = m.height = 32;   // low-frequency mottling
-  const mg = m.getContext('2d'), md = mg.createImageData(32, 32);
-  for (let i = 0; i < 1024; i++) { const v = 128 + (Math.random() - .5) * 60; md.data.set([v, v, v, 255], i * 4); }
-  mg.putImageData(md, 0, 0);
-  g.globalAlpha = .12; g.globalCompositeOperation = 'overlay'; g.drawImage(m, 0, 0, n, n);   // soft mottling: kept faint, it turns into big clouds when scaled up
   // Two more versions of the grain for the cover color. A single `overlay` blend changes nothing on pure white or pure black,
   // so flat white and black areas would show no paper at all. `multiply` adds faint darker flecks on white, `screen` faint lighter flecks on black.
-  // The raw grain has low contrast (it is soft and sits near mid-gray), so its contrast is stretched first.
+  // The raw grain sits near mid-gray with low contrast, so its contrast is stretched first.
   const grainPixels = g.getImageData(0, 0, n, n).data;   // read once
   const mk = fn => { const o = document.createElement('canvas'); o.width = o.height = n; const og = o.getContext('2d'), od = og.createImageData(n, n), sd = grainPixels;
-    for (let i = 0; i < n * n; i++) { const v = fn(Math.max(0, Math.min(1, (sd[i * 4] / 255 - .5) * 5 + .5))); od.data[i * 4] = od.data[i * 4 + 1] = od.data[i * 4 + 2] = v; od.data[i * 4 + 3] = 255; }
+    for (let i = 0; i < n * n; i++) { const v = fn(Math.max(0, Math.min(1, (sd[i * 4] / 255 - .5) * 2 + .5))); od.data[i * 4] = od.data[i * 4 + 1] = od.data[i * 4 + 2] = v; od.data[i * 4 + 3] = 255; }
     og.putImageData(od, 0, 0); return o; };
   grainMul = mk(v => 255 * (1 - 0.12 * Math.max(0, (.5 - v) * 2)));     // darker where the grain is low, up to 12%
   grainScr = mk(v => 255 * 0.09 * Math.max(0, (v - .5) * 2));           // lighter where the grain is high, up to 9%
   grainCanvas = c;                   // also baked into the cover color (see coverCanvas)
   const t = new CanvasTexture(c);
-  t.wrapS = t.wrapT = RepeatWrapping; t.repeat.set(0.7, 0.875); t.anisotropy = 4;   // about one texel per pixel or coarser: finer grain aliases into faint streaks on dark covers
+  t.wrapS = t.wrapT = RepeatWrapping; t.repeat.set(0.8, 1); t.anisotropy = 4;   // about one texel per pixel or coarser: finer grain aliases into faint streaks on dark covers
   return t;
 }
 function pageEdgeTexture() {         // edge of a stack of sheets; dark gaps double as the bump map
@@ -123,10 +121,20 @@ const zB = (u, v) => -(pHalf(u) + TC + Math.max(GAP, 0.4 * lift(u) + 0.6 * wave(
 const ao = (u) => 1 - 0.05 * Math.exp(-Math.pow((u - 0.035) / 0.03, 2)) - 0.02 * (1 - sstep(0, 0.14, u));   // light baked shading at the hinge
 const X = u => (u - .5) * W, Y = v => (v - .5) * H;
 
-function grid(A, B, fn, shade) {
+const CORNER_R = 0.2;                               // radius of the two outer (fore-edge) corners, in inches
+// Rounds the two outer corners: vertices near them are pulled onto an arc. `ins` is how far the outline sits inside the cover edge.
+function roundCorner(x, y, ins) {
+  if (x <= 0) return [x, y];                        // the spine side stays square
+  const r = Math.max(0.02, CORNER_R - ins), ix = W / 2 - ins - r, iy = H / 2 - ins - r;
+  const px = Math.min(x, ix), py = Math.max(-iy, Math.min(iy, y)), vx = x - px, vy = y - py, d = Math.hypot(vx, vy);
+  return d > r ? [px + vx * r / d, py + vy * r / d] : [x, y];
+}
+function grid(A, B, fn, shade, ins) {
   const pos = [], uv = [], col = [], idx = [], n = A.length;
   for (let j = 0; j < B.length; j++) for (let i = 0; i < n; i++) {
-    pos.push(...fn(A[i], B[j])); uv.push(A[i], B[j]);
+    const p = fn(A[i], B[j]);
+    if (ins !== undefined) { const q = roundCorner(p[0], p[1], ins); p[0] = q[0]; p[1] = q[1]; }
+    pos.push(...p); uv.push(A[i], B[j]);
     if (shade) { const s = shade(A[i], B[j]); col.push(s, s, s); }
   }
   for (let j = 0; j < B.length - 1; j++) for (let i = 0; i < n - 1; i++) {
@@ -138,33 +146,39 @@ function grid(A, B, fn, shade) {
   if (shade) g.setAttribute('color', new Float32BufferAttribute(col, 3));
   g.setIndex(idx); g.computeVertexNormals(); return g;
 }
-const US = [...range(0, 0.1, 20), ...range(0.1, 1, 36).slice(1)];   // dense near the spine crease
-const VS = range(0, 1, 56), WS = range(0, 1, 6);
-// The visible front cover gets a finer mesh: on dark covers a coarse mesh shows faint streaks where the lighting changes at mesh seams.
-const USF = [...range(0, 0.1, 20), ...range(0.1, 1, 100).slice(1)], VSF = range(0, 1, 100);
+const WS = range(0, 1, 6);
 const INSET = 0.012;                                // page block sits slightly inside the trimmed covers
-const UP = US.map(u => Math.min(u, 1 - INSET / W));
+let US, VS, USF, VSF, UP;
+function setupAxes() {                              // mesh lines: dense near the spine crease, and near the outer corners so the rounding is smooth
+  const du = 1.5 * CORNER_R / W, dv = 1.5 * CORNER_R / H;
+  US  = [...range(0, 0.1, 20), ...range(0.1, 1 - du, 36).slice(1), ...range(1 - du, 1, 10).slice(1)];
+  // The visible front cover gets a finer mesh: on dark covers a coarse mesh shows faint streaks where the lighting changes at mesh seams.
+  USF = [...range(0, 0.1, 20), ...range(0.1, 1 - du, 100).slice(1), ...range(1 - du, 1, 10).slice(1)];
+  VS  = [...range(0, dv, 8), ...range(dv, 1 - dv, 48).slice(1), ...range(1 - dv, 1, 8).slice(1)];
+  VSF = [...range(0, dv, 8), ...range(dv, 1 - dv, 92).slice(1), ...range(1 - dv, 1, 8).slice(1)];
+  UP  = US.map(u => Math.min(u, 1 - INSET / W));
+}
 
 function buildBook(mats) {
   const grp = new Group();
   const add = (geo, mat) => { const m = new Mesh(geo, mat); m.castShadow = true; grp.add(m); return m; };
 
-  add(grid(USF, VSF, (u, v) => [X(u), Y(v), zF(u, v)], ao), mats.cover);               // front: the CMS image
-  add(grid(US, VS, (u, v) => [X(u), Y(v), zF(u, v) - TC]), mats.core);                 // front, inside face
-  add(grid(US, VS, (u, v) => [X(u), Y(v), zB(u, v)]), mats.spine);                     // back (never seen)
+  add(grid(USF, VSF, (u, v) => [X(u), Y(v), zF(u, v)], ao, 0), mats.cover);               // front: the CMS image
+  add(grid(US, VS, (u, v) => [X(u), Y(v), zF(u, v) - TC], undefined, 0), mats.core);                 // front, inside face
+  add(grid(US, VS, (u, v) => [X(u), Y(v), zB(u, v)], undefined, 0), mats.spine);                     // back (never seen)
   const coverEdges = (zf, d) => {
-    add(grid(US, [0, 1], (u, w) => [X(u),  H / 2, lerp(zf(u, 1), zf(u, 1) + d, w)]), mats.core);
-    add(grid(US, [0, 1], (u, w) => [X(u), -H / 2, lerp(zf(u, 0), zf(u, 0) + d, w)]), mats.core);
-    add(grid(VS, [0, 1], (v, w) => [W / 2, Y(v), lerp(zf(1, v), zf(1, v) + d, w)]), mats.core);
+    add(grid(US, [0, 1], (u, w) => [X(u),  H / 2, lerp(zf(u, 1), zf(u, 1) + d, w)], undefined, 0), mats.core);
+    add(grid(US, [0, 1], (u, w) => [X(u), -H / 2, lerp(zf(u, 0), zf(u, 0) + d, w)], undefined, 0), mats.core);
+    add(grid(VS, [0, 1], (v, w) => [W / 2, Y(v), lerp(zf(1, v), zf(1, v) + d, w)], undefined, 0), mats.core);
   };
   coverEdges(zF, -TC); coverEdges(zB, TC);
 
   const yP = v => lerp(-H / 2 + INSET, H / 2 - INSET, v);                               // page block
-  add(grid(UP, WS, (u, w) => [X(u),  H / 2 - INSET, lerp(-pHalf(u), pHalf(u), w)]), mats.edge);
-  add(grid(UP, WS, (u, w) => [X(u), -H / 2 + INSET, lerp(-pHalf(u), pHalf(u), w)]), mats.edge);
-  add(grid(VS, WS, (v, w) => [W / 2 - INSET, yP(v), lerp(-pHalf(1), pHalf(1), w)]), mats.edge);
-  add(grid(UP, VS, (u, v) => [X(u), yP(v),  pHalf(u)]), mats.core);
-  add(grid(UP, VS, (u, v) => [X(u), yP(v), -pHalf(u)]), mats.core);
+  add(grid(UP, WS, (u, w) => [X(u),  H / 2 - INSET, lerp(-pHalf(u), pHalf(u), w)], undefined, INSET), mats.edge);
+  add(grid(UP, WS, (u, w) => [X(u), -H / 2 + INSET, lerp(-pHalf(u), pHalf(u), w)], undefined, INSET), mats.edge);
+  add(grid(VS, WS, (v, w) => [W / 2 - INSET, yP(v), lerp(-pHalf(1), pHalf(1), w)], undefined, INSET), mats.edge);
+  add(grid(UP, VS, (u, v) => [X(u), yP(v),  pHalf(u)], undefined, INSET), mats.core);
+  add(grid(UP, VS, (u, v) => [X(u), yP(v), -pHalf(u)], undefined, INSET), mats.core);
 
   const bulge = 0.03;                                                                   // spine: nearly flat, rounded corners
   const prof = w => -W / 2 - bulge * (1 - Math.pow(Math.abs(1 - 2 * w), 6));
@@ -193,7 +207,9 @@ function coverCanvas(img, maxWidth, shownPx) {          // shownPx: about how ma
   const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height, AR = coverRatio(img);
   let sx = 0, sy = 0, sw = iw, sh = ih;                 // no crop unless the cover is outside the allowed ratio range
   if (iw / ih > AR) { sw = ih * AR; sx = (iw - sw) / 2; } else { sh = iw / AR; sy = (ih - sh) / 2; }
-  const cw = Math.min(Math.round(sw), maxWidth), ch = Math.round(cw / AR);
+  // A vector (SVG) cover has no fixed pixel size: its natural size is only a drawing unit, so draw it at the full texture size.
+  const vector = /\.svg(\?|#|$)/i.test(img.currentSrc || img.src || '');
+  const cw = vector ? maxWidth : Math.min(Math.round(sw), maxWidth), ch = Math.round(cw / AR);
   const c = document.createElement('canvas'); c.width = cw; c.height = ch;
   const g = c.getContext('2d'); g.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
   const spine = averageColor(g, cw, ch);
@@ -302,6 +318,7 @@ async function boot(stage, poster) {
   await yieldMain();
   const img = await imgPromise;                                           // throws if the image cannot be used by WebGL; the poster stays
   H = W / coverRatio(img);                                                // the book takes the cover's own shape
+  setupAxes();
   const pivot = new Group(); pivot.add(buildBook(mats)); scene.add(pivot);
 
   if (lowEnd) {                                                           // weak device: skip shadow maps, use a flat CSS shadow
@@ -333,7 +350,7 @@ async function boot(stage, poster) {
   scene.environmentIntensity = ENV_BASE * envK; spot.intensity = SPOT_BASE * spotK;
   mats.cover.specularIntensity = mats.spine.specularIntensity = FINISH.specular * specK;
   // Relief on a near-black cover shows up as faint streaks in the reflections, so scale it down as the cover gets darker.
-  mats.cover.bumpScale = mats.spine.bumpScale = FINISH.bump * (0.35 + 0.65 * Math.min(1, lum * 2.5));
+  mats.cover.bumpScale = mats.spine.bumpScale = FINISH.bump * (0.15 + 0.85 * Math.min(1, lum * 2.5));
   const coverTex = new Texture(coverSrc); coverTex.colorSpace = SRGBColorSpace;
   coverTex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); coverTex.needsUpdate = true;
   mats.cover.map = coverTex;

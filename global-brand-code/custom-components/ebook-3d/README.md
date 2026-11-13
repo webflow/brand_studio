@@ -18,7 +18,7 @@ The page always ships a normal `<img>`. This script only upgrades it. If anythin
 </div>
 ```
 
-The book takes the cover's own shape: any width/height ratio from 0.5 (tall) to 1.6 (wide). A cover outside that range is center-cropped to the nearest limit. Use at least 1700 px on the long side for a sharp texture.
+The book takes the cover's own shape: any width/height ratio from 0.5 (tall) to 1.6 (wide). A cover outside that range is center-cropped to the nearest limit. Use at least 1700 px on the long side for a sharp texture. An SVG cover is drawn at the full texture size, so it stays sharp at any natural size.
 
 **2. CSS.** Put this in the page `<head>`. It sizes the stage and sets the static image at the same angle and size as the 3D book, so the swap does not jump. The image sits in a 74% × 72% box with `object-fit: contain`, so any cover ratio fits the way the 3D book does.
 
