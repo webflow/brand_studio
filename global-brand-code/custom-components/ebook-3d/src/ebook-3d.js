@@ -350,10 +350,12 @@ async function boot(stage, poster) {
   let frames = 0, acc = 0, cpuAcc = 0, cpuMax = 0, worst = 0;
   const smooth = (x, a, b) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   const stats = wantStats ? Object.assign(document.createElement('div'), { className: 'ebook3d-stats' }) : null;
-  if (stats) document.body.appendChild(stats);
+  if (stats) { document.body.appendChild(stats); window.__ebook3dPose = () => ({ y: +cur.y.toFixed(3), x: +cur.x.toFixed(3) }); }   // QA only: stats mode
 
   function draw(now) {
-    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    // dt must never be negative. After a long task (a slow first load) a frame's timestamp can be earlier than `last`.
+    // A negative dt makes the damping factor below hugely negative, and the book spins far away from its target.
+    const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now;
     const time = now / 1000;
     if (!reduce) {
       const idle = smooth((now - input.t) / 1000, 1.2, 2.6);
@@ -361,6 +363,8 @@ async function boot(stage, poster) {
       const tx = REST.x + lerp(input.y * RANGE.x, Math.sin(time * .37 + 1) * AMBIENT.x, idle);
       const k = 1 - Math.exp(-dt * 6);                                    // damped follow
       cur.y += (ty - cur.y) * k; cur.x += (tx - cur.x) * k;
+      // Safety net: if the pose ever leaves a sane range (or becomes NaN), snap back to rest instead of spinning.
+      if (!(Math.abs(cur.y - REST.y) < 1 && Math.abs(cur.x - REST.x) < 1)) { cur.y = REST.y; cur.x = REST.x; }
       pivot.position.y = Math.sin(time * .9) * .16;                       // slow float; the shadow stays on the floor
     }
     pivot.rotation.set(cur.x, cur.y, 0, 'YXZ');
