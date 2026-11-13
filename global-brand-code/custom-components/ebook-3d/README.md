@@ -29,10 +29,16 @@ The cover should be US Letter (8.5:11), at least 1700×2200 px. Other ratios are
   transform: translate(-50%, -50%) perspective(1000px) rotateY(-0.68rad) rotateX(-0.2rad); }
 ```
 
+**Layout.** The stage is 100% of its parent's width. If the parent is a grid column that stays narrow on small screens (for example a one-third column), the book shrinks with it. Make that column full width on tablet and mobile in the Designer. As a fallback, add this to the head CSS:
+
+```css
+@media (max-width: 800px) { div:has(> .ebook-stage) { max-width: 100% !important; flex: 0 0 100% !important; } }
+```
+
 **3. Script.** Load it from jsDelivr, pinned to a commit, with an integrity hash. Never use a branch name.
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/webflow/brand_studio@COMMIT_SHA/ebook-3d/ebook-3d.min.js"
+<script src="https://cdn.jsdelivr.net/gh/webflow/brand_studio@COMMIT_SHA/global-brand-code/custom-components/ebook-3d/ebook-3d.min.js"
         integrity="sha384-HASH" crossorigin="anonymous" defer></script>
 ```
 

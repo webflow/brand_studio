@@ -208,10 +208,11 @@ function averageColor(g, cw, ch) {                      // fallback spine color:
 }
 
 /* ---------- Page-level plumbing ---------- */
+// The edge mask only fades the sides and the bottom, where the soft shadow ends. It never fades the top: the book can reach the top of the canvas.
 const STYLE = `
 [data-ebook-3d] canvas.ebook3d-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity .5s;
--webkit-mask-image:linear-gradient(to right,transparent,#000 10%,#000 90%,transparent),linear-gradient(to bottom,transparent,#000 10%,#000 90%,transparent);-webkit-mask-composite:source-in;
-mask-image:linear-gradient(to right,transparent,#000 10%,#000 90%,transparent),linear-gradient(to bottom,transparent,#000 10%,#000 90%,transparent);mask-composite:intersect}
+-webkit-mask-image:linear-gradient(to right,transparent,#000 8%,#000 92%,transparent),linear-gradient(to bottom,#000 88%,transparent);-webkit-mask-composite:source-in;
+mask-image:linear-gradient(to right,transparent,#000 8%,#000 92%,transparent),linear-gradient(to bottom,#000 88%,transparent);mask-composite:intersect}
 [data-ebook-3d].ebook3d-ready canvas.ebook3d-canvas{opacity:1}
 [data-ebook-3d] img{transition:opacity .5s}
 [data-ebook-3d].ebook3d-ready img{opacity:0}
@@ -235,6 +236,15 @@ function skipReason() {                                                  // case
 }
 
 /* ---------- Boot ---------- */
+const yieldMain = () => new Promise(r => setTimeout(r, 0));             // let the browser handle input and paint between the heavy steps
+
+function pickCoverUrl(poster, stage, wantWidth) {                        // the smallest srcset image that is wide enough for a sharp texture
+  const entries = (poster?.srcset || '').split(',').map(s => s.trim().split(/\s+/))
+    .map(([u, d]) => ({ u, w: parseInt(d, 10) })).filter(e => e.u && e.w > 0).sort((a, b) => a.w - b.w);
+  if (entries.length) { try { return new URL((entries.find(e => e.w >= wantWidth) || entries[entries.length - 1]).u, location.href).href; } catch { /* fall through */ } }
+  return poster?.currentSrc || poster?.src || stage.dataset.cover;
+}
+
 async function boot(stage, poster) {
   const t0 = performance.now();
   const coarse = matchMedia('(pointer: coarse)').matches;
@@ -242,9 +252,9 @@ async function boot(stage, poster) {
   const lowEnd = (navigator.deviceMemory || 4) <= 2 || (navigator.hardwareConcurrency || 4) <= 2;
   const wantStats = new URLSearchParams(location.search).get('ebook3d') === 'stats';
 
-  const url = poster?.currentSrc || poster?.src || stage.dataset.cover;
+  const url = pickCoverUrl(poster, stage, coarse || lowEnd ? 900 : 1400);
   if (!url) throw new Error('no cover image found: add an <img> inside [data-ebook-3d]');
-  const imgPromise = loadImage(url);                                      // usually served from the browser cache (the poster just loaded it)
+  const imgPromise = loadImage(url);                                      // loads in parallel with the scene setup below
 
   const canvas = document.createElement('canvas');
   canvas.className = 'ebook3d-canvas'; canvas.setAttribute('aria-hidden', 'true');
@@ -255,6 +265,7 @@ async function boot(stage, poster) {
   renderer.toneMapping = NeutralToneMapping;                              // keeps brand colors true
   const scene = new Scene();
   scene.environment = buildEnv(renderer); scene.environmentIntensity = ENV_BASE;
+  await yieldMain();
   const spot = new SpotLight(0xffffff, SPOT_BASE, 0, 0.55, 1, 0);        // soft key light: its wide penumbra puts a gradient across the cover
   spot.position.set(-9, 12, 20); scene.add(spot, spot.target);
   const camera = new PerspectiveCamera(28, 1, 1, 200);
@@ -287,8 +298,10 @@ async function boot(stage, poster) {
     floor.rotation.x = -Math.PI / 2; floor.position.y = FLOOR_Y; floor.receiveShadow = true; scene.add(floor);
   }
 
+  await yieldMain();
   const img = await imgPromise;                                           // throws if the image cannot be used by WebGL; the poster stays
   const { canvas: coverSrc, spine, lum } = coverCanvas(img, coarse || lowEnd ? 1024 : 2048);
+  await yieldMain();
   // Relief on a near-black cover shows up as faint streaks in the reflections, so scale it down as the cover gets darker.
   mats.cover.bumpScale = mats.spine.bumpScale = FINISH.bump * (0.35 + 0.65 * Math.min(1, lum * 2.5));
   const coverTex = new Texture(coverSrc); coverTex.colorSpace = SRGBColorSpace;
@@ -300,7 +313,7 @@ async function boot(stage, poster) {
 
   /* ----- sizing ----- */
   const dprCap = lowEnd ? 1.25 : coarse ? 1.5 : 2;
-  let dpr = 1;
+  let dpr = 1, booted = false, readyMs = 0;
   const resize = () => {
     const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return;
     dpr = Math.min(devicePixelRatio, dprCap);
@@ -311,7 +324,7 @@ async function boot(stage, poster) {
     camera.position.set(0, dist * Math.sin(CAM_TILT), dist * Math.cos(CAM_TILT));
     camera.lookAt(0, -1.2, 0);                                            // aim a bit low so the floor shadow stays in frame
     camera.updateProjectionMatrix();
-    if (!running) draw(performance.now());                                // paused or reduced motion: keep the still frame correct
+    if (booted && !running) draw(performance.now());                      // paused or reduced motion: keep the still frame correct
   };
 
   /* ----- input ----- */
@@ -359,12 +372,14 @@ async function boot(stage, poster) {
 
     if (!firstDone) {
       firstDone = true; stage.classList.add('ebook3d-ready');
-      setState(stage, 'ready', { ms: Math.round(performance.now() - t0), lowEnd, coarse, reduce });
+      readyMs = Math.round(performance.now() - t0);                       // time from the start of boot to the first drawn frame
+      performance.mark('ebook3d-ready');
+      setState(stage, 'ready', { ms: readyMs, lowEnd, coarse, reduce });
     }
     if (stats) {
       frames++; acc += dt; cpuAcc += rt; cpuMax = Math.max(cpuMax, rt); worst = Math.max(worst, dt * 1000);
       if (acc > .5) {
-        stats.textContent = `ebook-3d ${lowEnd ? '(low-end tier)' : coarse ? '(touch tier)' : '(desktop tier)'}\nready in ${Math.round(performance.now() - t0)} ms · ${(frames / acc) | 0} fps\ncanvas ${canvas.width}×${canvas.height}px · DPR ${dpr.toFixed(2)}\ntexture ${coverSrc.width}×${coverSrc.height}\nrender CPU avg ${(cpuAcc / frames).toFixed(1)} / max ${cpuMax.toFixed(1)} ms\nworst frame ${worst | 0} ms\n${renderer.info.render.calls} draw calls · ${(renderer.info.render.triangles / 1000).toFixed(1)}k triangles`;
+        stats.textContent = `ebook-3d ${lowEnd ? '(low-end tier)' : coarse ? '(touch tier)' : '(desktop tier)'}\nready in ${readyMs} ms · ${(frames / acc) | 0} fps\ncanvas ${canvas.width}×${canvas.height}px · DPR ${dpr.toFixed(2)}\ntexture ${coverSrc.width}×${coverSrc.height}\nrender CPU avg ${(cpuAcc / frames).toFixed(1)} / max ${cpuMax.toFixed(1)} ms\nworst frame ${worst | 0} ms\n${renderer.info.render.calls} draw calls · ${(renderer.info.render.triangles / 1000).toFixed(1)}k triangles`;
         frames = 0; acc = 0; cpuAcc = 0; cpuMax = 0; worst = 0;
       }
     }
@@ -375,8 +390,11 @@ async function boot(stage, poster) {
   document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
   canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); stop(); fallback(stage, 'context-lost'); });
 
-  resize(); new ResizeObserver(resize).observe(stage);
-  if (reduce) draw(performance.now()); else start();
+  resize();                                                               // size the canvas and camera; nothing is drawn yet
+  try { await renderer.compileAsync(scene, camera); } catch { /* compile on the first draw instead */ }   // shader compile off the main thread where supported
+  booted = true; new ResizeObserver(resize).observe(stage);
+  draw(performance.now());                                                // first frame now, even in a background tab
+  if (!reduce) start();
 }
 
 function run() {
