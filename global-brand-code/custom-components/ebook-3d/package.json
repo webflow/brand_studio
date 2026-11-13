@@ -1,0 +1,14 @@
+{
+  "name": "ebook-3d",
+  "version": "0.1.0",
+  "private": true,
+  "description": "3D soft-cover ebook for a Webflow page. Bundles Three.js into one script.",
+  "scripts": {
+    "build": "esbuild src/ebook-3d.js --bundle --minify --format=iife --target=es2019 --legal-comments=none --outfile=ebook-3d.min.js",
+    "sri": "node -e \"const c=require('crypto'),f=require('fs');console.log('sha384-'+c.createHash('sha384').update(f.readFileSync('ebook-3d.min.js')).digest('base64'))\""
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "three": "0.170.0"
+  }
+}
