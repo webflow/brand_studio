@@ -26,7 +26,7 @@ The book takes the cover's own shape: any width/height ratio from 0.5 (tall) to 
 .ebook-stage { position: relative; width: 100%; aspect-ratio: 4 / 5; max-height: 92vh; touch-action: pan-y; -webkit-user-select: none; user-select: none; }
 @media (max-width: 800px) { .ebook-stage { max-height: 62vh; } }
 .ebook-stage img { position: absolute; left: 50%; top: 50%; width: 74%; height: 72%; max-width: none; object-fit: contain; pointer-events: none;
-  transform: translate(-50%, -50%) perspective(1000px) rotateY(-0.68rad) rotateX(-0.2rad); }
+  transform: translate(-50%, -50%) perspective(1000px) rotateY(-0.06rad) rotateX(0.06rad); }
 ```
 
 **Layout.** The stage is 100% of its parent's width. If the parent is a grid column that stays narrow on small screens (for example a one-third column), the book shrinks with it. Make that column full width on tablet and mobile in the Designer. As a fallback, add this to the head CSS:

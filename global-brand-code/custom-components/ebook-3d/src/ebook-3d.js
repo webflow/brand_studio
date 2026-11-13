@@ -17,15 +17,16 @@ import {
 const SELECTOR = '[data-ebook-3d]';
 
 /* ---------- Settings (inches for size, radians for angles) ---------- */
-const W = 8.5, T = 0.21;                       // book width and total thickness at the spine
+const W = 8.5, T = 0.27;                       // book width and total thickness at the spine
 let H = 11;                                    // book height: W / the cover's own ratio, set once the cover has loaded (one book per page)
 const RATIO_MIN = 0.5, RATIO_MAX = 1.6;        // width/height range the book accepts; covers outside it are center-cropped to the nearest limit
-const REST = { y: -0.68, x: 0.06 };            // resting pose: shows the page edge
+const REST = { y: -0.06, x: -0.20 };           // resting pose: almost straight on; x is tilt (the camera adds 0.14 forward, so the book leans back about 0.06)
 const CAM_TILT = 0.14;                         // camera looks slightly down so the floor shadow is visible
-const RANGE = { y: 0.20, x: 0.12 };            // small tilt range from the pointer
+const RANGE = { y: 0.50, x: 0.14 };            // pointer range: the book turns toward the cursor, about 29 degrees at the window edge
 const AMBIENT = { y: 0.10, x: 0.05 };          // idle sway
 // Light levels are tuned so a head-on cover renders close to its source color.
-const ENV_BASE = 0.45, SPOT_BASE = 2.1;
+const ENV_BASE = 0.45, SPOT_BASE = 2.45;
+const LIGHT = [-13, 16, 18];                   // key light position: top left, in front
 // Satin: a narrow glint, not a veil.
 const FINISH = { roughness: .28, clearcoat: 0, clearcoatRoughness: .5, sheen: .1, sheenRoughness: .5, bump: 1.3, tooth: .85, specular: .25 };
 
@@ -39,33 +40,47 @@ let grainCanvas, grainMul, grainScr;
 function grainTexture() {            // paper surface: fine tooth + fibres; bump map and printed into the cover color
   const n = 512, c = document.createElement('canvas'); c.width = c.height = n;
   const g = c.getContext('2d', { willReadFrequently: true }), d = g.createImageData(n, n);
-  // High-pass noise: random noise minus its 3x3 average. It has fine specks and no soft blobs.
-  // (Blurred noise, or a low-frequency "mottling" layer, turns into blotchy clouds on screen.)
-  const N = new Float32Array(n * n); for (let i = 0; i < n * n; i++) N[i] = Math.random() - .5;
-  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
-    let s9 = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) s9 += N[((y + dy + n) % n) * n + ((x + dx + n) % n)];
-    const v = 128 + (N[y * n + x] - s9 / 9) * 95, k = (y * n + x) * 4;
-    d.data[k] = d.data[k + 1] = d.data[k + 2] = v; d.data[k + 3] = 255;
-  }
+  // Paper tooth: band-limited noise (a 3x3 average minus a 5x5 average). Its specks are about 1.5 to 3 pixels wide and soft, and it has no
+  // per-pixel static and no large cloudy blobs. Per-pixel noise reads as screen noise; wide blurs read as blotches.
+  const Nt = new Float32Array(n * n); for (let i = 0; i < n * n; i++) Nt[i] = Math.random() - .5;
+  const mean = (r, N = Nt) => {                                    // wrapped box average, in two passes
+    const T1 = new Float32Array(n * n), T2 = new Float32Array(n * n), k = 2 * r + 1;
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { let a = 0; for (let d = -r; d <= r; d++) a += N[y * n + ((x + d + n) % n)]; T1[y * n + x] = a / k; }
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { let a = 0; for (let d = -r; d <= r; d++) a += T1[((y + d + n) % n) * n + x]; T2[y * n + x] = a / k; }
+    return T2;
+  };
+  const m1 = mean(1), m3 = mean(2);
+  for (let i = 0; i < n * n; i++) { const v = 128 + (m1[i] - m3[i]) * 200, k = i * 4; d.data[k] = d.data[k + 1] = d.data[k + 2] = v; d.data[k + 3] = 255; }
   g.putImageData(d, 0, 0);
   g.lineCap = 'round';
-  for (let i = 0; i < 1400; i++) {   // short fibres, drawn wrapped so the tile repeats cleanly
-    const x = Math.random() * n, y = Math.random() * n, a = Math.random() * 6.28, l = 6 + Math.random() * 16;
-    g.strokeStyle = Math.random() < .5 ? 'rgba(255,255,255,.10)' : 'rgba(0,0,0,.10)'; g.lineWidth = .7 + Math.random() * .6;
+  for (let i = 0; i < 4500; i++) {   // thin curved fibres in every direction, drawn wrapped so the tile repeats cleanly. They are what makes it read as paper.
+    const x = Math.random() * n, y = Math.random() * n, a = Math.random() * 6.28, l = 4 + Math.random() * 11, bend = (Math.random() - .5) * l * .6;
+    const cx = Math.cos(a), cy = Math.sin(a);
+    g.strokeStyle = Math.random() < .5 ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)'; g.lineWidth = .5 + Math.random() * .3;
     for (const ox of [-n, 0, n]) for (const oy of [-n, 0, n]) {
-      g.beginPath(); g.moveTo(x + ox, y + oy); g.lineTo(x + ox + Math.cos(a) * l, y + oy + Math.sin(a) * l); g.stroke();
+      g.beginPath(); g.moveTo(x + ox, y + oy);
+      g.quadraticCurveTo(x + ox + cx * l / 2 - cy * bend, y + oy + cy * l / 2 + cx * bend, x + ox + cx * l, y + oy + cy * l); g.stroke();
     }
   }
-  // Two more versions of the grain for the cover color. A single `overlay` blend changes nothing on pure white or pure black,
+  // The cover color gets only a faint, soft "formation" (the cloudy look of paper fibres), not the tooth. The tooth lives in the bump map
+  // only, so it is lit like real relief: it fades into smooth shade where the book is in shadow. Printing it into the color would
+  // leave it visible in shadow, where it reads as noise.
+  const Nf = new Float32Array(n * n); for (let i = 0; i < n * n; i++) Nf[i] = Math.random() - .5;
+  const f1 = mean(1, Nf), f4 = mean(3, Nf);
+  const fc = document.createElement('canvas'); fc.width = fc.height = n;
+  const fg = fc.getContext('2d'), fd = fg.createImageData(n, n);
+  for (let i = 0; i < n * n; i++) { const v = 128 + (f1[i] - f4[i]) * 190, k = i * 4; fd.data[k] = fd.data[k + 1] = fd.data[k + 2] = v; fd.data[k + 3] = 255; }
+  fg.putImageData(fd, 0, 0);
+  // Two more versions for the cover color. A single `overlay` blend changes nothing on pure white or pure black,
   // so flat white and black areas would show no paper at all. `multiply` adds faint darker flecks on white, `screen` faint lighter flecks on black.
   // The raw grain sits near mid-gray with low contrast, so its contrast is stretched first.
-  const grainPixels = g.getImageData(0, 0, n, n).data;   // read once
+  const grainPixels = fd.data;
   const mk = fn => { const o = document.createElement('canvas'); o.width = o.height = n; const og = o.getContext('2d'), od = og.createImageData(n, n), sd = grainPixels;
     for (let i = 0; i < n * n; i++) { const v = fn(Math.max(0, Math.min(1, (sd[i * 4] / 255 - .5) * 2 + .5))); od.data[i * 4] = od.data[i * 4 + 1] = od.data[i * 4 + 2] = v; od.data[i * 4 + 3] = 255; }
     og.putImageData(od, 0, 0); return o; };
   grainMul = mk(v => 255 * (1 - 0.12 * Math.max(0, (.5 - v) * 2)));     // darker where the grain is low, up to 12%
   grainScr = mk(v => 255 * 0.09 * Math.max(0, (v - .5) * 2));           // lighter where the grain is high, up to 9%
-  grainCanvas = c;                   // also baked into the cover color (see coverCanvas)
+  grainCanvas = fc;                  // the soft layer baked into the cover color (see coverCanvas)
   const t = new CanvasTexture(c);
   t.wrapS = t.wrapT = RepeatWrapping; t.repeat.set(0.8, 1); t.anisotropy = 4;   // about one texel per pixel or coarser: finer grain aliases into faint streaks on dark covers
   return t;
@@ -95,10 +110,10 @@ function buildEnv(renderer) {
     const m = new Mesh(new PlaneGeometry(w, h), new MeshBasicMaterial({ color: new Color().setScalar(I), side: DoubleSide }));
     m.position.set(...pos); m.lookAt(0, 0, 0); s.add(m);
   };
-  box(18, 8, 4.5, [0, 10, 4]);      // large top key
+  box(18, 8, 4.5, [-4, 10, 4]);     // large top key, shifted left
   box(3, 15, 9,   [-10, 1, 5]);     // tall left strip (the moving highlight)
-  box(3, 14, 4.5, [10, 1, 5]);      // right strip
-  box(11, 11, 2.4, [-7, 7, 9]);     // soft upper-left fill
+  box(3, 14, 3,   [10, 1, 5]);      // right strip (dimmer: the light comes from the left)
+  box(11, 11, 3.2, [-7, 7, 9]);     // soft upper-left fill
   box(9, 9, 1.6,  [8, -3, 8]);      // soft lower-right fill
   box(14, 4, 1.2, [0, -8, 5]);      // low bounce
   box(14, 5, 3.5, [0, 3, -10]);     // back rim
@@ -119,7 +134,9 @@ const GAP = 0.003;                                  // covers never sink into th
 const zF = (u, v) => pHalf(u) + TC + Math.max(GAP, lift(u) + wave(u, v) + hinge(u));
 const zB = (u, v) => -(pHalf(u) + TC + Math.max(GAP, 0.4 * lift(u) + 0.6 * wave(u + .3, v)));
 const ao = (u) => 1 - 0.05 * Math.exp(-Math.pow((u - 0.035) / 0.03, 2)) - 0.02 * (1 - sstep(0, 0.14, u));   // light baked shading at the hinge
-const X = u => (u - .5) * W, Y = v => (v - .5) * H;
+const SR = 0.12;                                    // how far the rounded spine bulges out to the left
+const XL = -W / 2 + SR;                             // where the flat covers start; the spine wraps around from here
+const X = u => lerp(XL, W / 2, u), Y = v => (v - .5) * H;
 
 const CORNER_R = 0.2;                               // radius of the two outer (fore-edge) corners, in inches
 // Rounds the two outer corners: vertices near them are pulled onto an arc. `ins` is how far the outline sits inside the cover edge.
@@ -147,7 +164,7 @@ function grid(A, B, fn, shade, ins) {
   g.setIndex(idx); g.computeVertexNormals(); return g;
 }
 const WS = range(0, 1, 6);
-const INSET = 0.012;                                // page block sits slightly inside the trimmed covers
+const INSET = 0.07;                                 // the covers overhang the page block a little, like a trimmed softcover
 let US, VS, USF, VSF, UP;
 function setupAxes() {                              // mesh lines: dense near the spine crease, and near the outer corners so the rounding is smooth
   const du = 1.5 * CORNER_R / W, dv = 1.5 * CORNER_R / H;
@@ -165,7 +182,7 @@ function buildBook(mats) {
 
   add(grid(USF, VSF, (u, v) => [X(u), Y(v), zF(u, v)], ao, 0), mats.cover);               // front: the CMS image
   add(grid(US, VS, (u, v) => [X(u), Y(v), zF(u, v) - TC], undefined, 0), mats.core);                 // front, inside face
-  add(grid(US, VS, (u, v) => [X(u), Y(v), zB(u, v)], undefined, 0), mats.spine);                     // back (never seen)
+  add(grid(US, VS, (u, v) => [X(u), Y(v), zB(u, v)], () => 1, 0), mats.spine);                       // back cover (seen only as a thin edge behind the pages)
   const coverEdges = (zf, d) => {
     add(grid(US, [0, 1], (u, w) => [X(u),  H / 2, lerp(zf(u, 1), zf(u, 1) + d, w)], undefined, 0), mats.core);
     add(grid(US, [0, 1], (u, w) => [X(u), -H / 2, lerp(zf(u, 0), zf(u, 0) + d, w)], undefined, 0), mats.core);
@@ -180,15 +197,21 @@ function buildBook(mats) {
   add(grid(UP, VS, (u, v) => [X(u), yP(v),  pHalf(u)], undefined, INSET), mats.core);
   add(grid(UP, VS, (u, v) => [X(u), yP(v), -pHalf(u)], undefined, INSET), mats.core);
 
-  const bulge = 0.03;                                                                   // spine: nearly flat, rounded corners
-  const prof = w => -W / 2 - bulge * (1 - Math.pow(Math.abs(1 - 2 * w), 6));
-  add(grid(VS, range(0, 1, 12), (v, w) => [prof(w), Y(v), lerp(zB(0, v), zF(0, v), w)]), mats.spine);
+  // Rounded spine: the covers wrap around it. It is a squashed circle (superellipse) that meets both covers
+  // flat, so the wrap has no hard edge. `t` runs from the back cover (0) to the front cover (1).
+  const SN = 2.4, WP = range(0, 1, 28);
+  const spinePt = (v, t) => {
+    const s = Math.sin((t - .5) * Math.PI);                                             // dense near both covers, where the curve is tightest
+    return [XL - SR * Math.pow(1 - Math.pow(Math.abs(s), SN), 1 / SN), Y(v), lerp(zB(0, v), zF(0, v), (s + 1) / 2)];
+  };
+  const crease = (v, t) => 1 - 0.2 * sstep(.72, 1, Math.abs(2 * t - 1));                // slightly darker where the spine meets each cover, so it reads as a curve
+  add(grid(VS, WP, spinePt, crease), mats.spine);
   for (const sgn of [1, -1]) {                                                          // spine end caps
-    const v = sgn > 0 ? 1 : 0, pos = [-W / 2, sgn * H / 2, (zF(0, v) + zB(0, v)) / 2], idx = [];
-    for (let i = 0; i <= 12; i++) { const w = i / 12; pos.push(prof(w), sgn * H / 2, lerp(zB(0, v), zF(0, v), w)); }
-    for (let i = 1; i <= 12; i++) idx.push(0, i, i + 1);
+    const v = sgn > 0 ? 1 : 0, pos = [XL, sgn * H / 2, (zF(0, v) + zB(0, v)) / 2], idx = [];
+    for (let i = 0; i < WP.length; i++) pos.push(...spinePt(v, WP[i]));
+    for (let i = 1; i < WP.length; i++) idx.push(0, i, i + 1);
     const g = new BufferGeometry();
-    g.setAttribute('position', new Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+    g.setAttribute('position', new Float32BufferAttribute(pos, 3)); g.setAttribute('color', new Float32BufferAttribute(pos.map(() => .85), 3)); g.setIndex(idx); g.computeVertexNormals();
     add(g, mats.spine);
   }
   return grp;
@@ -202,7 +225,9 @@ function coverRatio(img) {                              // the book's width/heig
   const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
   return Math.min(RATIO_MAX, Math.max(RATIO_MIN, iw / ih));
 }
-const GRAIN_PX = 2.2;                                     // target size of one paper-grain speck on screen, in device pixels
+const GRAIN_PX = 2.2;                                     // size of one printed-grain speck, in device pixels, when the cover is GRAIN_REF device pixels wide
+const GRAIN_REF = 1100;                                   // cover width (device pixels) the grain size was tuned at: it looked right at about 900 CSS px on a 2x screen
+const GRAIN_MIN = 1.2;                                    // never finer than this: finer grain is averaged away and aliases into streaks
 function coverCanvas(img, maxWidth, shownPx) {          // shownPx: about how many device pixels wide the cover will be on screen
   const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height, AR = coverRatio(img);
   let sx = 0, sy = 0, sw = iw, sh = ih;                 // no crop unless the cover is outside the allowed ratio range
@@ -215,13 +240,14 @@ function coverCanvas(img, maxWidth, shownPx) {          // shownPx: about how ma
   const spine = averageColor(g, cw, ch);
   const stats = coverStats(g.canvas);                   // measured before the grain is added
   if (grainCanvas) {
-    // A speck is about 2 pixels of the grain image. Size the specks for the cover's on-screen size, not its texture size:
-    // grain finer than about 3 device pixels is averaged away when the cover is shrunk and turned.
-    const scale = (GRAIN_PX / 2) * cw / Math.max(120, shownPx || 400);
+    // A speck is about 2 pixels of the grain image, so it is sized from the cover's on-screen size, not its texture size.
+    // The grain grows and shrinks with the cover, so it stays the same size relative to the book (paper does not change size). Floor and cap keep it visible and stable.
+    const px = Math.max(120, shownPx || 400), gp = Math.min(GRAIN_PX * 1.4, Math.max(GRAIN_MIN, GRAIN_PX * px / GRAIN_REF));
+    const scale = (gp / 2) * cw / px;
     const paint = (src, op, alpha) => { const pat = g.createPattern(src, 'repeat'); pat.setTransform(new DOMMatrix().scale(scale)); g.globalCompositeOperation = op; g.globalAlpha = alpha; g.fillStyle = pat; g.fillRect(0, 0, cw, ch); };
-    paint(grainCanvas, 'overlay', FINISH.tooth * .6);   // mid-tones: keeps the average color and brightness
-    paint(grainMul, 'multiply', FINISH.tooth * .75);    // white areas: faint darker flecks
-    paint(grainScr, 'screen', FINISH.tooth * .75);      // black areas: faint lighter flecks
+    paint(grainCanvas, 'overlay', FINISH.tooth * .4);   // mid-tones: keeps the average color and brightness
+    paint(grainMul, 'multiply', FINISH.tooth * .5);    // white areas: faint darker flecks
+    paint(grainScr, 'screen', FINISH.tooth * .5);      // black areas: faint lighter flecks
     g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
   }
   return { canvas: c, spine, ...stats };
@@ -303,7 +329,7 @@ async function boot(stage, poster) {
   scene.environment = buildEnv(renderer); scene.environmentIntensity = ENV_BASE;
   await yieldMain();
   const spot = new SpotLight(0xffffff, SPOT_BASE, 0, 0.55, 1, 0);        // soft key light: its wide penumbra puts a gradient across the cover
-  spot.position.set(-9, 12, 20); scene.add(spot, spot.target);
+  spot.position.set(...LIGHT); scene.add(spot, spot.target);
   const camera = new PerspectiveCamera(28, 1, 1, 200);
 
   const grain = grainTexture();
@@ -311,7 +337,7 @@ async function boot(stage, poster) {
   const edgeTex = pageEdgeTexture();
   const mats = {
     cover: new MeshPhysicalMaterial({ ...shared, side: FrontSide, vertexColors: true }),
-    spine: new MeshPhysicalMaterial({ ...shared, side: DoubleSide }),
+    spine: new MeshPhysicalMaterial({ ...shared, side: DoubleSide, vertexColors: true }),
     edge:  new MeshStandardMaterial({ side: DoubleSide, roughness: .92, map: edgeTex, bumpMap: edgeTex, bumpScale: 3 }),
     core:  new MeshStandardMaterial({ side: DoubleSide, roughness: .85, color: 0xf2f0ea }),   // plain paper: cover stock edge, inside faces
   };
@@ -332,8 +358,8 @@ async function boot(stage, poster) {
       Object.assign(l.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 80 });
       scene.add(l, l.target);
     };
-    shadowLight([-2.5, 13, -5], 32);   // main shadow: wide and very soft
-    shadowLight([0.5, 14, -1.5], 12);  // tighter shadow right under the book
+    shadowLight([-5.5, 13, -4.5], 32);   // main shadow: wide and very soft
+    shadowLight([-1, 14, -1.5], 12);  // tighter shadow right under the book
     const floor = new Mesh(new PlaneGeometry(80, 80), new ShadowMaterial({ opacity: .2 }));
     floor.rotation.x = -Math.PI / 2; floor.position.y = -(H / 2 + 0.9); floor.receiveShadow = true; scene.add(floor);   // the floor sits about 0.9 in below the book
   }
@@ -349,6 +375,7 @@ async function boot(stage, poster) {
   const envK = Math.min(2.2, (1 + 2.2 * whiteShare) * (1 - 0.1 * darkShare)), spotK = Math.max(.25, 1 - 1.5 * whiteShare), specK = Math.max(.25, 1 - 1.2 * darkShare);
   scene.environmentIntensity = ENV_BASE * envK; spot.intensity = SPOT_BASE * spotK;
   mats.cover.specularIntensity = mats.spine.specularIntensity = FINISH.specular * specK;
+  const baseLight = { env: ENV_BASE * envK, spot: SPOT_BASE * spotK, spec: FINISH.specular * specK };   // draw() dims these as the book turns toward the light
   // Relief on a near-black cover shows up as faint streaks in the reflections, so scale it down as the cover gets darker.
   mats.cover.bumpScale = mats.spine.bumpScale = FINISH.bump * (0.15 + 0.85 * Math.min(1, lum * 2.5));
   const coverTex = new Texture(coverSrc); coverTex.colorSpace = SRGBColorSpace;
@@ -374,17 +401,22 @@ async function boot(stage, poster) {
   };
 
   /* ----- input ----- */
-  const input = { x: 0, y: 0, t: -1e9 };
-  const release = () => { input.x = input.y = 0; input.t = performance.now(); };
+  const input = { x: 0, y: 0, t: -1e9, held: false };   // held: a mouse is over the page, so the book keeps facing it
+  const release = () => { input.x = input.y = 0; input.held = false; input.t = performance.now(); };
+  const clamp1 = v => Math.max(-1, Math.min(1, v));
   addEventListener('pointermove', e => {
     if (e.pointerType === 'touch') return;
-    input.x = e.clientX / innerWidth * 2 - 1; input.y = e.clientY / innerHeight * 2 - 1; input.t = performance.now();
+    // Measured from the middle of the book, so the book turns toward the cursor wherever it sits in the layout.
+    const r = stage.getBoundingClientRect();
+    input.x = clamp1((e.clientX - (r.left + r.width / 2)) / (innerWidth / 2));
+    input.y = clamp1((e.clientY - (r.top + r.height / 2)) / (innerHeight / 2));
+    input.held = true; input.t = performance.now();
   });
   document.documentElement.addEventListener('mouseleave', release);
   const touch = e => {
     if (e.pointerType !== 'touch') return;
     const r = stage.getBoundingClientRect();
-    input.x = ((e.clientX - r.left) / r.width) * 2 - 1; input.y = ((e.clientY - r.top) / r.height) * 2 - 1; input.t = performance.now();
+    input.x = ((e.clientX - r.left) / r.width) * 2 - 1; input.y = ((e.clientY - r.top) / r.height) * 2 - 1; input.held = true; input.t = performance.now();
   };
   stage.addEventListener('pointerdown', touch); stage.addEventListener('pointermove', touch);
   stage.addEventListener('pointerup', e => { if (e.pointerType === 'touch') release(); });
@@ -404,7 +436,7 @@ async function boot(stage, poster) {
     const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now;
     const time = now / 1000;
     if (!reduce) {
-      const idle = smooth((now - input.t) / 1000, 1.2, 2.6);
+      const idle = input.held ? 0 : smooth((now - input.t) / 1000, 1.2, 2.6);   // the idle sway starts only after the cursor or finger leaves
       const ty = REST.y + lerp(input.x * RANGE.y, Math.sin(time * .45) * AMBIENT.y, idle);
       const tx = REST.x + lerp(input.y * RANGE.x, Math.sin(time * .37 + 1) * AMBIENT.x, idle);
       const k = 1 - Math.exp(-dt * 6);                                    // damped follow
@@ -414,8 +446,13 @@ async function boot(stage, poster) {
       pivot.position.y = Math.sin(time * .9) * .16;                       // slow float; the shadow stays on the floor
     }
     pivot.rotation.set(cur.x, cur.y, 0, 'YXZ');
-    scene.environmentRotation.set(-(cur.x - REST.x) * 1.8, -(cur.y - REST.y) * 2.2, 0);   // reflections sweep across the cover
-    spot.position.set(-9 - (cur.y - REST.y) * 45, 12 + (cur.x - REST.x) * 45, 20);         // the soft light slides across the cover
+    // Turned left, the cover faces the key light and its reflection, and washes out. Dim the light and the shine as it turns.
+    const toLight = Math.min(1, Math.max(0, (REST.y - cur.y) / RANGE.y));
+    spot.intensity = baseLight.spot * (1 - .45 * toLight);
+    scene.environmentIntensity = baseLight.env * (1 - .2 * toLight);
+    mats.cover.specularIntensity = mats.spine.specularIntensity = baseLight.spec * (1 - .6 * toLight);
+    scene.environmentRotation.set(-(cur.x - REST.x) * 1.8, -(cur.y - REST.y) * .8, 0);   // reflections sweep across the cover
+    spot.position.set(LIGHT[0] - (cur.y - REST.y) * 12, LIGHT[1] + (cur.x - REST.x) * 45, LIGHT[2]);         // the soft light slides across the cover
     const r0 = performance.now();
     renderer.render(scene, camera);
     const rt = performance.now() - r0;                                    // CPU time to submit the frame (GPU time is not visible to JS)
