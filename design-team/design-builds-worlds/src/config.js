@@ -41,7 +41,8 @@ export const CLEAR = QUERY.get('bg') !== 'white';
 const bgc = QUERY.get('bgcolor') || '';
 export const HOST_BG = !CLEAR ? '#FFFFFF' : /^[0-9a-f]{6}$/i.test(bgc) ? '#' + bgc.toUpperCase() : EMBED ? '#FFFFFF' : '#080808';
 // A dark color behind the planet: text that lies on the backdrop is light, and the planet has no glow of air around it (on a dark page the glow is a bright halo).
-export const HOST_DARK = (() => { const v = parseInt(HOST_BG.slice(1), 16); return (0.299 * (v >> 16) + 0.587 * ((v >> 8) & 255) + 0.114 * (v & 255)) / 255 < 0.45; })();
+export const isDark = (hex) => { const v = parseInt(hex.slice(1), 16); return (0.299 * (v >> 16) + 0.587 * ((v >> 8) & 255) + 0.114 * (v & 255)) / 255 < 0.45; };
+export const HOST_DARK = isDark(HOST_BG);
 // In an embed: does the page around the frame scroll? Then the mouse wheel and a finger that moves up or down are for the page.
 export const hostScrolls = () => {
   if (!EMBED) return false;

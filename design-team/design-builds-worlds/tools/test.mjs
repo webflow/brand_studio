@@ -264,6 +264,10 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   await sleep(500);
   ok('the option bg=white gives the white backdrop and the glow again', await q.evaluate(() => { const w = window.__dbw.world; return getComputedStyle(document.documentElement).backgroundColor === 'rgb(255, 255, 255)' && w.backdrop.visible === true && w.rings.visible === true && w.renderer.getClearAlpha() === 1; }));
   await q.close();
+  const bk = await p.evaluate(() => { const a = window.__dbw, px = (back) => { const c = a.photoCanvas(a.samples[2], 0, 'noon', 1, 0.25, 'off', 0, 'off', back), d = c.getContext('2d').getImageData(3, 3, 1, 1).data; return [...d]; }; const white = px('white'), black = px('black'), clear = px('clear'); document.querySelector('#settingsBtn').click(); return { white, black, clear, liveAlpha: a.world.renderer.getClearAlpha(), halo: a.world.rings.visible, bg: a.world.U.uBg.value.toArray().map((v) => Math.round(v * 255)).join(',') }; });
+  ok('a photo can have a white, a black, or a transparent backdrop, and the live view is as before after it', bk.white[0] > 245 && bk.white[1] > 245 && bk.white[2] > 245 && bk.white[3] === 255 && bk.black[0] < 14 && bk.black[1] < 14 && bk.black[2] < 14 && bk.black[3] === 255 && bk.clear[3] === 0 && bk.liveAlpha === 0 && bk.halo === false && bk.bg === '8,8,8', JSON.stringify(bk));
+  await p.evaluate(() => { const a = window.__dbw; a.takePhoto(a.samples[2]); }); await sleep(900);
+  ok('the photo dialog offers the three backdrops', await p.evaluate(() => [...document.querySelectorAll('#phBack option')].map((o) => o.textContent).join('|') === 'White|Black|Transparent'));
   await done(p, 'backdrop');
 }
 

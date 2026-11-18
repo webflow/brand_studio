@@ -1,6 +1,6 @@
 // The scene: renderer, shared uniforms, materials, ocean, sky rings, orbit marks, clouds, sun, shadows.
 import * as THREE from 'three';
-import { CONFIG, REDUCED, CLEAR, HOST_BG, HOST_DARK } from './config.js';
+import { CONFIG, REDUCED, CLEAR, HOST_BG, isDark } from './config.js';
 import { makePaletteTexture, ROW, WHITE } from './palette.js';
 import { VERT, FRAG, FRAG_DEPTH, FX_VERT, FX_FRAG, FRAG_HI } from './shaders.js';
 import { wireLines, PrimBatch, MeshAcc, Builder } from './prims.js';
@@ -115,15 +115,15 @@ export class World {
     this.setTier('medium');
     this.solid(false);
   }
-  // The live backdrop is clear: the color of the page shows behind the planet. A photo needs a white backdrop:
-  // solid(true) gives it, and solid(false) takes it away again. With the option bg=white this does nothing.
-  solid(on) {
-    if (!CLEAR) return;
-    const c = rgb(on ? WHITE : HOST_BG);
-    this.renderer.setClearColor(srgb(on ? WHITE : HOST_BG), on ? 1 : 0);
-    this.backdrop.visible = on; this.backdrop.material.uniforms.uC.value.copy(c);
-    this.rings.visible = on || !HOST_DARK;   // on a dark page the glow of air is a bright halo: no glow there
-    for (const m of this.rings.children) { m.material.uniforms.uSolid.value = on ? 1 : 0; m.material.uniforms.uBgc.value.copy(c); }
+  // The live backdrop is clear: the color of the page shows behind the planet (with the option bg=white it is a white backdrop).
+  // A photo needs a backdrop of its own: solid(true, color) gives a solid backdrop of that color, and solid(false) gives the live backdrop again.
+  // On a dark color the planet has no glow of air around it (there the glow is a bright halo).
+  solid(on, hex = WHITE) {
+    const col = on ? hex : HOST_BG, c = rgb(col), full = on || !CLEAR;   // full: a solid backdrop
+    this.renderer.setClearColor(srgb(col), full ? 1 : 0);
+    this.backdrop.visible = full; this.backdrop.material.uniforms.uC.value.copy(c);
+    for (const m of this.rings.children) { m.material.uniforms.uSolid.value = full ? 1 : 0; m.material.uniforms.uBgc.value.copy(c); }
+    this.rings.visible = !isDark(col);
     this.U.uBg.value.copy(c);
   }
 

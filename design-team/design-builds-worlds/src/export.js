@@ -11,7 +11,8 @@ const SEASONS = [['current', 'Current season'], ['0', 'Spring'], ['1', 'Summer']
 const ELEV = { dawn: 7, noon: 62, golden: 17, dusk: 1.5, night: -35 };
 const BLURS = [['soft', 'Soft'], ['strong', 'Strong'], ['off', 'Off']];
 const GRAINS = [['off', 'Off'], ['light', 'Light'], ['strong', 'Strong']];
-const BACKS = [['white', 'White'], ['clear', 'Transparent']];
+const BACKS = [['white', 'White'], ['black', 'Black'], ['clear', 'Transparent']];
+const BACK_COLOR = { white: '#FFFFFF', black: '#080808' };   // black is Webflow black
 const ISO_TILT = 54.74 * DEG, ISO_FOV = 7;   // the true isometric angle (35.26 degrees above the ground), and a lens narrow enough that lines stay parallel
 
 export function setupExport(app) {
@@ -22,7 +23,7 @@ export function setupExport(app) {
   const fitMemo = { key: null, target: null, d: 0 };
   function shoot(reg, w, h, time, season, scale = 1, blur = st.blur, planet = false, rot = 0, grain = 'off', back = 'white', fitKey = null) {
     const clear = back === 'clear';
-    world.solid(true);   // in an embed the live backdrop is clear: a photo is made with the white backdrop, as on the full page
+    world.solid(true, BACK_COLOR[back] || BACK_COLOR.white);   // a photo has a solid backdrop of its own color (the live backdrop is clear). A cut-out starts from white.
     const r = world.renderer, c = world.camera, U = world.U, tile = reg.tile, n = tile.center;
     const save = { fov: c.fov, near: c.near, far: c.far, pr: r.getPixelRatio(), pos: c.position.clone(), quat: c.quaternion.clone(), up: c.up.clone(), to: world.timeOverride, so: world.sunOverride,
       fk: U.uFocusK.value, ft: U.uFocusTile.value, fc: U.uFocusC.value.clone(), fr: U.uFocusR.value, ht: U.uHoverTile.value, hr: U.uHoverR.value };
@@ -144,12 +145,12 @@ export function setupExport(app) {
       ctx.putImageData(img, 0, 0);
     } else { ctx.imageSmoothingQuality = 'high'; ctx.drawImage(r.domElement, 0, 0, W, H); }
     if (grain !== 'off') {
-      // Film grain: fine noise on the brightness, a little weaker in the bright parts so the white backdrop stays clean.
+      // Film grain: fine noise on the brightness, a little weaker in the bright parts so the white backdrop stays clean (and, on a black backdrop, in the darkest parts).
       const amp = grain === 'strong' ? 30 : 15, img = ctx.getImageData(0, 0, W, H), px4 = img.data;
       let sd = 0x9e3779b9;
       const rnd = () => { sd ^= sd << 13; sd ^= sd >>> 17; sd ^= sd << 5; return (sd >>> 0) / 4294967296; };
       for (let i = 0; i < px4.length; i += 4) {
-        const l = (px4[i] * 0.299 + px4[i + 1] * 0.587 + px4[i + 2] * 0.114) / 255, k = (rnd() + rnd() - 1) * amp * (1 - 0.6 * l * l);
+        const l = (px4[i] * 0.299 + px4[i + 1] * 0.587 + px4[i + 2] * 0.114) / 255, k = (rnd() + rnd() - 1) * amp * (1 - 0.6 * l * l) * (back === 'black' ? 0.4 + 0.6 * Math.min(1, l * 5) : 1);
         px4[i] += k; px4[i + 1] += k; px4[i + 2] += k;
       }
       ctx.putImageData(img, 0, 0);
