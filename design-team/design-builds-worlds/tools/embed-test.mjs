@@ -34,6 +34,16 @@ const host = await page.evaluate(() => ({ bodyFont: getComputedStyle(document.bo
 ok('the styles of the planet do not reach the host page', /Georgia/.test(host.bodyFont) && host.overflow !== 'hidden', JSON.stringify(host));
 await inner((w) => w.document.querySelector('#settingsBtn').click());
 
+// In the embed: no title, time, or season in the corner. The backdrop is clear, so the dark page shows behind the planet.
+const look = await inner((w) => { const d = w.document, a = w.__dbw; return { brand: w.getComputedStyle(d.querySelector('#brand')).display, body: w.getComputedStyle(d.body).backgroundColor, cls: d.documentElement.className, alpha: a.world.renderer.getContext().getContextAttributes().alpha, clearA: a.world.renderer.getClearAlpha(), backdrop: a.world.backdrop.visible, bg: a.world.U.uBg.value.toArray().map((v) => Math.round(v * 255)).join(','), hint: w.getComputedStyle(d.querySelector('#hint')).color, clock: !!d.querySelector('#ppTimeT') || true }; });
+ok('in the embed there is no title, time, or season in the corner', look.brand === 'none', JSON.stringify(look));
+ok('the backdrop of the embed is clear, and the planet knows the color of the page (16, 20, 24)', look.body === 'rgba(0, 0, 0, 0)' && look.alpha === true && look.clearA === 0 && look.backdrop === false && look.bg === '16,20,24' && look.cls.includes('embed-dark'), JSON.stringify(look));
+const shot = await page.screenshot({ encoding: 'base64' });
+const px = await page.evaluate(async (b64) => { const im = new Image(); im.src = 'data:image/png;base64,' + b64; await im.decode(); const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0); const f = document.querySelector('iframe').getBoundingClientRect(); const at = (dx, dy) => [...x.getImageData(Math.round(f.x + dx), Math.round(f.y + dy), 1, 1).data].slice(0, 3); return { corner: at(8, 8), corner2: at(8, 300), mid: at(f.width / 2, f.height / 2) }; }, shot);
+ok('on the screen the corners of the frame have the color of the page, not white, and the planet is in the middle', px.corner.every((v, i) => Math.abs(v - [16, 20, 24][i]) < 8) && px.corner2.every((v, i) => Math.abs(v - [16, 20, 24][i]) < 8) && px.mid.some((v) => v > 50), JSON.stringify(px));
+const ph = await inner((w) => { const a = w.__dbw, c = a.photoCanvas(a.samples[2], 0, 'noon', 1, 0.25, 0, 0, 'off', 'white'), d = c.getContext('2d').getImageData(4, 4, 1, 1).data; return { px: [...d], clearA: a.world.renderer.getClearAlpha(), backdrop: a.world.backdrop.visible }; });
+ok('a photo from the embed still has its white backdrop, and the live view is clear again after it', ph.px[0] > 245 && ph.px[1] > 245 && ph.px[2] > 245 && ph.px[3] === 255 && ph.clearA === 0 && ph.backdrop === false, JSON.stringify(ph));
+
 // The wheel: with no key it scrolls the page. With Ctrl it zooms the planet.
 const r = await page.evaluate(() => { const b = document.querySelector('iframe').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
 await page.mouse.move(r.x, r.y);

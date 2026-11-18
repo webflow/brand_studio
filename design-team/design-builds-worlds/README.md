@@ -25,6 +25,7 @@ If you cannot add an attribute to the canvas, name the canvas on the script tag:
 - It puts a frame (an `<iframe>`) where the canvas is. The frame gets the id, the classes, the inline style, and the width and height attributes of the canvas, so the size from the page still applies.
 - A canvas with no size (300 x 150) becomes 100% wide and as high as the window (760 px at most).
 - The planet runs inside the frame. The styles and scripts of the page cannot change it, and it cannot change the page.
+- The backdrop is clear: the page shows behind the planet. There is no title, time, or season in the corner (the passport in the menu has the time and the season).
 - It starts when the canvas comes near the view, and it stops drawing while it is out of view.
 - The passport and the visitor's region stay in the storage of the browser, for the address of the page.
 
@@ -34,6 +35,7 @@ If you cannot add an attribute to the canvas, name the canvas on the script tag:
 |---|---|
 | `data-tier="low"`, `medium`, `high`, `max` | Sets the quality level. Default: it measures the frame rate, then picks one. |
 | `data-wheel="zoom"` or `page` | What the mouse wheel does. Default: `page` when the page scrolls (zoom needs Ctrl or the Command key, or a pinch), `zoom` when the page does not scroll. |
+| `data-bg="white"` | A white backdrop. Default: the backdrop is clear, so the page shows behind the planet. Tiles that are not in focus fade to the color of the page. |
 | `data-font-url="https://.../font.woff2"` | A font file for the text. Default: the WF Visual Sans file that the page loaded, if there is one. If not, a system font. |
 
 From your own code: `DesignBuildsWorlds.mount(canvasOrSelector, { tier, wheel, fontUrl })`.

@@ -22,6 +22,7 @@ export function setupExport(app) {
   const fitMemo = { key: null, target: null, d: 0 };
   function shoot(reg, w, h, time, season, scale = 1, blur = st.blur, planet = false, rot = 0, grain = 'off', back = 'white', fitKey = null) {
     const clear = back === 'clear';
+    world.solid(true);   // in an embed the live backdrop is clear: a photo is made with the white backdrop, as on the full page
     const r = world.renderer, c = world.camera, U = world.U, tile = reg.tile, n = tile.center;
     const save = { fov: c.fov, near: c.near, far: c.far, pr: r.getPixelRatio(), pos: c.position.clone(), quat: c.quaternion.clone(), up: c.up.clone(), to: world.timeOverride, so: world.sunOverride,
       fk: U.uFocusK.value, ft: U.uFocusTile.value, fc: U.uFocusC.value.clone(), fr: U.uFocusR.value, ht: U.uHoverTile.value, hr: U.uHoverR.value };
@@ -154,6 +155,7 @@ export function setupExport(app) {
       ctx.putImageData(img, 0, 0);
     }
     // Put everything back.
+    world.solid(false);
     world.timeOverride = save.to; world.sunOverride = save.so;
     U.uFocusK.value = save.fk; U.uFocusTile.value = save.ft; U.uFocusC.value.copy(save.fc); U.uFocusR.value = save.fr; U.uHoverTile.value = save.ht; U.uHoverR.value = save.hr;
     if (world.postRT) { world.postRT.depthTexture.dispose(); world.postRT.dispose(); world.postRT = null; }   // free the large photo buffer

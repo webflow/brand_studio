@@ -1,6 +1,6 @@
 // The scene: renderer, shared uniforms, materials, ocean, sky rings, orbit marks, clouds, sun, shadows.
 import * as THREE from 'three';
-import { CONFIG, REDUCED } from './config.js';
+import { CONFIG, REDUCED, CLEAR, HOST_BG } from './config.js';
 import { makePaletteTexture, ROW, WHITE } from './palette.js';
 import { VERT, FRAG, FRAG_DEPTH, FX_VERT, FX_FRAG, FRAG_HI } from './shaders.js';
 import { wireLines, PrimBatch, MeshAcc, Builder } from './prims.js';
@@ -23,7 +23,7 @@ export const TIERS = {
 export class World {
   constructor(canvas) {
     this.canvas = canvas;
-    const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
+    const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: CLEAR, powerPreference: 'high-performance' });   // alpha: the page can show behind the planet (an embed)
     r.setClearColor(srgb(WHITE), 1);   // the backdrop is white
     r.autoClear = false;
     r.info.autoReset = false;
@@ -113,6 +113,17 @@ export class World {
     this.shadowCam.layers.set(1);
     this.shadowRT = null;
     this.setTier('medium');
+    this.solid(false);
+  }
+  // In an embed the backdrop is clear: the page shows behind the planet. A photo needs the white backdrop of the full page:
+  // solid(true) gives it, and solid(false) takes it away again. With no clear backdrop (the full page) this does nothing.
+  solid(on) {
+    if (!CLEAR) return;
+    const c = rgb(on ? WHITE : HOST_BG);
+    this.renderer.setClearColor(srgb(on ? WHITE : HOST_BG), on ? 1 : 0);
+    this.backdrop.visible = on; this.backdrop.material.uniforms.uC.value.copy(c);
+    for (const m of this.rings.children) { m.material.uniforms.uSolid.value = on ? 1 : 0; m.material.uniforms.uBgc.value.copy(c); }
+    this.U.uBg.value.copy(c);
   }
 
   setTier(name) {
@@ -178,9 +189,9 @@ export class World {
     // Atmosphere: a soft glow of air behind the planet.
     const bg = rgb(WHITE);
     const ringMat = (hex, rad) => new THREE.ShaderMaterial({
-      uniforms: { uColor: { value: rgb(hex) }, uBgc: { value: bg }, uSunDir: this.U.uSunDir, uFade: { value: 1 }, uIn: { value: 1 / rad } },
+      uniforms: { uColor: { value: rgb(hex) }, uBgc: { value: bg }, uSolid: { value: 1 }, uSunDir: this.U.uSunDir, uFade: { value: 1 }, uIn: { value: 1 / rad } },
       vertexShader: 'varying vec3 vW; varying vec2 vP; void main(){ vP = position.xy / ' + rad.toFixed(3) + '; vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
-      fragmentShader: 'uniform vec3 uColor, uBgc, uSunDir; uniform float uFade, uIn; varying vec3 vW; varying vec2 vP; void main(){ float g = dot(normalize(vW), uSunDir) * 0.5 + 0.5; float t = clamp((length(vP) - uIn) / (1.0 - uIn), 0.0, 1.0); float k = pow(1.0 - t, 2.4) * (0.35 + 0.65 * smoothstep(0.0, 0.8, g)) * uFade; gl_FragColor = vec4(mix(uBgc, uColor, k), 1.0); }',
+      fragmentShader: 'uniform vec3 uColor, uBgc, uSunDir; uniform float uFade, uIn, uSolid; varying vec3 vW; varying vec2 vP; void main(){ float g = dot(normalize(vW), uSunDir) * 0.5 + 0.5; float t = clamp((length(vP) - uIn) / (1.0 - uIn), 0.0, 1.0); float k = pow(1.0 - t, 2.4) * (0.35 + 0.65 * smoothstep(0.0, 0.8, g)) * uFade; gl_FragColor = uSolid > 0.5 ? vec4(mix(uBgc, uColor, k), 1.0) : vec4(uColor * k, k); }',   // with a clear backdrop: only the glow, and the page shows through (the color is multiplied by its alpha, as the canvas needs)
       depthTest: false, depthWrite: false,
     });
     this.backdrop = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({ uniforms: { uC: { value: bg } }, vertexShader: 'void main(){ gl_Position = vec4(position.xy, 1.0, 1.0); }', fragmentShader: 'uniform vec3 uC; void main(){ gl_FragColor = vec4(uC, 1.0); }', depthTest: false, depthWrite: false }));

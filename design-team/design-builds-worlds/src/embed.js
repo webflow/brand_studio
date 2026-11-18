@@ -11,16 +11,26 @@
 // Options, as attributes of the canvas:
 //   data-tier="low | medium | high | max"   the quality level (default: it measures, then picks one)
 //   data-wheel="zoom | page"                what the mouse wheel does (default: "page" when the page scrolls, "zoom" when it does not)
+//   data-bg="white"                         a white backdrop (default: clear, so the page shows behind the planet)
 //   data-font-url="https://.../font.woff2"  a font file for the text (default: the WF Visual Sans file that the page loaded, if there is one; if not, a system font)
 // Or, on the script tag: data-target="a CSS selector for the canvas".
 // Or, from your own code: DesignBuildsWorlds.mount(canvasOrSelector, { tier, wheel, fontUrl }).
 const HTML = __DBW_HTML__;
 const SCRIPT = document.currentScript;
-const QUERY_OPTIONS = ['tier', 'wheel', 't', 'season', 'samples'];
+const QUERY_OPTIONS = ['tier', 'wheel', 'bg', 't', 'season', 'samples'];
 
 // The frame does not get the fonts of the page. If the page already loaded a WF Visual Sans file, the frame uses the same file (it is in the cache).
 function siteFont() {
   try { return performance.getEntriesByType('resource').map((e) => e.name).find((n) => /visual[^/]*sans[^/]*\.woff2/i.test(n)) || undefined; } catch (e) { return undefined; }
+}
+
+// The color of the page behind an element: the first background color that is not clear, from the element up. The result is 'rrggbb'.
+function pageColor(el) {
+  for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+    const m = /rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)/.exec(getComputedStyle(n).backgroundColor);
+    if (m && (m[4] === undefined || +m[4] > 0.5)) return [m[1], m[2], m[3]].map((v) => Math.round(+v).toString(16).padStart(2, '0')).join('');
+  }
+  return 'ffffff';
 }
 
 function mount(target, options = {}) {
@@ -34,6 +44,8 @@ function mount(target, options = {}) {
   if (getComputedStyle(el).display === 'inline') frame.style.display = 'block';
   const q = new URLSearchParams();
   for (const k of QUERY_OPTIONS) { const v = options[k] ?? el.dataset[k]; if (v != null && v !== '') q.set(k, v); }
+  q.set('bgcolor', pageColor(el.parentElement));
+  if (q.get('bg') !== 'white') { frame.style.background = 'transparent'; frame.style.colorScheme = 'light'; }   // colorScheme: a browser gives a frame a solid backdrop if the page is in the dark scheme and the frame is not
   const fontUrl = options.fontUrl ?? el.dataset.fontUrl ?? siteFont();
   const head = (fontUrl ? `<style>@font-face{font-family:"WF Visual Sans";src:url(${JSON.stringify(new URL(fontUrl, location.href).href)}) format("woff2");font-weight:100 900;font-style:normal;font-display:swap}</style>` : '')
     + `<script>window.__DBW_EMBED=1;window.__DBW_QUERY=${JSON.stringify(q.toString())}<\/script>`;

@@ -34,6 +34,10 @@ export function deepMerge(dst, src) {
 // The embed script (src/embed.js) runs this page inside a frame on another page. It sets these two values before the page starts.
 export const EMBED = !!window.__DBW_EMBED;
 export const QUERY = new URLSearchParams(window.__DBW_QUERY || location.search);
+// In an embed the backdrop is clear by default, so the page shows behind the planet (the option bg=white keeps the white backdrop).
+// HOST_BG = the color of the page behind the frame (the embed script reads it). Tiles that are not in focus fade to this color, and the wireframe view uses it.
+export const CLEAR = EMBED && QUERY.get('bg') !== 'white';
+export const HOST_BG = CLEAR && /^[0-9a-f]{6}$/i.test(QUERY.get('bgcolor') || '') ? '#' + QUERY.get('bgcolor').toUpperCase() : '#FFFFFF';
 // In an embed: does the page around the frame scroll? Then the mouse wheel and a finger that moves up or down are for the page.
 export const hostScrolls = () => {
   if (!EMBED) return false;

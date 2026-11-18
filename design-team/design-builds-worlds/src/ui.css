@@ -19,6 +19,10 @@
 html,body{margin:0;height:100%;overflow:hidden;background:#fff;color:var(--k);font-family:var(--f);font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
 body{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 #c{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none;touch-action:none;cursor:grab}
+/* In an embed: no title, time, or season in the corner (the passport in the menu has the time and the season). */
+.embed #brand{display:none}
+html.embed-clear,.embed-clear body{background:transparent}
+.embed-dark #hint{color:rgba(255,255,255,.72)}
 .embed-scroll body,.embed-scroll #c{touch-action:pan-y}
 html.embed-scroll,.embed-scroll body{overscroll-behavior:auto}
 #c:active{cursor:grabbing}
