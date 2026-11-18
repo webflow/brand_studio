@@ -1,0 +1,36 @@
+// Small line diagrams for the landmarks (20 built, 10 natural).
+const HG = {
+  castle: '<path d="M4 28v-15h3v3h3v-3h3v3h6v-3h3v3h3v-3h3v15z M13 28v-6a3 3 0 016 0v6 M13 13v-8h6v8 M16 5v-3h4v2h-4"/>',
+  volcano: '<path d="M3 28l9-16h8l9 16z M12 12l2 4 2-3 2 3 2-4 M13 8c0-2 2-2 2-4 M18 9c0-2 2-2 2-4"/>',
+  lake: '<path d="M4 20c0-5 5-8 12-8s12 3 12 8-5 8-12 8-12-3-12-8z M9 19c2-1.5 4-1.5 6 0s4 1.5 6 0 M11 23c1.5-1 3-1 4.5 0s3 1 4.5 0"/>',
+  mountain: '<path d="M3 28l10-18 6 10 3-4 7 12z M10 15.5l3 2.5 2.5-3"/>',
+  bigtree: '<path d="M14 28v-9 M18 28v-9 M10 28h12 M16 19c-7 0-10-4-10-8s4-8 10-8 10 4 10 8-3 8-10 8z"/>',
+  campground: '<path d="M3 27l9-16 9 16z M12 11v16 M9 27l3-6 3 6 M22 27l3.5-6 3.500 6z"/>',
+  waterfall: '<path d="M5 5h8v9 M27 5h-8v9 M13 6v18 M16 6v18 M19 6v18 M8 27c2-2 4-2 5 0s4 2 6 0 4-2 5 0"/>',
+  rockarch: '<path d="M4 28v-12c0-7 5-11 12-11s12 4 12 11v12h-6v-11c0-3-2-5-6-5s-6 2-6 5v11z"/>',
+  geyser: '<path d="M5 28c2-4 6-5 11-5s9 1 11 5z M16 23v-14 M16 9c-3-4-6-2-5 1 M16 9c3-4 6-2 5 1 M12 15c-2-1-3 0-3 2 M20 15c2-1 3 0 3 2"/>',
+  cave: '<path d="M3 28c0-12 5-20 13-20s13 8 13 20z M11 28v-6a5 5 0 0110 0v6"/>',
+  flowerfield: '<path d="M4 28h24 M9 28v-8 M16 28v-11 M23 28v-8"/><circle cx="9" cy="17" r="3"/><circle cx="16" cy="13" r="3.5"/><circle cx="23" cy="17" r="3"/>',
+  lighthouse: '<path d="M12.5 28l2-15h3l2 15z M14 13v-4h4v4 M13 9h6 M16 6v3 M6 8.5l6 2 M26 8.5l-6 2 M13.6 19h4.8 M13 24h6"/>',
+  observatory: '<path d="M7 28v-9h18v9z M8 19a8 8 0 0116 0 M17 12l5-6 M13 28v-4h4v4"/>',
+  windmill: '<path d="M12.5 28l2-13h3l2 13z M16 14L7 8 M16 14l9-6 M16 14l-7 8 M16 14l7 8"/><circle cx="16" cy="14" r="1.6"/>',
+  monument: '<path d="M14 23l1-16 1-3 1 3 1 16z M11 23h10v3h-10z M8 26h16v3h-16z"/>',
+  arch: '<path d="M6 28v-15h20v15h-5v-6a5 5 0 00-10 0v6z M5 13v-3h22v3"/>',
+  fountain: '<path d="M6 27h20 M8 27c0-4 16-4 16 0 M16 27v-13 M11 19c0-3 10-3 10 0 M16 13c-3-7-8-2-6 2 M16 13c3-7 8-2 6 2"/>',
+  farm: '<path d="M4 28v-9l6.500-5 6.500 5v9z M8 28v-5h5v5 M21 28v-12a3 3 0 016 0v12z M21 20h6"/>',
+  museum: '<path d="M5 12l11-7 11 7z M7 12v13 M11.500 12v13 M16 12v13 M20.500 12v13 M25 12v13 M5 25h22 M3.500 28h25"/>',
+  clocktower: '<path d="M12 28v-17h8v17z M11 11l5-8 5 8z M16 16v-2 M16 16h1.500 M14 28v-5h4v5"/><circle cx="16" cy="16" r="3"/>',
+  opera: '<path d="M4 27h24 M5 27a11 11 0 0111-13 M10.500 27a9 9 0 019-11 M16.500 27a8 8 0 018-9v9"/>',
+  zoo: '<path d="M6 28v-11 M11 28v-11 M16 28v-11 M21 28v-11 M26 28v-11 M5 19h22 M5 25h22 M10 13a6 6 0 0112 0 M16 7v-3"/>',
+  coffee: '<path d="M8 14h13v6a6.500 6.500 0 01-13 0z M21 15.500h2a2.500 2.500 0 010 5h-2.200 M6 28h17 M12 10c0-2 2-2 2-4.500 M17 10c0-2 2-2 2-4.500"/>',
+  pottery: '<path d="M12 6h8 M13 6c0 4-5.500 6-5.500 13 0 5 3.500 9 8.500 9s8.500-4 8.500-9c0-7-5.500-9-5.500-13 M8 17h16"/>',
+  gym: '<path d="M4 13v6 M8 9.500v13 M24 9.500v13 M28 13v6 M8 16h16"/>',
+  dock: '<path d="M4 13h21 M8 13v11 M14 13v11 M20 13v11 M3 27c2-2 4 2 6 0s4 2 6 0 4 2 6 0 4 2 6 0 M25 13v-7l3 2"/>',
+  bridge: '<path d="M3 21h26 M4 21c5-13 19-13 24 0 M9.500 21v-6.500 M16 21v-9.500 M22.500 21v-6.500 M3 21v6 M29 21v6"/>',
+  store: '<path d="M6 28v-13h20v13z M5 15l2-7h18l2 7z M10 28v-8h5v8 M18 19h5v4h-5z M12 8v7 M20 8v7"/>',
+  bakery: '<path d="M6 28v-11l10-8 10 8v11z M21 13v-7h3v9.500 M10.500 23c0-5 11-5 11 0v2h-11z M14 20.500l1 2 M17 20.500l1 2"/>',
+  square: '<circle cx="16" cy="16" r="12"/><circle cx="16" cy="16" r="7.500"/><circle cx="16" cy="16" r="2"/><path d="M16 4v-2 M16 30v-2 M4 16h-2 M30 16h-2"/>',
+};
+export function heroGlyph(id, size = 32) {
+  return `<svg viewBox="0 0 32 32" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="square" aria-hidden="true">${(HG[id] || '').replace(/\.500/g, '.5')}</svg>`;
+}

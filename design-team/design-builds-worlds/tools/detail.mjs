@@ -1,0 +1,26 @@
+import puppeteer from 'puppeteer-core';
+import { dirname, join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const file = pathToFileURL(join(root, 'dist', 'design-builds-worlds.html')).href;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const browser = await puppeteer.launch({ executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: 'new', args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] });
+const page = await browser.newPage(); const errs = [];
+page.on('console', (m) => { if (!['log', 'info', 'debug'].includes(m.type())) errs.push(m.text()); });
+page.on('pageerror', (e) => errs.push(e.message));
+await page.setViewport({ width: 1440, height: 900 });
+await page.goto(file + '?tier=high&light=studio&open=3'); await sleep(2000);
+const pts = await page.evaluate(() => { const a = window.__dbw, reg = a.current, V = a.world.camera.position.constructor; return reg.details.map((d) => { const v = new V(d.wx, d.wy, d.wz).applyMatrix4(reg.tile.matrix); const p = a.cam.project(v); return { x: p.x, y: p.y, type: d.type, el: document.elementFromPoint(p.x, p.y) && document.elementFromPoint(p.x, p.y).id }; }); });
+console.log(JSON.stringify(pts));
+const t = pts.find((p) => p.el === 'c' && p.type !== 'plane') || pts[0];
+await page.mouse.move(t.x - 60, t.y - 60); await sleep(100); await page.mouse.move(t.x, t.y, { steps: 6 }); await sleep(500);
+console.log('hover find:', await page.evaluate(() => ({ n: window.__dbw.foundCount(window.__dbw.current), tip: document.querySelector('#tip').textContent, line: document.querySelector('#foundLine').textContent })));
+await page.screenshot({ path: join(root, 'checkpoints', 'detail-found.png') });
+// Mirror lake ripple on click
+await page.evaluate(() => window.__dbw.openRegion(window.__dbw.areas[10])); await sleep(1600);
+const c = await page.evaluate(() => { const a = window.__dbw; const p = a.cam.project(a.current.tile.center); return { x: p.x, y: p.y }; });
+await page.mouse.click(c.x, c.y + 30); await sleep(900);
+console.log('ripple:', await page.evaluate(() => { const a = window.__dbw; return a.current.state.now - a.current.state.ripple; }));
+await page.screenshot({ path: join(root, 'checkpoints', 'lake-ripple.png') });
+console.log(errs.length ? 'ERRORS ' + errs.join('|') : 'no errors');
+await browser.close();

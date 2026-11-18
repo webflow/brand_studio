@@ -1,0 +1,21 @@
+# Installed packages
+node_modules/
+
+# Working pictures and test logs. The tools make them again.
+checkpoints/
+
+# Pages and pictures that the tools make
+catalog/
+dist/*.png
+
+# The full page is a file for tests on your own computer. The file for a site is dist/design-builds-worlds.min.js.
+dist/*.html
+
+# The Webflow brand font is not kept in this public repository (see README.md)
+assets/fonts/
+
+# System and editor files
+.DS_Store
+*.log
+.env
+.env.*

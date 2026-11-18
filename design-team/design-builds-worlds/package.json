@@ -1,0 +1,18 @@
+{
+  "name": "design-builds-worlds-prototype",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node build.mjs && node tools/test.mjs",
+    "test:embed": "node build.mjs && node tools/embed-test.mjs",
+    "test:webkit": "node tools/webkit.mjs",
+    "shots": "node tools/shots.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "playwright-core": "^1.65.1",
+    "puppeteer-core": "^25.17.0",
+    "three": "^0.187.0"
+  }
+}

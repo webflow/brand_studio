@@ -1,0 +1,24 @@
+<canvas id="c" tabindex="0" role="application" aria-label="A planet made of 92 tiles. Drag to rotate. Scroll or pinch to zoom. Press Tab to move between regions."></canvas>
+<nav id="a11y" class="sr" aria-label="Regions on the planet"></nav>
+<div id="hud">
+  <header id="brand"><strong>Design builds worlds</strong><span id="clock" aria-live="off"></span></header>
+  <div id="topright">
+    <button id="settingsBtn" class="iconbtn" aria-label="Menu: your region, passport, and settings" aria-expanded="false" aria-controls="settings"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 6h9M15 6h2M3 14h2M8 14h9" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="13.5" cy="6" r="1.8" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="6.5" cy="14" r="1.8" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
+    <div id="settings" hidden role="dialog" aria-label="Menu">
+      <div id="menuYou"><button id="designBtn" class="btn primary">Design your region</button><button id="goBtn" class="btn" hidden>Go to your region</button></div>
+      <div id="menuPass"></div>
+      <div id="menuQ"></div>
+      <div id="menuReset"><button id="resetBtn" class="btn small">Reset passport</button></div>
+    </div>
+  </div>
+  <div id="tip" role="status" hidden></div>
+  <div id="toast" role="status" hidden></div>
+  <button id="lightBtn" class="btn small" hidden aria-pressed="false">Light this region</button>
+  <button id="backBtn" class="btn" hidden>Back to planet</button>
+  <button id="wireBtn" class="btn" hidden>Exit wireframe view</button>
+  <div id="bottom"><p id="hint">Drag to turn the planet. Scroll or pinch to zoom. Select a region to open it, or an empty tile to claim it.</p></div>
+  <div id="live" class="sr" aria-live="polite"></div>
+</div>
+<aside id="panel" hidden></aside>
+<div id="thumb" hidden aria-hidden="true"><canvas id="thumbC" width="240" height="180"></canvas></div>
+<div id="modal" hidden></div>
