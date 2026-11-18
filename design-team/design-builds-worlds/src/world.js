@@ -7,7 +7,7 @@ import { wireLines, PrimBatch, MeshAcc, Builder } from './prims.js';
 import { buildTiles } from './goldberg.js';
 import { TAU, DEG, clamp, lerp, smooth } from './util.js';
 import { edgeE } from './terrain.js';
-import { Weather, TileOutline, makeSun } from './sky.js';
+import { Weather, TileOutline, makeSun, makeCloudBed } from './sky.js';
 
 export const OCEAN_R = 0.988, SEABED_R = 0.925;
 const rgb = (h) => new THREE.Vector3(parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255);
@@ -107,6 +107,7 @@ export class World {
 
     this.tickers = [];   // small per-frame jobs (for example: turn the lake mirror on when the viewer is near)
     this._ocean(); this._sky(); this._post();   // a photo uses it for the depth of field blur (view.dof)
+    this.cloudBeds = new Map();   // the cloud of each sky region (the index of its tile -> the cloud)
     this.weather = new Weather(this);
     this.outline = new TileOutline(this);
     this.shadowCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 6);
@@ -114,6 +115,16 @@ export class World {
     this.shadowRT = null;
     this.setTier('medium');
     this.solid(false);
+  }
+  // The cloud under a sky region: make it (on = true) or take it away. top = the height of its top, in tile units.
+  // parts = shapes of cloud that stand on it (the sky castle), each [x, z, radius, bottom, top] in tile units.
+  cloudBed(tile, on, top = 0.6, parts) {
+    const old = this.cloudBeds.get(tile.index);
+    if (on && !old) this.cloudBeds.set(tile.index, makeCloudBed(this, tile, top));
+    else if (!on && old) { old.dispose(); this.cloudBeds.delete(tile.index); }
+    const bed = this.cloudBeds.get(tile.index) || null;
+    if (bed) bed.parts(parts || []);
+    return bed;
   }
   // The live backdrop is clear: the color of the page shows behind the planet (with the option bg=white it is a white backdrop).
   // A photo needs a backdrop of its own: solid(true, color) gives a solid backdrop of that color, and solid(false) gives the live backdrop again.

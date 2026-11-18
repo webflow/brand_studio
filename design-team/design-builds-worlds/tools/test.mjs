@@ -87,7 +87,7 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   ok('design mode opens on the practice tile', await p.evaluate(() => window.__dbw.mode === 'design' && !document.querySelector('#panel').hidden && document.querySelector('#panel').textContent.includes('Practice region, not saved')));
   ok('a new region starts blank: bare land, no scenery, no landmarks, no name', c0.biome === 'blank' && c0.arch === 'none' && c0.heroes.length === 0 && c0.name === '', JSON.stringify(c0).slice(0, 120));
   ok('the steps are Land, Scenery, Landmarks, Color, Name', (await p.$$eval('.steps button span', (e) => e.map((x) => x.textContent).join(','))) === 'Land,Scenery,Landmarks,Color,Name');
-  ok('there are 17 biomes to pick', (await p.$$eval('[data-set="biome"]', (e) => e.length)) === 17);
+  ok('there are 19 biomes to pick (17 with land, the ocean, and the sky)', (await p.$$eval('[data-set="biome"]', (e) => e.length)) === 19);
   await p.evaluate(() => document.querySelector('.chip[data-season="3"]').click()); await sleep(300);
   ok('the season preview shows winter', await p.evaluate(() => window.__dbw.world.time.season === 3 && document.querySelector('.chip[data-season="3"]').getAttribute('aria-pressed') === 'true'));
   await p.evaluate(() => document.querySelector('.chip[data-season="-1"]').click()); await sleep(200);
@@ -269,6 +269,54 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   await p.evaluate(() => { const a = window.__dbw; a.takePhoto(a.samples[2]); }); await sleep(900);
   ok('the photo dialog offers the three backdrops', await p.evaluate(() => [...document.querySelectorAll('#phBack option')].map((o) => o.textContent).join('|') === 'White|Black|Transparent'));
   await done(p, 'backdrop');
+}
+
+// ---- hidden details: a library of 40 for any region and 10 for each biome; scenery by biome; the ocean and the sky
+{
+  const p = await open('light=studio');
+  await sleep(500);
+  const lib = await p.evaluate(() => { const a = window.__dbw, L = a.detailLib, kinds = a.samples.flatMap((r) => r.details.map((d) => d.label)); return { uni: L.universal.length, biomes: Object.keys(L.biome).length, each: Object.values(L.biome).every((v) => v.length === 10), kinds: new Set(kinds).size, total: kinds.length, balloons: kinds.filter((k) => /balloon/.test(k)).length, windows: kinds.filter((k) => /window/.test(k)).length, own: a.samples.filter((r) => r.details.some((d) => (L.biome[r.cfg.biome] || []).some((q) => q.label === d.label))).length }; });
+  ok('the detail library: 40 for any region (31 new and 9 from before), and 10 for each of the 19 biomes', lib.uni === 31 && lib.biomes === 19 && lib.each, JSON.stringify(lib));
+  ok('the sample regions have many different hidden details, with details of their own biome, few balloons, and no window with a person', lib.kinds >= 40 && lib.balloons <= 4 && lib.windows === 0 && lib.own >= 15, JSON.stringify(lib));
+  await p.click('#settingsBtn'); await p.click('#designBtn'); await sleep(1500);
+  const lists = (biome) => p.evaluate(async (biome) => {
+    const sl = (ms) => new Promise((r) => setTimeout(r, ms)), a = window.__dbw, q = (s) => document.querySelector(s), grid = (t) => { const h = [...document.querySelectorAll('#panel h3')].find((x) => x.textContent.trim().startsWith(t)); return h ? [...h.nextElementSibling.querySelectorAll('button')].map((b) => (b.querySelector('b, small') || b).textContent.trim()) : []; };
+    q('.steps button[data-step="0"]').click(); q(`[data-set="biome"][data-v="${biome}"]`).click(); await sl(500);
+    q('.steps button[data-step="1"]').click(); const sn = grid('Nature'), sb = grid('Buildings');
+    q('.steps button[data-step="2"]').click(); const hn = grid('Add from nature'), hb = grid('Add a built object');
+    return { sn, sb, hn, hb, open: a.practice.reg.open || 'land', arch: a.practice.cfg.arch, heroes: a.practice.cfg.heroes.length, beds: a.world.cloudBeds.size, shore: a.practice.shore };
+  }, biome);
+  const L0 = await lists('meadow');
+  ok('a biome with land shows its 7 kinds of nature scenery, 11 kinds of buildings, and 10 + 20 landmarks', L0.sn.length === 7 && L0.sb.length === 11 && L0.hn.length === 10 && L0.hb.length === 20 && L0.open === 'land', JSON.stringify([L0.sn.length, L0.sb.length, L0.hn.length, L0.hb.length]));
+  const Ld = await lists('desert');
+  ok('the grove has the trees of the biome (Cherry grove on a meadow, Joshua trees in a desert)', L0.sn.includes('Cherry grove') && Ld.sn.includes('Joshua trees'), L0.sn.join('|') + ' / ' + Ld.sn.join('|'));
+  const Lo = await lists('ocean');
+  ok('the ocean biome shows only its own items: 6 + 6 scenery, 4 + 4 landmarks', Lo.sn.length === 6 && Lo.sb.length === 6 && Lo.hn.length === 4 && Lo.hb.length === 4 && Lo.sn.includes('Island chain') && Lo.sn.includes('Raft village') && Lo.hn.includes('Coral reef') && Lo.hn.includes('Whale pack') && Lo.hb.includes('Sunken tower') && Lo.hb.includes('Oil rig'), JSON.stringify(Lo));
+  const oc = await p.evaluate(async () => { const sl = (ms) => new Promise((r) => setTimeout(r, ms)), a = window.__dbw, q = (s) => document.querySelector(s); q('[data-add="oilrig"]').click(); await sl(300); q('[data-add="reef"]').click(); await sl(300); q('.steps button[data-step="1"]').click(); q('[data-set="arch"][data-v="islets"]').click(); await sl(700); const r = a.practice.reg; return { open: r.open, heroes: r.heroes.map((h) => h.type + ':' + (h.y < 0)).join(','), scenery: r.counts.scenery, hMid: +r.H(0, 0).toFixed(3), hEdge: +r.H(0.8, 0).toFixed(3), details: r.details.length, shore: a.practice.shore, beds: a.world.cloudBeds.size }; });
+  ok('an ocean region has no land: its landmarks and scenery float on the sea, which curves down to the edge, and it makes no shore', oc.open === 'ocean' && oc.heroes === 'oilrig:true,reef:true' && oc.scenery > 3 && oc.hMid < 0 && oc.hEdge < oc.hMid && oc.details >= 3 && oc.shore === false && oc.beds === 0, JSON.stringify(oc));
+  const Ls = await lists('sky');
+  ok('the sky biome shows only its own items: 4 + 4 scenery, 4 + 4 landmarks', Ls.sn.length === 4 && Ls.sb.length === 4 && Ls.hn.length === 4 && Ls.hb.length === 4 && Ls.hn.includes('Rainbow') && Ls.hb.includes('Zeppelin') && Ls.hb.includes('Sky Castle') && Ls.hb.includes('Aviary'), JSON.stringify(Ls));
+  ok('a change from the ocean to the sky takes away the ocean scenery and landmarks', Ls.arch === 'none' && Ls.heroes === 0 && Ls.open === 'sky');
+  const sk = await p.evaluate(async () => { const sl = (ms) => new Promise((r) => setTimeout(r, ms)), a = window.__dbw, q = (s) => document.querySelector(s); q('[data-add="skycastle"]').click(); await sl(300); q('[data-add="rainbow"]').click(); await sl(300); q('.steps button[data-step="1"]').click(); q('[data-set="arch"][data-v="cottages"]').click(); await sl(700); const r = a.practice.reg; return { heroes: r.heroes.map((h) => h.type + ':' + h.y).join(','), scenery: r.counts.scenery, beds: a.world.cloudBeds.size, shore: a.practice.shore, details: r.details.length, onCloud: r.details.every((d) => d.y >= 0.55), far: Math.max(...r.heroes.map((h) => Math.hypot(h.x, h.z))).toFixed(2) }; });
+  ok('a sky region has a cloud, and its landmarks, scenery, and details are on the cloud or over it', sk.heroes === 'skycastle:0.6,rainbow:0.6' && sk.scenery > 2 && sk.beds === 1 && sk.shore === false && sk.details >= 3 && sk.onCloud && +sk.far < 0.5, JSON.stringify(sk));
+  const fit = await p.evaluate(async () => {
+    const sl = (ms) => new Promise((r) => setTimeout(r, ms)), a = window.__dbw, q = (s) => document.querySelector(s);
+    const apart = () => { const r = a.practice.reg, o = r.occ, h = r.heroes.length, n = r.counts.scenery || 0; let bad = 0; for (let i = h; i < h + n; i++) for (let j = 0; j < i; j++) if (Math.hypot(o[i].x - o[j].x, o[i].z - o[j].z) < o[i].r + o[j].r - 0.003) bad++; return bad + '/' + n; };
+    const bed = a.world.cloudBeds.get(a.practice.tile.index), out = { clouds: a.practice.reg.clouds.length, mesh: bed.grp.children.length, sky: apart() };
+    q('[data-set="arch"][data-v="starlets"]').click(); await sl(500); out.stars = apart(); out.live = a.practice.reg.animators.length;
+    q('.steps button[data-step="2"]').click(); await sl(200); out.icons = [...document.querySelectorAll('[data-add] svg')].map((e) => e.children.length > 0); q('.steps button[data-step="1"]').click();
+    return out;
+  });
+  ok('scenery on the cloud does not overlap other scenery or a landmark', /^0\/[1-9]/.test(fit.sky) && /^0\/[1-9]/.test(fit.stars), JSON.stringify(fit));
+  ok('the sky castle is made of cloud: its body and towers are one mesh on the cloud of the region', fit.clouds >= 6 && fit.mesh === 12, JSON.stringify([fit.clouds, fit.mesh]));
+  ok('each of the 8 sky landmarks has an icon', fit.icons.length === 8 && fit.icons.every(Boolean), JSON.stringify(fit.icons));
+  await p.evaluate(() => document.querySelector('#doneBtn').click()); await sleep(900);
+  ok('a saved sky region opens with its manual, and its cloud stays', await p.evaluate(async () => { const a = window.__dbw; a.openRegion(a.practice.reg); await new Promise((r) => setTimeout(r, 900)); return a.current === a.practice.reg && !document.querySelector('#panel').hidden && document.querySelector('#panel').textContent.includes('Sky') && a.world.cloudBeds.size === 1; }));
+  await p.evaluate(() => window.__dbw.closeRegion()); await sleep(400);
+  await p.click('#settingsBtn'); await p.click('#designBtn'); await sleep(1200);
+  const Lb = await lists('forest');
+  ok('a change from the sky to a biome with land takes the cloud away and gives the land back', Lb.beds === 0 && Lb.open === 'land' && Lb.shore === true && Lb.arch === 'none' && Lb.heroes === 0, JSON.stringify([Lb.beds, Lb.open, Lb.shore]));
+  await done(p, 'biomes with no land');
 }
 
 // ---- a claimed tile that is not saved goes back to empty ocean

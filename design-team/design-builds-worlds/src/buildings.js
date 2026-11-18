@@ -1,6 +1,7 @@
 // Small background buildings. Eight architecture styles. Each returns [footprint radius, roof height, roof offset].
 // Walls are plaster or accent 2. Roofs are accent 1. Fine details (sills, shutters, steps) show at close zoom.
 import { ROW } from './palette.js';
+import { OPEN_STYLES } from './open.js';
 const PI = Math.PI;
 export const STYLES = {
   minimal: 'Modern Minimal', organic: 'Organic', city: 'Modern City', whimsical: 'Whimsical',
@@ -8,10 +9,45 @@ export const STYLES = {
   grand: 'Grand Avenue', treehouse: 'Tree Houses', yurt: 'Yurts',
   // Scenery that is not a building. A region can have these and no building at all.
   woodland: 'Woodland', orchard: 'Orchard', farmland: 'Farmland', vineyard: 'Vineyard',
-  flowers: 'Flower fields', boulders: 'Boulder field', palms: 'Palm grove',
+  flowers: 'Flower fields', boulders: 'Boulder field', palms: 'Grove',
+};
+// These kinds are fields: square plots, side by side on one grid, all turned the same way (see region.js).
+export const GRID_STYLES = new Set(['orchard', 'farmland', 'vineyard', 'flowers']);
+// The grove has the trees of the biome: palms on a beach, Joshua trees in a desert, birches in a forest.
+export const GROVE = {
+  forest: ['birch', 'Birch grove'], desert: ['joshua', 'Joshua trees'], tundra: ['spruce', 'Spruce grove'], wetland: ['willow', 'Willow grove'], volcanic: ['dragon', 'Dragon trees'],
+  archipelago: ['palm', 'Palm grove'], meadow: ['cherry', 'Cherry grove'], canyon: ['juniper', 'Juniper grove'], jungle: ['banana', 'Banana grove'], alpine: ['larch', 'Larch grove'],
+  crystal: ['gem', 'Crystal grove'], coral: ['mangrove', 'Mangrove'], beach: ['palm', 'Palm grove'], valley: ['poplar', 'Poplar grove'], savannah: ['baobab', 'Baobab grove'],
+  urban: ['ginkgo', 'Ginkgo grove'], suburban: ['magnolia', 'Magnolia grove'],
+};
+// The name of a kind of scenery in one biome.
+export const styleLabel = (k, biome) => (k === 'palms' ? (GROVE[biome] || ['palm', 'Grove'])[1] : STYLES[k]);
+const G = (row, tone, kind = 0) => [ROW[row], tone, kind, 0];
+// One tree of a grove, at the origin. s = its size.
+const GROVE_TREE = {
+  palm(b, c, r, s) { const lean = (r() - 0.5) * 0.5; b.push(0, 0, 0, r() * PI * 2, s, 0, lean); for (let q = 0; q < 5; q++) b.box(0.01, 0.022, 0.01, q % 2 ? c.trunk : c.wood, { y: q * 0.02, x: Math.sin(q * 0.5) * 0.004 }); for (let q = 0; q < 6; q++) { const fa = (q / 6) * PI * 2; b.box(0.05, 0.004, 0.014, c.f(q % 2 ? 0.8 : 0.62), { x: Math.cos(fa) * 0.024, z: Math.sin(fa) * 0.024, y: 0.1, ry: -fa, rz: -0.45, k: 11 }); } b.ball(0.006, c.soil(0.2), { y: 0.094, x: 0.006, lod: 1 }); b.pop(); },
+  birch(b, c, r, s) { const h = 0.12 * s; b.cyl(0.006 * s, h, G('plaster', 0.6)); for (let q = 1; q < 4; q++) b.box(0.013 * s, 0.004, 0.013 * s, G('neutral', 8.6), { y: q * h * 0.24, lod: 1 }); b.ball(0.03 * s, G('grass', 3.6, 11), { y: h * 0.8, sy: 1.3 }); b.ball(0.02 * s, G('grass', 2.8, 11), { x: 0.012 * s, y: h * 1.1 }); },
+  joshua(b, c, r, s) { const T = G('earth', 6.6), L = G('olive', 6, 11); b.cyl(0.008 * s, 0.06 * s, T); for (const [sx, a, h] of [[1, -0.7, 0.05], [-1, 0.6, 0.06], [0.2, -0.15, 0.045]]) { b.push(0, 0.055 * s, 0, r() * PI * 2, s, 0, a); b.cyl(0.006, h, T); b.ball(0.014, L, { y: h, sy: 0.9 }); b.cone(0.012, 0.02, G('olive', 5, 11), { y: h + 0.006 }); b.pop(); } },
+  spruce(b, c, r, s) { b.cyl(0.006 * s, 0.03 * s, c.trunk); for (let q = 0; q < 4; q++) { b.cone((0.034 - q * 0.006) * s, 0.04 * s, G('forest', 8.2 - q * 0.3, 11), { y: (0.02 + q * 0.026) * s }); b.cone((0.026 - q * 0.005) * s, 0.012 * s, G('snow', 0.4), { y: (0.046 + q * 0.026) * s, lod: 1 }); } },
+  willow(b, c, r, s) { b.cyl(0.009 * s, 0.07 * s, c.trunk); b.ball(0.04 * s, G('olive', 4.6, 11), { y: 0.06 * s, sy: 0.8 }); for (let q = 0; q < 7; q++) { const a = (q / 7) * PI * 2; b.box(0.008 * s, 0.06 * s, 0.008 * s, G('olive', q % 2 ? 4 : 5.2, 11), { x: Math.cos(a) * 0.036 * s, z: Math.sin(a) * 0.036 * s, y: 0.012 * s }); } },
+  dragon(b, c, r, s) { b.cyl(0.009 * s, 0.07 * s, G('earth', 8)); for (let q = 0; q < 5; q++) { const a = (q / 5) * PI * 2; b.box(0.006 * s, 0.03 * s, 0.006 * s, G('earth', 7.4), { x: Math.cos(a) * 0.012 * s, z: Math.sin(a) * 0.012 * s, y: 0.064 * s, rz: -Math.cos(a) * 0.6, rx: Math.sin(a) * 0.6 }); } b.cyl(0.044 * s, 0.014 * s, G('forest', 8, 11), { y: 0.09 * s }); b.cyl(0.03 * s, 0.01 * s, G('forest', 7, 11), { y: 0.104 * s }); },
+  cherry(b, c, r, s) { b.cyl(0.007 * s, 0.05 * s, G('earth', 8)); b.ball(0.036 * s, G('pink', 2.6), { y: 0.05 * s }); b.ball(0.026 * s, G('pink', 1.8), { x: 0.018 * s, y: 0.078 * s }); b.ball(0.022 * s, G('pink', 3.2), { x: -0.02 * s, y: 0.07 * s, z: 0.01 * s }); for (let q = 0; q < 3; q++) b.box(0.006, 0.002, 0.006, G('pink', 2), { x: Math.cos(q * 2.1) * 0.04 * s, z: Math.sin(q * 2.1) * 0.04 * s, lod: 2 }); },
+  juniper(b, c, r, s) { const T = G('sand', 5.4); b.push(0, 0, 0, r() * PI * 2, s, 0, 0.35); b.cyl(0.008, 0.04, T); b.push(0, 0.038, 0, 0, 1, 0, -0.7); b.cyl(0.006, 0.04, T); b.ball(0.024, G('forest', 7.6, 11), { y: 0.04, sy: 0.7 }); b.pop(); b.ball(0.02, G('forest', 8.2, 11), { x: -0.014, y: 0.05, sy: 0.7 }); b.pop(); },
+  banana(b, c, r, s) { b.cyl(0.008 * s, 0.07 * s, G('grass', 5.4)); for (let q = 0; q < 5; q++) { const a = (q / 5) * PI * 2 + 0.3; b.box(0.06 * s, 0.004, 0.022 * s, G('grass', q % 2 ? 4 : 5, 11), { x: Math.cos(a) * 0.028 * s, z: Math.sin(a) * 0.028 * s, y: 0.074 * s, ry: -a, rz: -0.5 }); } b.box(0.012 * s, 0.022 * s, 0.012 * s, G('yellow', 3.4), { x: 0.012 * s, y: 0.05 * s, lod: 1 }); },
+  larch(b, c, r, s) { b.cyl(0.006 * s, 0.04 * s, c.trunk); for (let q = 0; q < 4; q++) b.cone((0.03 - q * 0.006) * s, 0.044 * s, G('yellow', 4.6 + q * 0.3, 11), { y: (0.024 + q * 0.03) * s }); },
+  gem(b, c, r, s) { b.cyl(0.006 * s, 0.05 * s, G('neutral', 2)); for (let q = 0; q < 5; q++) { const a = (q / 5) * PI * 2; b.pyr(0.014 * s, 0.04 * s, 0.014 * s, [ROW.amethyst, 2.6 + (q % 3), 2, 0], { x: Math.cos(a) * 0.016 * s, z: Math.sin(a) * 0.016 * s, y: 0.046 * s, rz: -Math.cos(a) * 0.7, rx: Math.sin(a) * 0.7 }); } b.pyr(0.016 * s, 0.05 * s, 0.016 * s, [ROW.pink, 2.4, 2, 0], { y: 0.05 * s }); },
+  mangrove(b, c, r, s) { for (let q = 0; q < 5; q++) { const a = (q / 5) * PI * 2; b.box(0.005 * s, 0.05 * s, 0.005 * s, G('earth', 7.6), { x: Math.cos(a) * 0.022 * s, z: Math.sin(a) * 0.022 * s, y: -0.012, rz: Math.cos(a) * 0.5, rx: -Math.sin(a) * 0.5 }); } b.cyl(0.007 * s, 0.04 * s, G('earth', 7.6), { y: 0.03 * s }); b.ball(0.036 * s, G('forest', 6.6, 11), { y: 0.062 * s, sy: 0.7 }); b.ball(0.022 * s, G('grass', 5.4, 11), { x: 0.014 * s, y: 0.088 * s, sy: 0.7 }); },
+  poplar(b, c, r, s) { b.cyl(0.006 * s, 0.03 * s, c.trunk); b.ball(0.02 * s, G('grass', 5.8, 11), { y: 0.022 * s, sy: 2.6 }); b.ball(0.014 * s, G('grass', 4.8, 11), { y: 0.082 * s, sy: 2.2 }); },
+  baobab(b, c, r, s) { b.cyl(0.02 * s, 0.07 * s, G('earth', 5.4), { t: 0.3 }); for (let q = 0; q < 5; q++) { const a = (q / 5) * PI * 2 + 0.5; b.box(0.006 * s, 0.03 * s, 0.006 * s, G('earth', 6), { x: Math.cos(a) * 0.012 * s, z: Math.sin(a) * 0.012 * s, y: 0.066 * s, rz: -Math.cos(a) * 0.8, rx: Math.sin(a) * 0.8 }); b.ball(0.014 * s, G('olive', 5.4, 11), { x: Math.cos(a) * 0.034 * s, z: Math.sin(a) * 0.034 * s, y: 0.084 * s, sy: 0.6 }); } },
+  ginkgo(b, c, r, s) { b.box(0.04 * s, 0.01, 0.04 * s, G('rock', 4.4)); b.cyl(0.006 * s, 0.06 * s, G('earth', 8), { y: 0.01 }); b.ball(0.032 * s, G('yellow', 3.4, 11), { y: 0.06 * s, sy: 1.2 }); b.ball(0.022 * s, G('yellow', 2.6, 11), { x: 0.01 * s, y: 0.092 * s }); },
+  magnolia(b, c, r, s) { b.cyl(0.007 * s, 0.045 * s, G('earth', 8)); b.ball(0.034 * s, G('forest', 6.4, 11), { y: 0.046 * s }); for (let q = 0; q < 6; q++) { const a = q * 1.05; b.ball(0.009 * s, G('pink', q % 2 ? 1.4 : 0.6), { x: Math.cos(a) * 0.03 * s, z: Math.sin(a) * 0.03 * s, y: (0.06 + (q % 3) * 0.014) * s, lod: 1 }); } },
 };
 export const NATURE_STYLES = new Set(['woodland', 'orchard', 'farmland', 'vineyard', 'flowers', 'boulders', 'palms']);
+export const LAND_STYLE_IDS = Object.keys(STYLES);   // the scenery for a region with land (the samples use these)
+for (const [k, v] of Object.entries(OPEN_STYLES)) { STYLES[k] = v[0]; if (v[2]) NATURE_STYLES.add(k); }   // and the scenery of the ocean and of the sky
 export const STYLE_IDS = Object.keys(STYLES);
+// Which kind of biome has this scenery: 'land', 'ocean', or 'sky'.
+export const styleBiome = (k) => (OPEN_STYLES[k] ? OPEN_STYLES[k][1] : 'land');
 
 // A grid of windows on the front wall (the window style draws its own sill). shut = add shutters.
 function wins(b, c, w, h, z, cols, rows, y0 = 0.02, shut = false) {
@@ -310,60 +346,65 @@ export function building(b, style, c, r, wh, opt = {}) {
       return [R * 1.3, 0];
     }
     // ---- Scenery that is not a building. No walls, no windows, no lamps.
-    case 'woodland': {   // a clump of trees. In a region they are the trees of its biome.
+    case 'woodland': {   // an old wood: tall, dark trees on a floor of moss, with a log, ferns, and red mushrooms. It does not look like the trees of the biome.
       b.auto = false;
-      const nn = r.int(3, 5);
+      b.cyl(0.085, 0.006, G('forest', 8.4), { y: -0.002 }); b.cyl(0.06, 0.005, G('olive', 6.6), { x: 0.02, z: -0.01, y: 0.002 });
+      const nn = r.int(4, 5);
       for (let i = 0; i < nn; i++) {
-        const a = r() * PI * 2, d = i ? r.range(0.035, 0.075) : 0, x = Math.cos(a) * d, z = Math.sin(a) * d, s = r.range(0.75, 1.25) * k;
-        if (c.tree) { c.tree(b, x, 0, z, s); continue; }   // the trees of the biome: cactus in a desert, pine on cold land, palm on a beach
-        if (r() < 0.55) { b.cyl(0.008 * s, 0.06 * s, c.trunk, { x, z }); b.ball(0.042 * s, c.leaf(0.8), { x, z, y: 0.042 * s }); b.ball(0.028 * s, c.leaf(0.62), { x: x + 0.016 * s, z, y: 0.078 * s }); }
-        else { b.cyl(0.009 * s, 0.04 * s, c.trunk, { x, z }); b.cone(0.045 * s, 0.1 * s, c.f(0.86), { x, z, y: 0.03 * s, k: 11 }); b.cone(0.032 * s, 0.08 * s, c.f(0.72), { x, z, y: 0.085 * s, k: 11 }); }
+        const a = (i / nn) * PI * 2 + r() * 0.6, d = i ? r.range(0.04, 0.07) : 0.012, x = Math.cos(a) * d, z = Math.sin(a) * d, s = r.range(0.85, 1.2) * k, h = 0.13 * s;
+        b.cyl(0.011 * s, h, G('earth', 8.6), { x, z, t: 0.25 });
+        b.ball(0.05 * s, G('forest', 8), { x, z, y: h * 0.72, sy: 0.8, k: 11 }); b.ball(0.038 * s, G('forest', 7.2), { x: x + 0.014 * s, z: z - 0.008 * s, y: h * 1.02, sy: 0.8, k: 11 }); b.ball(0.026 * s, G('forest', 6.2), { x: x - 0.006 * s, z, y: h * 1.26, sy: 0.8, k: 11 });
       }
-      b.auto = true; return [0.09, 0];
-    }
-    case 'orchard': {   // four small fruit trees in a square, with fruit
-      b.auto = false;
-      const fc = r() < 0.5 ? 2 : 3;   // red or orange fruit (palette rows)
-      for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-        const x = sx * 0.04, z = sz * 0.04, s = r.range(0.85, 1.1);
-        b.cyl(0.006, 0.034 * s, c.trunk, { x, z }); b.ball(0.03 * s, c.leaf(0.7), { x, z, y: 0.026 * s });
-        for (let q = 0; q < 3; q++) { const a = q * 2.1 + sx + sz; b.ball(0.006, [fc, 5, 0, 0], { x: x + Math.cos(a) * 0.024 * s, y: 0.04 * s + (q % 2) * 0.012, z: z + Math.sin(a) * 0.024 * s, lod: 1 }); }
-      }
-      b.box(0.014, 0.012, 0.014, c.wood, { lod: 1 });   // a crate in the middle
-      b.auto = true; return [0.085, 0];
-    }
-    case 'farmland': {   // one crop plot in rows, now and then with a hay bale
-      b.auto = false;
-      if (c.crop) {   // the crop of the biome (wheat on a meadow, agave in a desert, rice on wet land)
-        const w = 0.15 * k, d = 0.12, cs = c.crop;
-        b.box(w, 0.006, d, cs.wet ? [ROW.sea, 4.4] : c.soil(0.62));
-        for (let i = 0; i < 5; i++) for (let q = 0; q < 6; q++) { const x = -w * 0.4 + q * w * 0.16, z = -d * 0.4 + i * d * 0.2; b.box(cs.stem[0], cs.stem[1], cs.stem[0], cs.stem[2], { x, z, y: 0.005 }); if (cs.head) b.box(cs.head[0], cs.head[1], cs.head[0], cs.head[2], { x, z, y: 0.005 + cs.stem[1], lod: 1 }); }
-        b.auto = true; return [0.095, 0];
-      }
-      const w = 0.15 * k, d = 0.12, crop = r.pick([[c.soil(0.1)[0], 3.2], c.f(0.45), c.f(0.7)]), gold = r() < 0.45;
-      b.box(w, 0.006, d, c.soil(0.62));
-      for (let i = 0; i < 5; i++) { b.box(w * 0.92, 0.012, 0.014, gold ? c.soil(0.02) : crop, { z: -d * 0.4 + i * d * 0.2, y: 0.005 }); if (!gold) for (let q = 0; q < 5; q++) b.box(0.012, 0.016, 0.012, c.f(0.8), { x: -w * 0.38 + q * w * 0.19, z: -d * 0.4 + i * d * 0.2, y: 0.012, k: 11, lod: 2 }); }
-      if (r() < 0.5) { b.cyl(0.016, 0.026, c.soil(0.0), { x: w * 0.62, y: 0.016, z: 0.02, rx: PI / 2 }); }
+      b.cyl(0.009, 0.06, G('earth', 7.4), { x: 0.05, z: 0.05, y: 0.008, rz: PI / 2, ry: r() * 3 });   // a log on the ground
+      for (let q = 0; q < 3; q++) { const a = q * 2.2 + r(), x = Math.cos(a) * 0.066, z = Math.sin(a) * 0.066; b.cyl(0.003, 0.012, G('plaster', 0.6), { x, z, lod: 1 }); b.dome(0.009, 0.007, G('red', 5), { x, z, y: 0.012, lod: 1 }); }
+      for (let q = 0; q < 4; q++) { const a = q * 1.7 + 0.8, x = Math.cos(a) * 0.052, z = Math.sin(a) * 0.052; b.cone(0.012, 0.022, G('grass', 6.4, 11), { x, z, lod: 2 }); }
       b.auto = true; return [0.095, 0];
     }
-    case 'vineyard': {   // three rows of vines on posts, with grapes
+    case 'orchard': {   // a square plot: nine small fruit trees in three rows
       b.auto = false;
-      for (let i = -1; i <= 1; i++) {
-        const z = i * 0.04;
-        for (const sx of [-1, 1]) b.box(0.006, 0.034, 0.006, c.wood, { x: sx * 0.07, z });
-        b.box(0.14, 0.002, 0.002, c.wood, { y: 0.03, z, lod: 1 });
-        b.box(0.13, 0.018, 0.016, c.f(0.74), { y: 0.014, z, k: 11 });
-        for (let q = 0; q < 4; q++) b.ball(0.006, [6, 6, 0, 0], { x: -0.05 + q * 0.034 + (i & 1) * 0.012, y: 0.012, z: z + 0.009, lod: 1 });
+      const fc = r() < 0.5 ? 2 : 3;   // red or orange fruit (palette rows)
+      b.box(0.17, 0.004, 0.17, c.g ? c.g(0.5) : c.f(0.86));
+      for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
+        const x = i * 0.056, z = j * 0.056, s = 0.9 + ((i * 7 + j * 3 + 20) % 4) * 0.05;
+        b.cyl(0.005, 0.03 * s, c.trunk, { x, z }); b.ball(0.024 * s, c.leaf(0.7), { x, z, y: 0.024 * s });
+        for (let q = 0; q < 3; q++) { const a = q * 2.1 + i + j; b.ball(0.005, [fc, 5, 0, 0], { x: x + Math.cos(a) * 0.019 * s, y: 0.036 * s + (q % 2) * 0.01, z: z + Math.sin(a) * 0.019 * s, lod: 1 }); }
       }
-      b.box(0.15, 0.004, 0.11, c.soil(0.55));
-      b.auto = true; return [0.09, 0];
+      b.auto = true; return [0.095, 0];
     }
-    case 'flowers': {   // a patch of flowers in rows. The two accent colors of the region are in it.
+    case 'farmland': {   // a square plot with many rows of crops. Plots next to each other have different crops: the crop of the biome, wheat, greens, or a harvested plot with hay.
       b.auto = false;
-      const cols = [c.a(0.45), c.s(0.5), [4, 3, 0, 0], c.W];
-      b.box(0.15, 0.005, 0.12, c.g ? c.g(0.45) : c.f(0.86));   // the ground of the biome under the flowers
-      for (let i = 0; i < 5; i++) { const col = cols[(i + (r() < 0.5 ? 1 : 0)) % cols.length]; for (let q = 0; q < 7; q++) { b.box(0.004, 0.012, 0.004, c.f(0.7), { x: -0.063 + q * 0.021, z: -0.048 + i * 0.024, y: 0.004, k: 11, lod: 2 }); b.box(0.012, 0.009, 0.012, col, { x: -0.063 + q * 0.021, z: -0.048 + i * 0.024, y: 0.014 }); } }
-      b.auto = true; return [0.09, 0];
+      const W = 0.17, kind = r.int(0, 3), cs = c.crop, wet = kind === 0 && cs && cs.wet;
+      b.box(W, 0.006, W, wet ? [ROW.sea, 4.4] : c.soil(0.62));
+      for (const sd of [-1, 1]) { b.box(W + 0.008, 0.008, 0.005, c.soil(0.9), { z: sd * (W / 2 + 0.001) }); b.box(0.005, 0.008, W, c.soil(0.9), { x: sd * (W / 2 + 0.001) }); }   // a low bank around the plot
+      if (kind === 3) {   // harvested: short stubble and hay bales
+        for (let i = 0; i < 8; i++) b.box(W * 0.94, 0.004, 0.007, c.soil(0.12), { z: -0.07 + i * 0.02, y: 0.005 });
+        for (const [x, z] of [[-0.04, -0.03], [0.045, 0.01], [-0.01, 0.05]]) b.cyl(0.014, 0.022, c.soil(0.02), { x, z, y: 0.019, rx: PI / 2 });
+      } else for (let i = 0; i < 8; i++) for (let q = 0; q < 9; q++) {
+        const x = -0.072 + q * 0.018, z = -0.07 + i * 0.02;
+        if (kind === 0 && cs) { b.box(cs.stem[0], cs.stem[1], cs.stem[0], cs.stem[2], { x, z, y: 0.005 }); if (cs.head) b.box(cs.head[0], cs.head[1], cs.head[0], cs.head[2], { x, z, y: 0.005 + cs.stem[1], lod: 1 }); }
+        else if (kind === 1 || kind === 0) { b.box(0.006, 0.026, 0.006, c.soil(0.06), { x, z, y: 0.005, k: 11 }); b.box(0.009, 0.01, 0.009, c.soil(0.0), { x, z, y: 0.031, lod: 1 }); }   // wheat
+        else b.box(0.014, 0.012, 0.014, c.f(q % 2 ? 0.82 : 0.66), { x, z, y: 0.005, k: 11 });   // greens
+      }
+      b.auto = true; return [0.095, 0];
+    }
+    case 'vineyard': {   // a square plot: five straight rows of vines on posts and wires, with grapes
+      b.auto = false;
+      b.box(0.17, 0.004, 0.17, c.soil(0.55));
+      for (let i = -2; i <= 2; i++) {
+        const z = i * 0.034;
+        for (const sx of [-1, 0, 1]) b.box(0.005, 0.034, 0.005, c.wood, { x: sx * 0.078, z });
+        b.box(0.16, 0.002, 0.002, c.wood, { y: 0.03, z, lod: 1 }); b.box(0.16, 0.002, 0.002, c.wood, { y: 0.018, z, lod: 2 });
+        b.box(0.15, 0.02, 0.014, c.f(0.74), { y: 0.012, z, k: 11 });
+        for (let q = 0; q < 7; q++) b.ball(0.005, [6, 6, 0, 0], { x: -0.066 + q * 0.022, y: 0.012, z: z + 0.008, lod: 1 });
+      }
+      b.auto = true; return [0.095, 0];
+    }
+    case 'flowers': {   // a square plot of flowers in straight rows. Each row has one color, so the field has stripes. The two accent colors of the region are in it.
+      b.auto = false;
+      const cols = [c.a(0.45), c.s(0.5), [4, 3, 0, 0], c.W, [7, 3, 0, 0]], off = r.int(0, 4);
+      b.box(0.17, 0.005, 0.17, c.g ? c.g(0.45) : c.f(0.86));   // the ground of the biome under the flowers
+      for (let i = 0; i < 8; i++) { const col = cols[(Math.floor(i / 2) + off) % cols.length], z = -0.07 + i * 0.02; b.box(0.158, 0.008, 0.006, c.f(0.74), { z, y: 0.004, k: 11 }); for (let q = 0; q < 10; q++) b.box(0.011, 0.008, 0.011, col, { x: -0.072 + q * 0.016, z, y: 0.012 }); }
+      b.auto = true; return [0.095, 0];
     }
     case 'boulders': {   // a few large and small rocks
       b.auto = false;
@@ -372,18 +413,14 @@ export function building(b, style, c, r, wh, opt = {}) {
       b.ball(0.014, c.f(0.8), { x: 0.05, z: 0.03, sy: 0.6, k: 11, lod: 1 });
       b.auto = true; return [0.085, 0];
     }
-    case 'palms': {   // two or three palm trees
+    case 'palms': {   // a grove: three or four trees of the kind that fits the biome (see GROVE)
       b.auto = false;
-      const nn = r.int(2, 3);
+      const draw = GROVE_TREE[(GROVE[c.biome] || ['palm'])[0]] || GROVE_TREE.palm, nn = r.int(3, 4);
       for (let i = 0; i < nn; i++) {
-        const a = r() * PI * 2, d = i ? r.range(0.04, 0.07) : 0, x = Math.cos(a) * d, z = Math.sin(a) * d, s = r.range(0.8, 1.2) * k, lean = (r() - 0.5) * 0.5;
-        b.push(x, 0, z, r() * PI * 2, s, 0, lean);
-        for (let q = 0; q < 5; q++) b.box(0.01, 0.022, 0.01, q % 2 ? c.trunk : c.wood, { y: q * 0.02, x: Math.sin(q * 0.5) * 0.004 });
-        for (let q = 0; q < 6; q++) { const fa = (q / 6) * PI * 2; b.box(0.05, 0.004, 0.014, c.f(q % 2 ? 0.8 : 0.62), { x: Math.cos(fa) * 0.024, z: Math.sin(fa) * 0.024, y: 0.1, ry: -fa, rz: -0.45, k: 11 }); }
-        b.ball(0.006, c.soil(0.2), { y: 0.094, x: 0.006, lod: 1 });
-        b.pop();
+        const a = (i / nn) * PI * 2 + r() * 0.8, d = i ? r.range(0.045, 0.075) : 0.01;
+        b.push(Math.cos(a) * d, 0, Math.sin(a) * d, r() * PI * 2, 1); draw(b, c, r, r.range(0.85, 1.25) * k); b.pop();
       }
-      b.auto = true; return [0.085, 0];
+      b.auto = true; return [0.09, 0];
     }
   }
 }

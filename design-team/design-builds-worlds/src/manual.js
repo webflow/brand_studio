@@ -1,7 +1,7 @@
 // The Region Manual: a panel that looks like a page from a corporate brand guidelines book.
 import { toneHex, toneLabel, HUE_LABEL } from './palette.js';
 import { BIOMES } from './region.js';
-import { STYLES } from './buildings.js';
+import { STYLES, styleLabel } from './buildings.js';
 import { heroGlyph } from './glyphs.js';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -93,7 +93,7 @@ export function manualHTML(app, reg) {
   <section class="cover"><h1>${esc(c.name || 'Your region')}</h1><p class="motto">${esc(c.motto || '')}</p>
     <div class="tag">${esc(tt.tag)}</div></section>
   ${ownerHTML(reg)}
-  <section><h2>Identity</h2><dl class="spec"><dt>Founded</dt><dd>${reg.kind === 'sample' ? esc(c.founded) + ' <em class="demo">demo</em>' : 'Not saved'}</dd><dt>Biome</dt><dd>${BIOMES[c.biome].label} <small>${BIOMES[c.biome].hint}</small></dd><dt>Scenery</dt><dd>${STYLES[c.arch] || 'None'}</dd></dl></section>
+  <section><h2>Identity</h2><dl class="spec"><dt>Founded</dt><dd>${reg.kind === 'sample' ? esc(c.founded) + ' <em class="demo">demo</em>' : 'Not saved'}</dd><dt>Biome</dt><dd>${BIOMES[c.biome].label} <small>${BIOMES[c.biome].hint}</small></dd><dt>Scenery</dt><dd>${STYLES[c.arch] ? styleLabel(c.arch, c.biome) : 'None'}</dd></dl></section>
   <section><h2>Palette</h2>${swRow([BIOMES[c.biome].rows.map((h) => swatches(h, h === 'darkblue' ? [5] : [3, 5], 'Natural: land, plants, water')).join(''), ...P.hues.map((h, i) => ((i && P.hues.indexOf(h) < i) ? '' : swatches(h, P.tones(h), `${ROLE[i]}: ${USE[i]}`)))])}
     <p class="note">Natural colors come from the biome. A person picks the two accent colors.</p></section>
   <section><h2>Landmarks</h2>${reg.heroes.length ? '' : '<p class="note">No landmarks yet.</p>'}<div class="heroes"${reg.heroes.length ? '' : ' hidden'}>${reg.heroes.map((h, i) => `<figure tabindex="0" data-hi="h${reg.tile.index}-${h.i}"><div class="hg">${heroGlyph(h.type, 44)}</div><figcaption><b>${h.def.label}</b><span>Anchor A${h.anchor} · ${SIZE_LABEL[c.heroes[h.i].size] || 'Medium'} · ${((c.heroes[h.i].rot | 0) * 60) % 360}°</span></figcaption></figure>`).join('')}</div></section>

@@ -2,8 +2,9 @@
 import * as THREE from 'three';
 import { REDUCED } from './config.js';
 import { PrimBatch, MeshAcc } from './prims.js';
-import { generateRegion, randomConfig, BIOMES, BIOME_IDS, HUE_IDS } from './region.js';
-import { STYLES, STYLE_IDS, NATURE_STYLES } from './buildings.js';
+import { generateRegion, randomConfig, BIOMES, BIOME_IDS, HUE_IDS, biomeKind } from './region.js';
+import { STYLES, STYLE_IDS, NATURE_STYLES, styleLabel, styleBiome } from './buildings.js';
+import { CLOUD_Y } from './open.js';
 import { HEROES, HERO_IDS } from './heroes.js';
 import { toneHex, HUE_LABEL, TONE_SET_LABEL, ROW } from './palette.js';
 import { heroGlyph } from './glyphs.js';
@@ -28,7 +29,7 @@ export function setupDesign(app) {
   let step = 0, hist = [], hi = -1, dirty = false, dragHero = -1, seedN = (Date.now() % 100000) + 17, rise = -1, sink = -1, sinkReg = null;
   const addAnimator = (t, fn, o) => world.addAnimator(t, fn, o), addLight = (L) => world.addLight(L);
 
-  const setLift = (off) => { P.mesh.position.copy(tile.center).multiplyScalar(off); for (const g of [P.batch.group, P.water[0].group, P.water[1].group]) g.position.copy(P.mesh.position); };
+  const setLift = (off) => { P.mesh.position.copy(tile.center).multiplyScalar(off); for (const g of [P.batch.group, P.water[0].group, P.water[1].group]) g.position.copy(P.mesh.position); const bed = world.cloudBeds.get(tile.index); if (bed) bed.lift(P.mesh.position); };
   function rebuild() {
     dirty = false;
     if (P.reg) { world.removeAnimators(P.reg.animators); world.removeLights(P.reg.lights); }
@@ -39,7 +40,11 @@ export function setupDesign(app) {
     P.batch.commit(); P.water[0].commit(); P.water[1].commit();
     const old = P.mesh.geometry; P.mesh.geometry = acc.toGeometry(); old.dispose();
     const first = !P.mesh.visible;
-    if (first) { world.setShore([...world.tiles.filter((t) => app.byTile.has(t.index)), tile]); rise = 0; }
+    // A region with land makes a shore in the sea around its tile. An ocean region and a sky region do not. A sky region has a cloud.
+    const shore = !reg.open;
+    if (first || shore !== P.shore) { P.shore = shore; world.setShore([...world.tiles.filter((t) => app.byTile.has(t.index)), ...(shore ? [tile] : [])]); }
+    world.cloudBed(tile, reg.open === 'sky', CLOUD_Y, reg.clouds);
+    if (first) rise = 0;
     P.mesh.visible = true; P.reg = reg;
     if (first && app.refreshFree) app.refreshFree();
     if (rise >= 0) for (const a of reg.animators) a.off = true;
@@ -57,17 +62,17 @@ export function setupDesign(app) {
   const hueRow = (i, label) => `<fieldset class="huepick"><legend>${label} <b>${HUE_LABEL[P.cfg.hues[i]]}</b></legend><div class="hues">${HUE_IDS.map((h) => `<button class="hue" data-role="${i}" data-hue="${h}" aria-pressed="${P.cfg.hues[i] === h}" aria-label="${label}: ${HUE_LABEL[h]}" title="${HUE_LABEL[h]}" style="--c:${toneHex(h, 5)}"><i></i></button>`).join('')}</div></fieldset>`;
 
   function stepHTML() {
-    const c = P.cfg, id = STEPS[step][0];
+    const c = P.cfg, id = STEPS[step][0], bk = biomeKind(c.biome);   // bk: land, ocean, or sky. Scenery and landmarks are those of this kind.
     const opt = (set, v, label, hint) => `<button class="opt" data-set="${set}" data-v="${v}" aria-pressed="${c[set] === v}"><b>${label}</b>${hint ? `<small>${hint}</small>` : ''}</button>`;
     if (id === 'land') return `${c.biome === 'blank' ? '<p class="note">Your region starts as bare land. Pick a biome to give it a shape.</p>' : ''}<h3>Biome</h3><div class="grid g3">${BIOME_IDS.map((b) => `<button class="opt" data-set="biome" data-v="${b}" aria-pressed="${c.biome === b}"><b>${BIOMES[b].label}</b><small>${BIOMES[b].hint}</small></button>`).join('')}</div>
       <h3>Terrain</h3>${slider('rough', 'Roughness')}${slider('water', 'Water level')}${slider('veg', 'Vegetation')}`;
     if (id === 'color') return `<p class="note">Land, plants, and water take natural colors from the biome. Pick two accent colors for the buildings and objects.</p>${hueRow(0, 'Accent 1 · roofs, large shapes')}${hueRow(1, 'Accent 2 · walls, details')}
       <h3>Tone set</h3><div class="grid g2">${Object.keys(TONE_SET_LABEL).map((t) => `<button class="opt" data-set="toneSet" data-v="${t}" aria-pressed="${c.toneSet === t}"><b>${TONE_SET_LABEL[t].split(' (')[0]}</b><small>${TONE_SET_LABEL[t].replace(/^.*\(|\)$/g, '')}</small></button>`).join('')}</div>
       ${slider('hueShift', 'Hue shift')}`;
-    if (id === 'scenery') return `<p class="note">The small things that repeat across your land. Pick nature, or buildings, or nothing.</p>
+    if (id === 'scenery') return `<p class="note">${bk === 'ocean' ? 'The small things that repeat across your sea.' : bk === 'sky' ? 'The small things that repeat across your cloud.' : 'The small things that repeat across your land.'} Pick nature, or buildings, or nothing.</p>
       <div class="grid g2">${opt('arch', 'none', 'None', 'only the biome')}</div>
-      <h3>Nature</h3><div class="grid g2">${STYLE_IDS.filter((k) => NATURE_STYLES.has(k)).map((k) => opt('arch', k, STYLES[k])).join('')}</div>
-      <h3>Buildings</h3><div class="grid g2">${STYLE_IDS.filter((k) => !NATURE_STYLES.has(k)).map((k) => opt('arch', k, STYLES[k])).join('')}</div>
+      <h3>Nature</h3><div class="grid g2">${STYLE_IDS.filter((k) => NATURE_STYLES.has(k) && styleBiome(k) === bk).map((k) => opt('arch', k, styleLabel(k, c.biome))).join('')}</div>
+      <h3>Buildings</h3><div class="grid g2">${STYLE_IDS.filter((k) => !NATURE_STYLES.has(k) && styleBiome(k) === bk).map((k) => opt('arch', k, STYLES[k])).join('')}</div>
       <h3>Amount and mood</h3>${slider('bld', 'Density')}${slider('whimsy', 'Whimsy')}`;
     // A small map of the tile with its 7 positions, turned the same way as the view. Blue = this landmark. Grey = taken by a different landmark (not available).
     const posMap = (hi) => {
@@ -84,8 +89,8 @@ export function setupDesign(app) {
         <select data-h="${i}" data-f="size" aria-label="Size of ${HEROES[h.type].label}">${['small', 'medium', 'large'].map((s) => `<option value="${s}" ${h.size === s ? 'selected' : ''}>${s[0].toUpperCase() + s.slice(1)}</option>`).join('')}</select>
         <button class="mini" data-h="${i}" data-f="rot" aria-label="Rotate ${HEROES[h.type].label} by 60 degrees" title="Rotate 60°">↻ ${(h.rot * 60) % 360}°</button>
         <button class="mini" data-h="${i}" data-f="del" aria-label="Remove ${HEROES[h.type].label}" title="Remove">×</button></li>`).join('')}</ol>
-      <h3>Add from nature <small>${c.heroes.length} of ${MAX_HEROES}</small></h3><div class="grid g4">${HERO_IDS.filter((h) => HEROES[h].nature).map(addBtn).join('')}</div>
-      <h3>Add a built object</h3><div class="grid g4">${HERO_IDS.filter((h) => !HEROES[h].nature).map(addBtn).join('')}</div>`;
+      <h3>Add from nature <small>${c.heroes.length} of ${MAX_HEROES}</small></h3><div class="grid g4">${HERO_IDS.filter((h) => HEROES[h].nature && (HEROES[h].open || 'land') === bk).map(addBtn).join('')}</div>
+      <h3>Add a built object</h3><div class="grid g4">${HERO_IDS.filter((h) => !HEROES[h].nature && (HEROES[h].open || 'land') === bk).map(addBtn).join('')}</div>`;
     return `<label class="tx"><span>Region name</span><input type="text" maxlength="24" value="${esc(c.name)}" placeholder="Your region" data-text="name" autocomplete="off" spellcheck="false"></label>
       <label class="tx"><span>Motto</span><input type="text" maxlength="48" value="${esc(c.motto)}" data-text="motto" autocomplete="off"></label>
       <h3>Owner</h3>
@@ -126,7 +131,9 @@ export function setupDesign(app) {
     q('.seasonbar .chip[data-season]').forEach((b) => (b.onclick = () => { setSeason(+b.dataset.season); render(); refocus(`.seasonbar .chip[data-season="${seasonPrev}"]`); }));
     q('.seasonbar .chip[data-time]').forEach((b) => (b.onclick = () => { setTime(b.dataset.time); render(); refocus(`.seasonbar .chip[data-time="${timePrev}"]`); }));
     q('.steps button').forEach((b) => (b.onclick = () => { step = +b.dataset.step; render(); panel.querySelector(`.steps button[data-step="${step}"]`).focus(); }));
-    q('[data-set]').forEach((b) => (b.onclick = () => { P.cfg[b.dataset.set] = b.dataset.v; touch(); commit(); render(); refocus(`[data-set="${b.dataset.set}"][data-v="${b.dataset.v}"]`); }));
+    q('[data-set]').forEach((b) => (b.onclick = () => {
+      if (b.dataset.set === 'biome' && biomeKind(b.dataset.v) !== biomeKind(P.cfg.biome)) { P.cfg.arch = 'none'; P.cfg.heroes = []; }   // land, ocean, and sky have their own scenery and landmarks
+      P.cfg[b.dataset.set] = b.dataset.v; touch(); commit(); render(); refocus(`[data-set="${b.dataset.set}"][data-v="${b.dataset.v}"]`); }));
     q('.hue').forEach((b) => (b.onclick = () => { P.cfg.hues[+b.dataset.role] = b.dataset.hue; touch(); commit(); render(); refocus(`.hue[data-role="${b.dataset.role}"][data-hue="${b.dataset.hue}"]`); }));
     q('input[type=range]').forEach((inp) => { inp.oninput = () => { P.cfg[inp.dataset.key] = +inp.value; inp.nextElementSibling.textContent = (+inp.value).toFixed(2); touch(); }; inp.onchange = () => commit(); });
     q('[data-text]').forEach((inp) => { inp.oninput = () => { P.cfg[inp.dataset.text] = inp.value.slice(0, +inp.maxLength); if (P.reg) P.reg.name = P.cfg.name || 'Your region'; }; inp.onchange = () => { touch(); commit(); }; });
@@ -206,6 +213,7 @@ export function setupDesign(app) {
   // Take the region off its tile: the tile is empty ocean again, and the visitor can claim a tile again.
   function discard() {
     const gone = P.reg || sinkReg; sinkReg = null;
+    world.cloudBed(tile, false); P.shore = undefined;
     if (gone) { world.removeAnimators(gone.animators); world.removeLights(gone.lights); }
     P.batch.reset(); P.water[0].reset(); P.water[1].reset(); P.batch.commit(); P.water[0].commit(); P.water[1].commit();
     const old = P.mesh.geometry; P.mesh.geometry = new THREE.BufferGeometry(); old.dispose(); P.mesh.visible = false;

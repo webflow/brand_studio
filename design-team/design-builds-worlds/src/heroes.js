@@ -1,6 +1,7 @@
 // The 19 hero objects. Each is built from primitives in local units (1 = tile inradius).
 // Local frame: y up, +z is the front. build() adds the static shapes. anim() adds the moving shapes each frame.
 import { ROW } from './palette.js';
+import { OPEN_HEROES } from './open.js';
 import { TAU } from './util.js';
 
 const PI = Math.PI;
@@ -676,5 +677,7 @@ const HL = {
   volcano: [[0, 0.12, 0, 0.9, 'f']], campground: [[0, 0.06, 0.06, 0.42, 'f']], castle: [[0, 0.12, 0.3, 0.42, 'o'], [-0.02, 0.2, -0.04, 0.5, 'o']],
 };
 for (const k in HL) HEROES[k].lights = HL[k];
+export const LAND_HERO_IDS = Object.keys(HEROES);   // the landmarks for a region with land (the samples use these)
+Object.assign(HEROES, OPEN_HEROES);                  // and the landmarks of the ocean and of the sky
 export const HERO_IDS = Object.keys(HEROES);
 export const SIZES = { small: 0.78, medium: 1.0, large: 1.28 };

@@ -1,7 +1,7 @@
 // Demo regions for the prototype. They are samples, not real people. Five are hand-tuned.
-import { randomConfig, BIOME_IDS } from './region.js';
-import { STYLE_IDS } from './buildings.js';
-import { HERO_IDS } from './heroes.js';
+import { randomConfig, LAND_IDS } from './region.js';
+import { LAND_STYLE_IDS } from './buildings.js';
+import { LAND_HERO_IDS } from './heroes.js';
 
 const TUNED = [
   { name: 'Mora Bay', motto: 'Small place. Big shapes.', biome: 'archipelago', rough: 0.45, water: 0.42, veg: 0.75,
@@ -30,10 +30,10 @@ export function sampleConfigs(count) {
     if (i < TUNED.length) cfg = { ...TUNED[i] };
     else {
       cfg = randomConfig(900 + i * 31);
-      cfg.biome = BIOME_IDS[(i * 5 + 2) % BIOME_IDS.length];
-      cfg.arch = STYLE_IDS[(i * 3 + 1) % STYLE_IDS.length];
+      cfg.biome = LAND_IDS[(i * 5 + 2) % LAND_IDS.length];
+      cfg.arch = LAND_STYLE_IDS[(i * 3 + 1) % LAND_STYLE_IDS.length];
       // Make sure every hero object shows somewhere on the planet.
-      cfg.heroes.forEach((h, k) => { h.type = HERO_IDS[(i * 4 + k * 5 + 3) % HERO_IDS.length]; h.rot = 1; });
+      cfg.heroes.forEach((h, k) => { h.type = LAND_HERO_IDS[(i * 4 + k * 5 + 3) % LAND_HERO_IDS.length]; h.rot = 1; });
       cfg.name = A[(i * 7) % A.length] + ' ' + B[(i * 4 + 1) % B.length];
       // Spread the accent hues so the planet shows every brand color.
       const HU = ['red', 'pink', 'green', 'blue', 'orange', 'purple', 'yellow', 'darkblue'];

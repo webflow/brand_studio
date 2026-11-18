@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { ROW } from './palette.js';
 import { edgeE } from './terrain.js';
 import { rng, clamp, easeOut, TAU } from './util.js';
+import { LIB_UNIVERSAL, LIB_BIOME, drawParts } from './details-lib.js';
 
 const WARM = [ROW.yellow, 2, 6];
 const K = (hue, tone, kind = 0) => [ROW[hue], tone, kind];
@@ -14,8 +15,6 @@ const TYPES = {
     draw(db, c, p, t) { const j = Math.sin(p * Math.PI) * 0.09; db.ball(0.016, c.K, { y: j, sx: 1.5 }); db.ball(0.011, c.K, { x: 0.021, y: 0.015 + j }); db.pyr(0.007, 0.009, 0.006, c.K, { x: 0.02, y: 0.034 + j, z: 0.006 }); db.pyr(0.007, 0.009, 0.006, c.K, { x: 0.02, y: 0.034 + j, z: -0.006 }); db.cyl(0.003, 0.028, c.K, { x: -0.022, y: 0.008 + j, rz: 0.5 + Math.sin(t * 2) * 0.25 }); } },
   door: { label: 'a tiny door that opens', pr: 0.05,
     draw(db, c, p) { const o = p > 0 ? easeOut(Math.min(1, p * 2)) : 0; db.half(0.06, 0.05, 0.03, c.p(0.8), { z: -0.012 }); db.box(0.026, 0.036, 0.004, WARM, { z: 0.004 }); db.push(-0.013, 0, 0.007, -o * 1.9, 1); db.box(0.026, 0.036, 0.004, c.a(0.6), { x: 0.013 }); db.ball(0.003, c.W, { x: 0.021, y: 0.014, z: 0.003 }); db.pop(); } },
-  window: { label: 'a window with a small scene', pr: 0.055,
-    draw(db, c, p) { const w = Math.sin(p * TAU * 2) * 0.008; db.box(0.07, 0.06, 0.05, c.s(0.3)); db.box(0.08, 0.008, 0.06, c.a(0.6), { y: 0.06 }); db.box(0.05, 0.036, 0.004, WARM, { y: 0.014, z: 0.025 }); db.cyl(0.006, 0.018, c.K, { x: w, y: 0.014, z: 0.028 }); db.ball(0.006, c.K, { x: w, y: 0.03, z: 0.028 }); db.box(0.004, 0.014, 0.003, c.K, { x: w + 0.008, y: 0.026, z: 0.028, rz: -0.6 - Math.sin(p * TAU * 3) * 0.5 }); } },
   plane: { label: 'a paper plane', pr: 0.06, air: 0.32,
     pos(d, t, p) { const a = t * 0.35 + d.seed; return [d.x + Math.cos(a) * 0.1, d.y + Math.sin(p * Math.PI) * 0.14, d.z + Math.sin(a) * 0.1, -a]; },
     draw(db, c) { db.box(0.012, 0.003, 0.05, c.W); db.box(0.026, 0.002, 0.04, c.W, { x: 0.012, rz: 0.35 }); db.box(0.026, 0.002, 0.04, c.W, { x: -0.012, rz: -0.35 }); } },
@@ -120,14 +119,27 @@ export function polyDist(pts, x, z) {
   }
   return inside ? 0 : best;
 }
-const ORDER = ['cat', 'balloon', 'door', 'frog', 'plane', 'hat', 'window', 'mailbox', 'scarecrow', 'bicycle'];
+// The details that any region can have: the 9 above and 31 from the library (40). Each biome has 10 more of its own (details-lib.js).
+const ORDER = ['cat', 'balloon', 'door', 'frog', 'plane', 'hat', 'mailbox', 'scarecrow', 'bicycle', ...LIB_UNIVERSAL.map((q) => q.id)];
+for (const item of [...LIB_UNIVERSAL, ...Object.values(LIB_BIOME).flat()]) {
+  TYPES[item.id] = { label: item.label, pr: 0.05, water: item.where === 'w', air: item.where === 'a' ? 0.26 : undefined, draw: (db, c, p) => drawParts(db, item, c, p) };
+  if (item.where === 'a') TYPES[item.id].pos = (d, t, p) => { const a = t * 0.3 + d.seed; return [d.x + Math.cos(a) * 0.06, d.y + Math.sin(t * 0.7 + d.seed) * 0.012 + hop(p) * 0.08, d.z + Math.sin(a) * 0.06, -a]; };
+}
+// The kinds for one region, in the order to try them: first two of its biome, then kinds that any region can have, then the other kinds of its biome.
+// The order comes from the seed of the region, so each region has its own mix.
+function kindsFor(biome, rr) {
+  const mix = (list) => list.map((t) => [rr(), t]).sort((a, bb) => a[0] - bb[0]).map((x) => x[1]);
+  const bio = mix((LIB_BIOME[biome] || []).map((q) => q.id)), uni = mix(ORDER);
+  return [...bio.slice(0, 2), ...uni.slice(0, 6), ...bio.slice(2), ...uni.slice(6)];
+}
 
 // Called by the region generator. Picks the details from the seed and adds one animator that draws them.
 export function addDetails(reg, b, anim, r, only) {
   const tile = reg.tile, c = reg.c, H = reg.H, seed = (reg.cfg ? reg.cfg.seed : tile.index * 97) >>> 0;
   const rr = rng(seed + 991);
   const want = only ? only.length : 3 + (seed % 3);
-  const types = only ? only.slice() : ORDER.map((t) => [rr(), t]).sort((a, bb) => a[0] - bb[0]).map((x) => x[1]);
+  const types = only ? only.slice() : kindsFor(reg.cfg ? reg.cfg.biome : '', rr);
+  const open = reg.open;   // 'ocean' or 'sky': a region with no land (see region.js)
   const free = (x, z, rad) => (reg.occ || []).every((o) => (x - o.x) ** 2 + (z - o.z) ** 2 > (rad + o.r) ** 2);
   const roofs = (reg.roofs || []).slice();
   for (const type of types) {
@@ -148,10 +160,11 @@ export function addDetails(reg, b, anim, r, only) {
     else for (let i = 0; i < 200 && !spot; i++) {   // many tries: land with much water or many objects has few free places
       const a = rr() * TAU, d = Math.sqrt(rr()) * 0.85, x = Math.cos(a) * d, z = Math.sin(a) * d, y = H(x, z);
       if (edgeE(tile, x, z) < 0.12) continue;
+      if (open === 'sky' && (T.water || y < 0)) continue;   // on a cloud: no water, and not over the edge of the cloud
       if (T.air) { spot = { x, y: Math.max(y, 0) + T.air, z }; break; }
       if (T.water ? y > -0.025 : y < 0.035) continue;
       if (!free(x, z, 0.05)) continue;
-      spot = { x, y: T.water ? 0.002 : y - 0.004, z };
+      spot = { x, y: T.water ? (open === 'ocean' ? y + 0.004 : 0.002) : y - 0.004, z };
     }
     if (!spot) continue;
     reg.details.push({ type, label: T.label, ...spot, ry: reg.az != null ? Math.PI / 2 - reg.az : 0, seed: rr() * 10, found: false, t0: -99 });
@@ -179,6 +192,7 @@ export function setupDetails(app) {
   const key = (reg) => (reg.kind === 'sample' ? 's' + reg.number : reg.kind === 'area' ? reg.def.id : null);
   const load = (reg) => { const k = key(reg); if (k && Array.isArray(mem[k])) reg.details.forEach((d, i) => { if (mem[k].includes(d.type + i)) d.found = true; }); };
   [...app.samples, ...app.areas].forEach(load);
+  app.detailLib = { universal: LIB_UNIVERSAL, biome: LIB_BIOME, draw: drawParts };   // for the tests and the picture tools
   app.isFound = (reg, i) => !!reg.details[i].found;
   app.foundCount = (reg) => reg.details.filter((d) => d.found).length;
 

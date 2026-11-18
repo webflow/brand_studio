@@ -124,6 +124,87 @@ void main(){
   vec3 col = mix(mix(vec3(0.13, 0.17, 0.28), vec3(0.32, 0.38, 0.52), h), lit, day);
   gl_FragColor = vec4(col, dens * 0.34);
 }`;
+// The cloud of a sky region: flat see-through layers over the tile, one above the other, with the cloud field and the colors of the clouds of the planet.
+// It is thick, so it reads as a solid cloud from near and from far. The buildings of the region stand on its top (top, in tile units).
+const BED_F = /* glsl */`
+uniform float uT, uLayer, uTop; uniform vec3 uSunDir;
+varying vec2 vQ; varying vec3 vW;
+${NOISE}
+void main(){
+  float r = length(vQ), h = uLayer / uTop;
+  float n = vn(vec3(vQ * 2.4 + vec2(uT * 0.02, 0.0), uLayer * 0.35)) * 0.6 + vn(vec3(vQ * 6.0 - vec2(0.0, uT * 0.03), uLayer * 0.5 + 4.0)) * 0.4;
+  float wide = mix(0.7, 0.96, sin(h * 2.67)) + (n - 0.5) * 0.3;                   // the cloud is widest a little over the middle of its height. Its edge is not a circle.
+  float dens = (1.0 - smoothstep(wide - 0.2, wide, r)) * smoothstep(0.16, 0.38, n + (1.0 - r) * 0.5);
+  if (dens < 0.02) discard;
+  float day = smoothstep(-0.15, 0.25, dot(normalize(vW), uSunDir));
+  vec3 lit = mix(vec3(0.78, 0.84, 0.92), vec3(1.0), h);                         // the base is in shade, the top is white (as the clouds of the planet)
+  vec3 col = mix(mix(vec3(0.14, 0.18, 0.3), vec3(0.3, 0.36, 0.5), h), lit, day);
+  gl_FragColor = vec4(col, dens * 0.5);
+}`;
+// Shapes of cloud that stand on the cloud of a region (the body and the towers of the sky castle). Each shape is a pile of flat see-through discs, as the cloud is.
+// All of them are one mesh. The discs are in order from low to high, so that they mix in the correct order when you look from above.
+const PART_V = /* glsl */`
+attribute vec3 aQ;
+varying vec3 vQ; varying vec3 vW; varying vec3 vL;
+void main(){ vQ = aQ; vL = position; vec4 wp = modelMatrix * vec4(position, 1.0); vW = wp.xyz; gl_Position = projectionMatrix * viewMatrix * wp; }`;
+const PART_F = /* glsl */`
+uniform float uT; uniform vec3 uSunDir;
+varying vec3 vQ; varying vec3 vW; varying vec3 vL;
+${NOISE}
+void main(){
+  float r = length(vQ.xy), h = vQ.z;
+  float n = vn(vec3(vL.xz * 9.0 + vec2(uT * 0.03, 0.0), vL.y * 9.0)) * 0.6 + vn(vec3(vL.xz * 23.0, vL.y * 21.0 + 4.0 - uT * 0.04)) * 0.4;
+  float wide = 0.84 + (n - 0.5) * 0.42;                                           // the edge is not a circle
+  float dens = 1.0 - smoothstep(wide - 0.2, wide, r);
+  if (dens < 0.02) discard;
+  float day = smoothstep(-0.15, 0.25, dot(normalize(vW), uSunDir));
+  vec3 lit = mix(vec3(0.8, 0.86, 0.94), vec3(1.0), 0.35 + 0.65 * h) * mix(1.0, 0.9, smoothstep(0.35, 0.9, r));   // white at the top, a little shade at the edge of each puff
+  vec3 col = mix(mix(vec3(0.16, 0.2, 0.32), vec3(0.32, 0.38, 0.52), h), lit, day);
+  gl_FragColor = vec4(col, dens * 0.46);
+}`;
+function partsGeometry(parts) {
+  const discs = [], S = 18, pos = [], q = [], idx = [];
+  parts.forEach(([x, z, R, y0, y1], pi) => {
+    const n = Math.max(4, Math.round((y1 - y0) / 0.0065));
+    for (let i = 0; i <= n; i++) discs.push({ x, z, y: y0 + (y1 - y0) * (i / n), R: R * (0.9 + 0.12 * Math.sin(i * 0.75 + pi * 2.1)) * Math.min(1, (n - i) / 5 + 0.5), h: i / n });   // each shape has soft bulges and a round top
+  });
+  discs.sort((a, b) => a.y - b.y);
+  for (const d of discs) {
+    const base = pos.length / 3; pos.push(d.x, d.y, d.z); q.push(0, 0, d.h);
+    for (let k = 0; k < S; k++) { const a = (k / S) * Math.PI * 2; pos.push(d.x + Math.cos(a) * d.R, d.y, d.z + Math.sin(a) * d.R); q.push(Math.cos(a), Math.sin(a), d.h); }
+    for (let k = 0; k < S; k++) idx.push(base, base + 1 + k, base + 1 + ((k + 1) % S));
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('aQ', new THREE.Float32BufferAttribute(q, 3)); g.setIndex(idx);
+  return g;
+}
+export function makeCloudBed(world, tile, top, depth = 0.24, layers = 11) {
+  const grp = new THREE.Group(); grp.matrixAutoUpdate = false; grp.matrix.copy(tile.matrix);
+  const g = new THREE.CircleGeometry(1, 48); g.rotateX(-Math.PI / 2);
+  const uT = { value: 0 }, mats = [];
+  for (let i = 0; i < layers; i++) {
+    const mat = new THREE.ShaderMaterial({ uniforms: { uT, uSunDir: world.U.uSunDir, uLayer: { value: i }, uTop: { value: layers - 1 }, tNoise: { value: noise3D() } }, vertexShader: EYE_V, fragmentShader: BED_F, transparent: true, depthWrite: false, side: THREE.DoubleSide });
+    const m = new THREE.Mesh(g, mat); mats.push(mat);
+    m.position.y = top - depth + (i / (layers - 1)) * (depth + 0.03); m.renderOrder = 4.3 + i * 0.05; m.frustumCulled = false; grp.add(m);
+  }
+  world.scene.add(grp);
+  let pm = null, pkey = '';
+  const pmat = new THREE.ShaderMaterial({ uniforms: { uT, uSunDir: world.U.uSunDir, tNoise: { value: noise3D() } }, vertexShader: PART_V, fragmentShader: PART_F, transparent: true, depthWrite: false, side: THREE.DoubleSide });
+  mats.push(pmat);
+  return {
+    grp, uT,
+    // The shapes of cloud that stand on this cloud. They are made again only when the list changes.
+    parts(list) {
+      const key = list.map((p) => p.map((v) => v.toFixed(3)).join(',')).join(';');
+      if (key === pkey) return; pkey = key;
+      if (pm) { grp.remove(pm); pm.geometry.dispose(); pm = null; }
+      if (list.length) { pm = new THREE.Mesh(partsGeometry(list), pmat); pm.renderOrder = 4.9; pm.frustumCulled = false; grp.add(pm); }
+    },
+    lift(v) { grp.matrix.copy(tile.matrix); const e = grp.matrix.elements; e[12] += v.x; e[13] += v.y; e[14] += v.z; },   // the region rises from the sea, or goes down into it
+    dispose() { world.scene.remove(grp); g.dispose(); if (pm) pm.geometry.dispose(); for (const q of mats) q.dispose(); },
+  };
+}
+
 export function addStormEye(world, tile) {
   const grp = new THREE.Group(); grp.matrixAutoUpdate = false; grp.matrix.copy(tile.matrix);
   const g = new THREE.CircleGeometry(1, 56); g.rotateX(-Math.PI / 2);
@@ -199,6 +280,7 @@ export class Weather {
     this.shells.forEach((m, i) => { m.visible = on && i < (tier === 'low' ? 2 : tier === 'medium' ? 3 : 4); });
     this.wind.visible = CONFIG.dynamics.weather;
     if (this.world.stormEye) this.world.stormEye.uT.value = tt;
+    for (const bed of this.world.cloudBeds.values()) bed.uT.value = tt;
   }
 }
 

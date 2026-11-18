@@ -5,9 +5,11 @@ import { Builder } from './prims.js';
 import { rimmed, edgeE, voxelH, buildVoxelTerrain, VOX } from './terrain.js';
 import { tileAnchors } from './goldberg.js';
 import { regionPalette, ROW, HUE_LABEL, TONE_SET_LABEL } from './palette.js';
-import { CROPS, HEROES, SIZES, colors, lavaBed, lavaFlow } from './heroes.js';
+import { CROPS, HEROES, LAND_HERO_IDS, SIZES, colors, lavaBed, lavaFlow } from './heroes.js';
 import { addAnimals, BIOME_ANIMALS } from './animals.js';
-import { building, STYLES, NATURE_STYLES } from './buildings.js';
+import { building, STYLES, LAND_STYLE_IDS, NATURE_STYLES, GRID_STYLES, styleLabel } from './buildings.js';
+import { OPEN_STYLES, OPEN_RAD, OPEN_LIVE, openScenery, CLOUD_Y, CLOUD_R } from './open.js';
+import { OCEAN_R } from './world.js';
 import { addDetails } from './details.js';
 import { rng, fbm, clamp, lerp, smooth, TAU } from './util.js';
 
@@ -158,11 +160,21 @@ export const BIOMES = {
     // Flat lawns between a wide grid of streets. Some lawns are one step higher.
     height: (x, z, s, a) => { const G = 0.6, fu = x / G - Math.round(x / G), fv = z / G - Math.round(z / G); if (Math.abs(fu) < 0.13 || Math.abs(fv) < 0.13) return 0.05; const hv = n(Math.floor(x / G) * 3.1 + 0.5, Math.floor(z / G) * 3.1 + 0.5, 7.3, s); return 0.05 + (hv < 0.15 + a * 0.55 ? 0.031 : 0); } },
   // The start of a new region: flat, bare ground with nothing on it. It is not in the list of biomes to pick.
+  // Two biomes with no land (open = which one). The ocean: things float on the open sea. The sky: things stand on a cloud. See generateOpen.
+  ocean: { label: 'Ocean', hint: 'open sea, no land: things float', sens: 0, amp: [0, 0], waterK: 0, vegN: 0, plants: [], open: 'ocean',
+    land: { row: 'sea', t0: 5, t1: 5 }, side: ['sea', 8], leaf: 'forest', rows: ['sea', 'sand'],
+    height: () => -0.1 },
+  sky: { label: 'Sky', hint: 'a city on a cloud, high over the sea', sens: 0, amp: [0, 0], waterK: 0, vegN: 0, plants: [], open: 'sky',
+    land: { row: 'plaster', t0: 0.6, t1: 0.6 }, side: ['plaster', 1], leaf: 'forest', rows: ['plaster', 'snow'],
+    height: () => 0.05 },
   blank: { label: 'Not chosen', hint: '', sens: 0.2, amp: [0, 0], waterK: 0, vegN: 0, plants: [],
     land: { row: 'plaster', t0: 1.6, t1: 1.6 }, side: ['rock', 4.6], leaf: 'forest', rows: [],
     height: () => 0.05 },
 };
 export const BIOME_IDS = Object.keys(BIOMES).filter((k) => k !== 'blank');
+export const LAND_IDS = BIOME_IDS.filter((k) => !BIOMES[k].open);   // the biomes with land (the samples and the random choice use these)
+// The kind of a biome: 'land', 'ocean', or 'sky'. Scenery and landmarks belong to one kind.
+export const biomeKind = (id) => (BIOMES[id] && BIOMES[id].open) || 'land';
 
 function terrainTop(B, maxH) {
   const L = B.land, bandH = B.bandH || 0.065, levels = Math.max(3, maxH / bandH);
@@ -188,7 +200,7 @@ export function describe(cfg) {
   const B = BIOMES[cfg.biome];
   const hues = [...new Set(cfg.hues)].map((h) => HUE_LABEL[h]).join(' and ');
   const objs = cfg.heroes.map((h) => HEROES[h.type].label.toLowerCase()).join(', ');
-  const scen = STYLES[cfg.arch] ? (NATURE_STYLES.has(cfg.arch) ? `${STYLES[cfg.arch].toLowerCase()} as scenery` : `${STYLES[cfg.arch].toLowerCase()} buildings`) : 'no scenery yet';
+  const scen = STYLES[cfg.arch] ? (NATURE_STYLES.has(cfg.arch) ? `${styleLabel(cfg.arch, cfg.biome).toLowerCase()} as scenery` : `${styleLabel(cfg.arch, cfg.biome).toLowerCase()} buildings`) : 'no scenery yet';
   return `${cfg.name || 'A new region'}. ${cfg.biome === 'blank' ? 'Bare land, no biome yet' : B.label + ' land in natural colors'}, with ${scen}. Accent colors: ${hues}, ${cfg.toneSet} tones. Landmarks: ${objs || 'none yet'}.`;
 }
 
@@ -201,6 +213,121 @@ const BIOME_LOOK = {
   beach: { tree: 'palm', stone: 'sand', hot: 1 }, valley: { tree: 'round' }, savannah: { tree: 'acacia', stone: 'earth', hot: 1 }, urban: { tree: 'planter' }, suburban: { tree: 'round' }, blank: { tree: 'round' },
 };
 
+// Keep the scenery apart. Before a piece is made, a builder that keeps nothing draws it, and we get how far its footprint goes from its middle.
+const DRY = new Builder({ add() {} }, null, null);
+function footprint(draw) {
+  DRY.rec = []; DRY.d = 0; DRY.top = DRY.mats[0]; draw(DRY);
+  let m = 0; for (const f of DRY.rec) for (const [x, z] of f.pts) m = Math.max(m, x * x + z * z);
+  return Math.sqrt(m);
+}
+// How much room there is at a place: the distance to the nearest thing that is there already.
+const roomAt = (occ, x, z) => { let m = 9; for (const o of occ) m = Math.min(m, Math.hypot(x - o.x, z - o.z) - o.r); return m; };
+
+// A region with no land.
+// Ocean: its things float on the open sea. The sea of the planet is a little under the plane of the tile, and it curves down to the edges: H gives its height.
+// Sky: its things stand on a cloud, high over the tile. The cloud itself is made in sky.js (see reg.open in design.js).
+function generateOpen(cfg, tile, out, B, c, r, P, anchors) {
+  const sky = B.open === 'sky', L = tile.center.length(), R2 = OCEAN_R * OCEAN_R, rin = tile.rin, seed = cfg.seed % 100000;
+  const seaY = (x, z) => (Math.sqrt(Math.max(0, R2 - (x * x + z * z) * rin * rin)) - L) / rin;
+  const H = sky ? (x, z) => (Math.hypot(x, z) < CLOUD_R ? CLOUD_Y : -1) : seaY;
+  const b = new Builder(out.batch, out.acc, tile.matrix, tile.index); b.sens = 0;
+  const occ = [], free = (x, z, rad) => occ.every((o) => (x - o.x) ** 2 + (z - o.z) ** 2 >= (rad + o.r) ** 2);
+  const reg = { cfg, tile, P, H, anchors, heroes: [], details: [], animators: [], lights: [], roofs: [], desc: describe(cfg), counts: {}, open: B.open, clouds: [] };
+  const anim = (fn, o) => { const a = out.addAnimator(tile, fn, o); reg.animators.push(a); return a; };
+  const _v = new THREE.Vector3();
+  // Put a thing in its place. On the sea it is tilted, so that its base is flat on the water: the sea is a part of a sphere, and its middle is far under the tile.
+  const UP = new THREE.Vector3(0, 1, 0), _q1 = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _sm = new THREE.Matrix4(), _sp = new THREE.Vector3(), _ss = new THREE.Vector3();
+  const seat = (x, y, z, ry, sc) => {
+    if (sky) return b.push(x, y, z, ry, sc);
+    _q1.setFromUnitVectors(UP, _v.set(x, y + L / rin, z).normalize()); _q1.multiply(_q2.setFromAxisAngle(UP, ry));
+    return b.pushM(_sm.compose(_sp.set(x, y, z), _q1, _ss.set(sc, sc, sc)));
+  };
+  // Landmarks. On a cloud they stand a little nearer to the middle, so that all of them are on it.
+  let tallest = null;
+  cfg.heroes.forEach((h, i) => {
+    const def = HEROES[h.type]; if (!def || def.open !== B.open) return;   // a landmark of a different kind of biome has no place here
+    const ai = clamp(h.anchor | 0, 0, 6), A = anchors[ai], sc = SIZES[h.size] || 1, kx = sky ? Math.min(1, (CLOUD_R - 0.22) / Math.max(0.01, Math.hypot(A.x, A.z))) : 1, x = A.x * kx, z = A.z * kx;
+    const ang = tile.rot0 + (h.rot | 0) * (PI / 3), ry = PI / 2 - ang, y = sky ? CLOUD_Y : H(x, z);
+    const it = { i, type: h.type, def, x, z, y, sc, ang, ry, anchor: ai, r: def.r * sc };
+    seat(x, y, z, ry, sc); b.auto = !def.nature; b.wall = 2;
+    const before = b.count;
+    def.build(b, c, { h: () => 0, water: 0, r });
+    b.auto = false; it.shapes = b.count - before;
+    const base = b.top.clone(); b.pop();
+    if (def.anim) anim((db, fb, t, env) => def.anim(db, fb, t, env, c), { base });
+    if (out.addLight) for (const [lx, ly, lz, lr, lt] of def.lights || []) reg.lights.push(out.addLight({ pos: _v.set(lx, ly, lz).applyMatrix4(base).clone(), r: lr * sc * rin * 1.25, col: lt === 'f' ? FIRE : WARM, dir: tile.center, spin: null }));
+    occ.push({ x, z, r: it.r + 0.02 });
+    if (sky && def.clouds) { const cr = Math.cos(ry), sr = Math.sin(ry); for (const [lx, lz, R, y0, y1] of def.clouds) reg.clouds.push([x + (lx * cr + lz * sr) * sc, z + (-lx * sr + lz * cr) * sc, R * sc, CLOUD_Y + y0 * sc, CLOUD_Y + y1 * sc]); }
+    reg.heroes.push(it);
+    const hh = def.h * sc; if (!tallest || hh > tallest.hh) tallest = { it, hh };
+  });
+  let az = PI / 2 + 0.35;
+  if (tallest && Math.hypot(tallest.it.x, tallest.it.z) > 0.1) az = Math.atan2(-tallest.it.z, -tallest.it.x) + 0.3;
+  reg.az = cfg.az ?? az;
+  const th = (tallest ? tallest.hh : 0.2) + (sky ? CLOUD_Y * 0.7 : 0);
+  reg.lift = 0.1 + th * 0.32; reg.camDist = 0.76 + Math.max(0, th - 0.35) * 0.42;
+  // Scenery: on rows, near the landmarks. Whimsy adds disorder.
+  const style = OPEN_STYLES[cfg.arch], nB = style && style[1] === B.open ? Math.round(cfg.bld * (sky ? 16 : 22)) : 0;
+  if (nB > 0) {
+    // Each piece has a known size (OPEN_RAD). A piece that does not fit where it would go gets smaller, or it does not go there.
+    const cand = [], rot = tile.rot0, wh = cfg.whimsy, lines = cfg.arch === 'sandbars', R0 = OPEN_RAD[cfg.arch] || 0.09, sp = Math.max(0.2, R0 * 2.1);
+    const inside = (x, z) => edgeE(tile, x, z) >= 0.16 && !(sky && Math.hypot(x, z) > CLOUD_R - 0.08);
+    if (lines) {
+      // Sandbars: long bars that lie one after the other, in a few lines that go the same way with a slow bend (as the bars along a coast).
+      const dir = rot + (seed % 6) * (PI / 6), cd = Math.cos(dir), sd = Math.sin(dir), ph = seed % 17;
+      for (let li = -3; li <= 3; li++) for (let k = -4; k <= 4; k++) {
+        const u = k * 0.33 + (li & 1) * 0.16, v = li * 0.25 + Math.sin(u * 2.2 + ph) * 0.05 + (r() - 0.5) * wh * 0.04;
+        const x = u * cd - v * sd, z = u * sd + v * cd;
+        if (inside(x, z)) cand.push({ x, z, k: Math.abs(li) + (li < 0 ? 0.3 : 0) + Math.abs(u) * 0.01, ang: dir + Math.atan(Math.cos(u * 2.2 + ph) * 0.11) });
+      }
+    } else for (let i = -6; i <= 6; i++) for (let j = -6; j <= 6; j++) {
+      const lx = (i + j * 0.5) * sp, lz = j * sp * 0.866;
+      const x = lx * Math.cos(rot) - lz * Math.sin(rot) + (r() - 0.5) * wh * 0.12, z = lx * Math.sin(rot) + lz * Math.cos(rot) + (r() - 0.5) * wh * 0.12;
+      if (!inside(x, z)) continue;
+      let near = Math.hypot(x, z) * 0.6;
+      for (const it of reg.heroes) near = Math.min(near, Math.hypot(x - it.x, z - it.z));
+      cand.push({ x, z, k: near + n(x, z, 3, seed + 21) * 0.5 });
+    }
+    cand.sort((a, bb) => a.k - bb.k);
+    let made = 0; const live = OPEN_LIVE[cfg.arch], alive = [];
+    b.auto = !style[2]; b.wall = 2;
+    for (const p of cand) {
+      if (made >= nB) break;
+      let sc = lerp(1, lines ? r.range(0.85, 1.12) : r.range(0.75, 1.3), wh), circ;
+      if (lines) {   // a bar is long: three circles along it
+        circ = [-1, 0, 1].map((q) => ({ x: p.x + Math.cos(p.ang) * q * 0.09 * sc, z: p.z + Math.sin(p.ang) * q * 0.09 * sc, r: 0.05 * sc }));
+        if (!circ.every((q) => free(q.x, q.z, q.r))) continue;
+      } else {
+        const room = roomAt(occ, p.x, p.z);
+        if (room < R0 * sc) { sc = room / R0; if (sc < 0.72) continue; }
+        circ = [{ x: p.x, z: p.z, r: R0 * sc }];
+      }
+      seat(p.x, sky ? CLOUD_Y : H(p.x, p.z), p.z, lines ? -p.ang : r() * TAU, sc);
+      openScenery(b, cfg.arch, c, r, { line: lines });
+      if (live) alive.push({ m: b.top.clone(), sd: made * 7 + (seed % 11) });
+      b.pop();
+      occ.push(...circ); made++;
+    }
+    b.auto = false;
+    reg.counts.scenery = made;
+    // Scenery that moves (bird flocks, star clusters) is drawn each frame.
+    if (live && alive.length) anim((db, fb, t) => { for (const q of alive) { db.pushM(q.m); fb.pushM(q.m); live(db, fb, t, q.sd, c); db.pop(); fb.pop(); } }, { base: new THREE.Matrix4() });
+  }
+  // Birds that circle (medium and high quality).
+  const bseed = seed % 10, by = sky ? CLOUD_Y + 0.36 : 0.5;
+  anim((db, fb, t) => {
+    for (let i = 0; i < 3; i++) {
+      const a = t * (0.25 + i * 0.05) + i * 2.1 + bseed, rad = 0.45 + i * 0.12, flap = Math.sin(t * 7 + i) * 0.5;
+      db.push(Math.cos(a) * rad, by + i * 0.07, Math.sin(a) * rad, -a, 1);
+      db.box(0.03, 0.004, 0.012, c.K, { x: 0.014, rz: flap, lod: 1 }); db.box(0.03, 0.004, 0.012, c.K, { x: -0.014, rz: -flap, lod: 1 });
+      db.pop();
+    }
+  }, { extra: true, minLod: 0.2 });
+  reg.occ = occ; reg.c = c; reg.animals = [];
+  addDetails(reg, b, anim, r);
+  return reg;
+}
+
 // out = { batch, acc, addAnimator(tile, fn, opts), addLight(light) }
 export function generateRegion(cfg, tile, out) {
   const B = BIOMES[cfg.biome], seed = cfg.seed % 100000;
@@ -212,6 +339,7 @@ export function generateRegion(cfg, tile, out) {
   c.tree = (bb, x, y, z, sc = 1) => { bb.push(x, y, z, r() * TAU, 1); tree[look.tree || 'round'](bb, c, r, sc); bb.pop(); };
   { const cr = CROPS[cfg.biome] || CROPS.meadow, col = (q, k) => [ROW[q[0]], q[1], k || 0, 0]; c.crop = { wet: !!cr.wet, stem: [cr.stem[0], cr.stem[1], col(cr.stem[2], 11)], head: cr.head ? [cr.head[0], cr.head[1], col(cr.head[2], cr.head[3])] : null }; }
   const anchors = tileAnchors(tile);
+  if (B.open) return generateOpen(cfg, tile, out, B, c, r, P, anchors);
   const amp = lerp(B.amp[0], B.amp[1], cfg.rough);
   const wOff = (cfg.water - 0.3) * B.waterK * 1.4;
   const wh = cfg.whimsy;
@@ -377,34 +505,43 @@ export function generateRegion(cfg, tile, out) {
   // Small buildings: on a 60-degree lattice (rows), near the hero objects. Whimsy adds disorder.
   const nB = STYLES[cfg.arch] ? Math.round(cfg.bld * 26) : 0;   // no scenery kind yet: nothing
   if (nB > 0) {
-    const cand = [], sp = 0.2, rot = tile.rot0;
+    // Fields (farmland, vineyards, flower fields, orchards) are square plots on one square grid: side by side, all turned the same way, with no disorder.
+    const grid = GRID_STYLES.has(cfg.arch), cand = [], sp = grid ? 0.19 : 0.2, rot = tile.rot0;
     for (let i = -6; i <= 6; i++) for (let j = -6; j <= 6; j++) {
-      const lx = (i + j * 0.5) * sp, lz = j * sp * 0.866;
-      let x = lx * Math.cos(rot) - lz * Math.sin(rot) + (r() - 0.5) * wh * 0.12, z = lx * Math.sin(rot) + lz * Math.cos(rot) + (r() - 0.5) * wh * 0.12;
+      const lx = grid ? (i + 0.5) * sp : (i + j * 0.5) * sp, lz = grid ? (j + 0.5) * sp : j * sp * 0.866, jit = grid ? 0 : wh * 0.12;
+      let x = lx * Math.cos(rot) - lz * Math.sin(rot) + (r() - 0.5) * jit, z = lx * Math.sin(rot) + lz * Math.cos(rot) + (r() - 0.5) * jit;
       if (edgeE(tile, x, z) < 0.16) continue;
       let near = Math.hypot(x, z) * 0.6;
       for (const it of placed) near = Math.min(near, Math.hypot(x - it.x, z - it.z));
-      cand.push({ x, z, k: near + n(x, z, 3, seed + 21) * 0.5 });
+      cand.push({ x, z, k: near + (grid ? 0 : n(x, z, 3, seed + 21) * 0.5) });
     }
     cand.sort((a, bb) => a.k - bb.k);
     let made = 0, bigN = 0; const decks = [];
     b.auto = true;
+    let ci = 0;
     for (const p of cand) {
       if (made >= nB) break;
-      const y = H(p.x, p.z);
-      if (y < 0.03 || !free(p.x, p.z, 0.075)) continue;
-      if (Math.abs(H(p.x + 0.06, p.z) - y) + Math.abs(H(p.x, p.z + 0.06) - y) > 0.07) continue;
+      const y = H(p.x, p.z); ci++;
+      if (y < 0.03 || !free(p.x, p.z, grid ? 0.075 : 0.05)) continue;
+      if (Math.abs(H(p.x + 0.06, p.z) - y) + Math.abs(H(p.x, p.z + 0.06) - y) > (grid ? 0.04 : 0.07)) continue;   // a field needs land that is more level
       // Ruins: now and then a large temple, where there is room for it.
       const big = cfg.arch === 'ruins' && bigN < 2 && made >= bigN * 6 && free(p.x, p.z, 0.25) && edgeE(tile, p.x, p.z) > 0.3 && Math.abs(H(p.x + 0.12, p.z) - y) + Math.abs(H(p.x - 0.12, p.z) - y) + Math.abs(H(p.x, p.z + 0.1) - y) < 0.05;
-      const face = wh < 0.5 ? PI / 2 - (tile.rot0 + Math.round((reg.az - tile.rot0) / (PI / 3) + (r() < wh ? r.int(-1, 1) : 0)) * (PI / 3)) : r() * TAU;
-      const bs = big ? 1.35 : lerp(1, r.range(0.7, 1.45), wh);
+      const face = grid ? -rot : wh < 0.5 ? PI / 2 - (tile.rot0 + Math.round((reg.az - tile.rot0) / (PI / 3) + (r() < wh ? r.int(-1, 1) : 0)) * (PI / 3)) : r() * TAU;
+      let bs = grid ? 1 : big ? 1.35 : lerp(1, r.range(0.7, 1.45), wh), fit = 0;
+      // The plots of a field are squares that fit the grid. All other scenery: measure the piece first. If it is too large for the room at this place, make it smaller. If it is then too small, put nothing here.
+      const rb = grid ? r : rng((cfg.seed ^ Math.imul(ci, 2654435761)) >>> 0);
+      if (!grid) {
+        const sd = (cfg.seed ^ Math.imul(ci, 2654435761)) >>> 0, fr = footprint((d) => { d.auto = true; d.wall = 2; building(d, cfg.arch, c, rng(sd), wh, { big }); }), room = roomAt(occ, p.x, p.z);
+        if (fr * bs > room) { bs = room / fr; if (bs < (big ? 1.1 : 0.72)) continue; }
+        fit = fr * bs;
+      }
       b.push(p.x, y - 0.008, p.z, face, bs);
-      const [rad, topY, ox, deck] = building(b, cfg.arch, c, r, wh, { big });
+      const [rad, topY, ox, deck] = building(b, cfg.arch, c, rb, wh, { big });
       b.pop();
       if (big) bigN++;
       if (deck) decks.push({ x: p.x, z: p.z, y: y - 0.008 + deck * bs });
       if (topY > 0) reg.roofs.push({ x: p.x + Math.cos(face) * (ox || 0) * bs, y: y - 0.008 + topY * bs, z: p.z - Math.sin(face) * (ox || 0) * bs });
-      occ.push({ x: p.x, z: p.z, r: rad });
+      occ.push({ x: p.x, z: p.z, r: fit || rad });
       made++;
     }
     b.auto = false;
@@ -549,12 +686,12 @@ export function randomConfig(seed, part) {
   const r = rng(seed * 7919 + 13);
   const pickHues = () => { const a = r.pick(HUE_IDS); let s = r.pick(HUE_IDS); for (let i = 0; i < 8 && s === a; i++) s = r.pick(HUE_IDS); return [a, s]; };
   const nH = r.int(2, 5), used = new Set(), heroes = [];
-  const ids = Object.keys(HEROES);
+  const ids = LAND_HERO_IDS;
   for (let i = 0; i < nH; i++) { let an = r.int(0, 6); for (let k = 0; k < 8 && used.has(an); k++) an = r.int(0, 6); used.add(an); heroes.push({ type: r.pick(ids), anchor: an, rot: r.int(0, 5), size: r.pick(['small', 'medium', 'medium', 'large']) }); }
   const all = {
-    biome: r.pick(BIOME_IDS), rough: r.range(0.1, 0.9), water: r.range(0.1, 0.7), veg: r.range(0.25, 1),
+    biome: r.pick(LAND_IDS), rough: r.range(0.1, 0.9), water: r.range(0.1, 0.7), veg: r.range(0.25, 1),
     hues: pickHues(), toneSet: r.pick(['mid', 'mid', 'mid', 'deep', 'mixed', 'pastel']), hueShift: r.range(0.3, 0.8),
-    arch: r.pick(Object.keys(STYLES)), bld: r.range(0.2, 0.9), whimsy: r.range(0, 1),
+    arch: r.pick(LAND_STYLE_IDS), bld: r.range(0.2, 0.9), whimsy: r.range(0, 1),
     heroes,
     name: r.pick(NAMES_A) + ' ' + r.pick(NAMES_B), motto: r.pick(MOTTOS),
     seed: (seed * 2654435761) >>> 0,

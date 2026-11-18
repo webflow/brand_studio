@@ -30,6 +30,23 @@ const HG = {
   store: '<path d="M6 28v-13h20v13z M5 15l2-7h18l2 7z M10 28v-8h5v8 M18 19h5v4h-5z M12 8v7 M20 8v7"/>',
   bakery: '<path d="M6 28v-11l10-8 10 8v11z M21 13v-7h3v9.500 M10.500 23c0-5 11-5 11 0v2h-11z M14 20.500l1 2 M17 20.500l1 2"/>',
   square: '<circle cx="16" cy="16" r="12"/><circle cx="16" cy="16" r="7.500"/><circle cx="16" cy="16" r="2"/><path d="M16 4v-2 M16 30v-2 M4 16h-2 M30 16h-2"/>',
+  // The landmarks of the ocean and of the sky
+  reef: '<path d="M16 23v-9 M16 18l-4-4v-3 M16 15l4-4V7 M10 23v-4 M22 23v-5l3-3 M7 23v-2 M2 28c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0 4 1.5 6 0"/>',
+  whalepod: '<path d="M16 23v-8 M16 15c-1-4-5-5.5-9-4.5 1 4 5 6.500 9 4.5z M16 15c1-4 5-5.5 9-4.5-1 4-5 6.500-9 4.500z M2 28c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0 4 1.5 6 0"/>',
+  atoll: '<ellipse cx="15" cy="20" rx="11" ry="6"/><ellipse cx="15" cy="20" rx="5.5" ry="2.6"/><path d="M24 17V8 M24 8l-4 1.5 M24 8l4 1.5 M24 8l-2.5-3 M24 8l2.5-3"/>',
+  seaarch: '<path d="M5 26V11l3-3h16l3 3v15 M11 26v-7a5 5 0 0110 0v7 M9 8V6h5v2 M2 28c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0 4 1.5 6 0"/>',
+  suntower: '<path d="M10 25l2.500-16h7l2.500 16 M12 9V5h2v2h4V5h2v4 M15 14h2v3h-2z M17 20h2 M2 28c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0 4 1.5 6 0"/>',
+  oilrig: '<path d="M4 19h24v-3H4z M8 19v7 M24 19v7 M14 19v7 M19 19v7 M12.500 16l3.500-12 3.500 12 M14 11h4 M25 16v-5 M25 8v-1 M2 28c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0 4 1.5 6 0"/>',
+  shipwreck: '<path d="M5 21l13-6 9 1-4 8-12 1z M13 17.5L11 7 M11 7l7 3 M17 15.500l-1-6 M2 28c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0 4 1.5 6 0"/>',
+  seafort: '<path d="M5 25V15h3v2h3v-2h3v2h4v-2h3v2h3v-2h3v10 M12 15V9h8v6 M16 9V4h4v2h-4 M14 25v-3a2 2 0 014 0v3 M2 28c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0 4 1.5 6 0"/>',
+  rainbow: '<path d="M4 23a12 12 0 0124 0 M8 23a8 8 0 0116 0 M12 23a4 4 0 018 0 M2 26.500h9 M21 26.500h9"/>',
+  cloudfall: '<path d="M8 14a4 4 0 014-4 5 5 0 019.5 1.5 3.5 3.5 0 01.5 7H9a3 3 0 01-1-4.5z M12 21v6 M16 21v8 M20 21v5"/>',
+  skytree: '<path d="M16 25v-8 M16 21l-3-3 M9 12a7 7 0 0114 0 5 5 0 01-3 5h-8a5 5 0 01-3-5z M6 25h20 M9 28h14"/>',
+  floatisle: '<path d="M5 15h22l-5 5-3 1-3 7-3-7-3-1z M16 15v-3 M3 26h4 M25 24h4"/><circle cx="16" cy="8.5" r="3.5"/>',
+  zeppelin: '<ellipse cx="14" cy="13" rx="11" ry="5.5"/><path d="M11 18.500v3.500h7v-3.500 M25 13l5-4v8z M8.500 8.500v9 M19.500 8.500v9 M14 7.500v11"/>',
+  skycastle: '<path d="M9 20v-9h3v2h3V7h2v6h3v-2h3v9 M16 7V3h3.500v2H16 M14.500 20v-3a1.500 1.500 0 013 0v3 M5 24a3 3 0 013-4h16a3 3 0 013 4 3 3 0 01-3 4H8a3 3 0 01-3-4z"/>',
+  aviary: '<path d="M5 23h22 M10 23c0-5.500 3-9 7.500-9 2.200 0 4 1 5 3l3 .500-3 1.500c-.300 3.500-2.500 6-5.500 6 M17.500 14c-1.500-3.500-5-5-8.500-4 M14 23v4 M19 23v4"/><circle cx="20.500" cy="17" r=".7"/>',
+  stardome: '<path d="M5 26a11 11 0 0122 0z M16 15a6 11 0 00-6 11 M16 15a6 11 0 016 11 M12 23L23 9 M21 7.500l4 3 M27 3v4 M25 5h4"/>',
 };
 export function heroGlyph(id, size = 32) {
   return `<svg viewBox="0 0 32 32" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="square" aria-hidden="true">${(HG[id] || '').replace(/\.500/g, '.5')}</svg>`;
