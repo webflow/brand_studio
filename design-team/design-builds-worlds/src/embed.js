@@ -48,6 +48,7 @@ function mount(target, options = {}) {
   if (q.get('bg') !== 'white') { frame.style.background = 'transparent'; frame.style.colorScheme = 'light'; }   // colorScheme: a browser gives a frame a solid backdrop if the page is in the dark scheme and the frame is not
   const fontUrl = options.fontUrl ?? el.dataset.fontUrl ?? siteFont();
   const head = (fontUrl ? `<style>@font-face{font-family:"WF Visual Sans";src:url(${JSON.stringify(new URL(fontUrl, location.href).href)}) format("woff2");font-weight:100 900;font-style:normal;font-display:swap}</style>` : '')
+    + `<style>html{background:${q.get('bg') === 'white' ? '#fff' : 'transparent'}!important}</style>`
     + `<script>window.__DBW_EMBED=1;window.__DBW_QUERY=${JSON.stringify(q.toString())}<\/script>`;
   frame.srcdoc = HTML.replace('<head>', () => '<head>' + head);
   el.replaceWith(frame);

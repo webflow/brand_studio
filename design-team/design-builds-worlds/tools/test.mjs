@@ -254,6 +254,19 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   const r4 = await p4.evaluate(() => ({ tier: window.__dbw.world.tier, phase: window.__dbw.tierState.phase, fps: Math.round(window.__dbw.fps()) }));
   ok('auto quality settles on a tier', r4.phase === 'done', JSON.stringify(r4)); await done(p4, 'auto tier');
 }
+// ---- the full page: no title in the corner, no white backdrop, and no glow around the planet on the dark backdrop
+{
+  const p = await open('t=0.3');
+  await sleep(500);
+  ok('the full page has no title, time, or season in the corner, and the clock still runs for the passport', await p.evaluate(() => getComputedStyle(document.querySelector('#brand')).display === 'none' && /Planet time \d\d:\d\d/.test(document.querySelector('#clock').textContent)));
+  ok('the full page has a dark backdrop (Webflow black), with no white rectangle and no halo', await p.evaluate(() => { const a = window.__dbw, w = a.world; return getComputedStyle(document.documentElement).backgroundColor === 'rgb(8, 8, 8)' && getComputedStyle(document.body).backgroundColor === 'rgba(0, 0, 0, 0)' && w.backdrop.visible === false && w.rings.visible === false && w.renderer.getClearAlpha() === 0 && w.U.uBg.value.toArray().map((v) => Math.round(v * 255)).join(',') === '8,8,8'; }));
+  const q = await open('t=0.3&bg=white');
+  await sleep(500);
+  ok('the option bg=white gives the white backdrop and the glow again', await q.evaluate(() => { const w = window.__dbw.world; return getComputedStyle(document.documentElement).backgroundColor === 'rgb(255, 255, 255)' && w.backdrop.visible === true && w.rings.visible === true && w.renderer.getClearAlpha() === 1; }));
+  await q.close();
+  await done(p, 'backdrop');
+}
+
 // ---- a claimed tile that is not saved goes back to empty ocean
 {
   const p = await open('light=studio');

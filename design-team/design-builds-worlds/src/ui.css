@@ -16,12 +16,12 @@
 --k:var(--text-primary);--w:#fff;--g1:var(--neutral-100);--g15:var(--border-default-subtle);--g3:var(--border-input);--g6:var(--text-secondary);--g8:var(--neutral-1100);--blue:var(--blue-600);--line:var(--border-default-subtle);
 --f:var(--font-body);--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--pw:440px;--acc:var(--blue-600)}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;overflow:hidden;background:#fff;color:var(--k);font-family:var(--f);font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+html{background:#080808}
+html,body{margin:0;height:100%;overflow:hidden;color:var(--k);font-family:var(--f);font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
 body{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 #c{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none;touch-action:none;cursor:grab}
-/* In an embed: no title, time, or season in the corner (the passport in the menu has the time and the season). */
-.embed #brand{display:none}
-html.embed-clear,.embed-clear body{background:transparent}
+/* No title, time, or season in the corner (the passport in the menu has the time and the season). The element stays for the tests. */
+#hud #brand{display:none}
 .embed-dark #hint{color:rgba(255,255,255,.72)}
 .embed-scroll body,.embed-scroll #c{touch-action:pan-y}
 html.embed-scroll,.embed-scroll body{overscroll-behavior:auto}

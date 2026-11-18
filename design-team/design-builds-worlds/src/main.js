@@ -1,5 +1,5 @@
 // Design builds worlds: prototype. One self-contained page, no network.
-import { CONFIG, QUERY, deepMerge, EMBED, hostScrolls, CLEAR, HOST_BG } from './config.js';
+import { CONFIG, QUERY, deepMerge, EMBED, hostScrolls, CLEAR, HOST_BG, HOST_DARK } from './config.js';
 import { World, TIERS } from './world.js';
 import { Cam } from './camera.js';
 import { buildContent } from './content.js';
@@ -14,7 +14,8 @@ import { setupMenu } from './menu.js';
 const $ = (s) => document.querySelector(s);
 const canvas = $('#c');
 // In an embed on a page that scrolls: a finger that moves up or down scrolls the page (a move to the side turns the planet), and the hint says how to zoom.
-if (CLEAR) { const v = parseInt(HOST_BG.slice(1), 16), lum = (0.299 * (v >> 16) + 0.587 * ((v >> 8) & 255) + 0.114 * (v & 255)) / 255; document.documentElement.classList.add('embed-clear'); if (lum < 0.45) document.documentElement.classList.add('embed-dark'); }   // embed-dark: the page behind is dark, so text that lies on the backdrop is light
+if (CLEAR) document.documentElement.classList.add('embed-clear'); if (HOST_DARK) document.documentElement.classList.add('embed-dark');   // embed-dark: the color behind the planet is dark, so text that lies on the backdrop is light
+if (!EMBED) document.documentElement.style.background = HOST_BG;   // the full page paints the color itself. In an embed the page around the frame shows.
 if (EMBED) { document.documentElement.classList.add('embed'); if (hostScrolls()) { document.documentElement.classList.add('embed-scroll'); const h = $('#hint'); if (h) h.textContent = 'Drag to turn the planet. Pinch to zoom, or hold Ctrl or ⌘ and scroll. Select a region to open it, or an empty tile to claim it.'; } }
 const world = new World(canvas);
 const cam = new Cam(world, canvas);

@@ -26,6 +26,7 @@ If you cannot add an attribute to the canvas, name the canvas on the script tag:
 - A canvas with no size (300 x 150) becomes 100% wide and as high as the window (760 px at most).
 - The planet runs inside the frame. The styles and scripts of the page cannot change it, and it cannot change the page.
 - The backdrop is clear: the page shows behind the planet. There is no title, time, or season in the corner (the passport in the menu has the time and the season).
+- On a dark page the planet has no glow of air around it (on a dark page the glow is a bright halo). On a light page it has the glow.
 - It starts when the canvas comes near the view, and it stops drawing while it is out of view.
 - The passport and the visitor's region stay in the storage of the browser, for the address of the page.
 

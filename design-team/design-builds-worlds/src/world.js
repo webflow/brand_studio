@@ -1,6 +1,6 @@
 // The scene: renderer, shared uniforms, materials, ocean, sky rings, orbit marks, clouds, sun, shadows.
 import * as THREE from 'three';
-import { CONFIG, REDUCED, CLEAR, HOST_BG } from './config.js';
+import { CONFIG, REDUCED, CLEAR, HOST_BG, HOST_DARK } from './config.js';
 import { makePaletteTexture, ROW, WHITE } from './palette.js';
 import { VERT, FRAG, FRAG_DEPTH, FX_VERT, FX_FRAG, FRAG_HI } from './shaders.js';
 import { wireLines, PrimBatch, MeshAcc, Builder } from './prims.js';
@@ -115,13 +115,14 @@ export class World {
     this.setTier('medium');
     this.solid(false);
   }
-  // In an embed the backdrop is clear: the page shows behind the planet. A photo needs the white backdrop of the full page:
-  // solid(true) gives it, and solid(false) takes it away again. With no clear backdrop (the full page) this does nothing.
+  // The live backdrop is clear: the color of the page shows behind the planet. A photo needs a white backdrop:
+  // solid(true) gives it, and solid(false) takes it away again. With the option bg=white this does nothing.
   solid(on) {
     if (!CLEAR) return;
     const c = rgb(on ? WHITE : HOST_BG);
     this.renderer.setClearColor(srgb(on ? WHITE : HOST_BG), on ? 1 : 0);
     this.backdrop.visible = on; this.backdrop.material.uniforms.uC.value.copy(c);
+    this.rings.visible = on || !HOST_DARK;   // on a dark page the glow of air is a bright halo: no glow there
     for (const m of this.rings.children) { m.material.uniforms.uSolid.value = on ? 1 : 0; m.material.uniforms.uBgc.value.copy(c); }
     this.U.uBg.value.copy(c);
   }
