@@ -1,5 +1,5 @@
 // Design builds worlds: prototype. One self-contained page, no network.
-import { CONFIG, QUERY, deepMerge, EMBED, hostScrolls, CLEAR, HOST_BG, HOST_DARK } from './config.js';
+import { CONFIG, QUERY, REDUCED, deepMerge, EMBED, hostScrolls, CLEAR, HOST_BG, HOST_DARK } from './config.js';
 import { World, TIERS } from './world.js';
 import { Cam } from './camera.js';
 import { buildContent } from './content.js';
@@ -36,6 +36,18 @@ buildContent(app);
 world.updateTime();
 app.home = app.areas.find((a) => a.def.center) || null;
 if (!QUERY.has('cam')) { if (app.home) { cam.lon = app.home.tile.lon; cam.lat = Math.max(-1.2, Math.min(1.2, app.home.tile.lat)); } else cam.lon = Math.atan2(world.sunDir.z, world.sunDir.x) + 0.55; }
+// The load-in: the Webflow island powers on, then the other islands rise out of the sea. It plays one time at each load. Any input makes it finish fast. "intro=0" turns it off, "intro=1" turns it on.
+// It does not play with reduced motion, or when the address asks for a fixed view (a test, a picture, a region that opens at the start).
+const INTRO = QUERY.get('intro') === '1' || (QUERY.get('intro') !== '0' && !REDUCED && !['open', 'design', 'cam', 't', 'tier', 'light', 'season', 'cfg', 'samples'].some((k) => QUERY.has(k)));
+if (INTRO && app.home) {
+  world.startBuild(app.home.tile);
+  app.introWait = () => tier.mode === 'auto' && tier.phase === 'measure';   // the islands wait until the quality is set
+  const auto0 = cam.auto, introAt = performance.now(); cam.auto = false;
+  const hurry = () => { if (world.build) world.build.fast = true; };
+  for (const ev of ['pointerdown', 'wheel', 'keydown']) window.addEventListener(ev, hurry, { once: true, passive: true });
+  const prevU = app.update;
+  app.update = (t, dt) => { if (prevU) prevU(t, dt); if (world.build) { app.busy = true; world.build.wait = app.introWait() && performance.now() - introAt < 2200; } else if (auto0 != null && !app.introDone) { app.introDone = true; cam.auto = auto0; } };
+}
 setupInteraction(app);
 setupDetails(app);
 setupDiscover(app);
@@ -82,10 +94,14 @@ const forced = QUERY.get('tier');
 if (forced && TIERS[forced]) setTier(forced, true); else renderSettings();
 function autoTier(now, frameMs) {
   if (tier.mode !== 'auto' || tier.phase === 'done') return;
-  if (!tier.t0) { tier.t0 = now + 600; return; }
+  // In the load-in, the first measurement is short (0.9 seconds) and it is done before the islands rise: a change of quality makes one slow frame, and that frame must not come in the middle of the motion or after it.
+  // The second measurement (is "high" too much?) waits until the load-in is done.
+  const intro = !!world.build;
+  if (intro && tier.phase === 'check') { tier.t0 = 0; tier.samples = []; return; }
+  if (!tier.t0) { tier.t0 = now + (intro ? 150 : 600); tier.short = intro; return; }
   if (now < tier.t0) return;
   tier.samples.push(frameMs);
-  if (now - tier.t0 < 2000) return;
+  if (now - tier.t0 < (tier.short ? 900 : 2000)) return;
   const s = tier.samples.sort((a, b) => a - b), avg = s[Math.floor(s.length * 0.6)] || 16;
   const coarse = window.matchMedia && matchMedia('(pointer: coarse)').matches;
   tier.samples = []; tier.t0 = 0;

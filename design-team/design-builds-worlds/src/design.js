@@ -20,6 +20,7 @@ const SINK_S = 2.4, SINK_DEPTH = 0.44;   // a region that is not saved: the seco
 
 export function setupDesign(app) {
   const { world, cam, $ } = app, panel = $('#panel');
+  let saved = null;   // the region as it was at the last save
   let tile = app.practiceTile;   // a visitor with no region can claim a different free tile (app.claimTile)
   const P = app.practice = { tile, reg: null, cfg: null, batch: new PrimBatch(world.lit), mesh: null, water: [new PrimBatch(world.tileSeaDepth, { shadow: false, order: 0.8 }), new PrimBatch(world.tileSea, { shadow: false, order: 0.9 })] };
   world.scene.add(P.batch.group, P.water[0].group, P.water[1].group);
@@ -188,6 +189,7 @@ export function setupDesign(app) {
   function blank(seed) { return { biome: 'blank', rough: 0.4, water: 0.3, veg: 0.6, hues: ['blue', 'yellow'], toneSet: 'mid', hueShift: 0.5, arch: 'none', bld: 0.5, whimsy: 0.3, heroes: [], name: '', motto: '', seed: (seed * 2654435761) >>> 0 }; }
 
   app.enterDesign = () => {
+    if (stash) return;   // a hidden region has no tile: it must get a place first
     if (sink >= 0) discard();   // a region that is on its way down: it is gone now
     if (app.following) app.stopFollow();
     if (app.current) app.closeRegion();
@@ -208,8 +210,35 @@ export function setupDesign(app) {
     if (sink >= 0) discard();
     if (app.clearSeaTile) app.clearSeaTile(t);
     if (t !== tile) { tile = P.tile = app.practiceTile = t; world.removeAnimators([dotsAnim]); dotsAnim = world.addAnimator(tile, anchorDots); }
+    // A region that was hidden or is on the move: it goes on this tile as it was saved, and it rises from the sea. The design mode does not open.
+    if (stash) { P.cfg = JSON.parse(stash); saved = stash; stash = null; rebuild(); cam.changed(); if (app.toast) app.toast('Your region is in its new place<small>It keeps all that you made</small>'); $('#live').textContent = 'Your region is in its new place.'; return true; }
     app.enterDesign(); return true;
   };
+  // The visitor's saved region, from the menu: delete it, hide it, or move it.
+  // 'placed' = it is on a tile. 'hidden' = it is kept, but it has no tile: the visitor selects an empty tile to bring it back. 'none' = there is no saved region.
+  let stash = null;
+  app.myRegion = () => (stash ? 'hidden' : saved && P.cfg ? 'placed' : 'none');
+  // Take the saved region off its tile. It goes down into the sea, and the tile is empty ocean again.
+  function takeOff() {
+    if (app.mode === 'design') app.exitDesign();
+    if (app.current && app.current.kind === 'practice') app.closeRegion();
+    if (!P.cfg) return;
+    if (REDUCED || !P.mesh.visible) discard();
+    else { sink = 0; rise = -1; sinkReg = P.reg; for (const a of sinkReg.animators) a.off = true; world.removeLights(sinkReg.lights); P.reg = null; P.cfg = null; hist = []; hi = -1; world.setShore(world.tiles.filter((t) => app.byTile.has(t.index))); if (app.refreshFree) app.refreshFree(); }
+    cam.changed();
+  }
+  app.deleteRegion = () => { if (app.myRegion() === 'none') return false; takeOff(); saved = null; stash = null; if (app.toast) app.toast('Region deleted<small>The tile is empty ocean again</small>'); $('#live').textContent = 'Your region is deleted.'; return true; };
+  // Hide: the region is kept, but its tile is free again. To bring it back, the visitor selects an empty tile.
+  app.hideRegion = (move) => {
+    if (app.myRegion() !== 'placed') return false;
+    const keep = saved; takeOff(); saved = null; stash = keep;
+    if (app.toast) app.toast(move ? 'Select an empty tile<small>Your region goes there</small>' : 'Region hidden<small>It is saved. Its tile is free again.</small>');
+    $('#live').textContent = move ? 'Select an empty tile for your region.' : 'Your region is hidden. It is saved, and its tile is free again.';
+    return true;
+  };
+  app.moveRegion = () => app.hideRegion(true);
+  // Bring a hidden region back: the visitor selects an empty tile next.
+  app.placeRegion = () => { if (app.myRegion() !== 'hidden') return false; if (app.toast) app.toast('Select an empty tile<small>Your region goes there</small>'); $('#live').textContent = 'Select an empty tile for your region.'; return true; };
   // Take the region off its tile: the tile is empty ocean again, and the visitor can claim a tile again.
   function discard() {
     const gone = P.reg || sinkReg; sinkReg = null;
@@ -223,7 +252,6 @@ export function setupDesign(app) {
   }
   // save = true: "Save region" keeps what is on the tile. If not: the region goes back to how it was at the last save,
   // or, when it was never saved, the tile goes back to empty ocean. A region with no biome has nothing to save.
-  let saved = null;
   app.exitDesign = (save) => {
     if (app.mode !== 'design') return;
     if (dirty) rebuild();

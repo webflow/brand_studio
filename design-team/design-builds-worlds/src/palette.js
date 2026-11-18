@@ -22,21 +22,21 @@ export const DARK_BLUE = '#0F5CD6';
 
 // Row order in the palette texture.
 export const HUES = ['blue', 'darkblue', 'red', 'orange', 'yellow', 'green', 'purple', 'pink'];
-// Natural colors for land, plants, and water. They are not brand tokens. Stops are [tone, color].
+// Natural colors for land, plants, and water. Each one is a mix of brand tokens: the brand hue at tones 100, 300, 500, 700, 900, plus a Neutral token (the mix is noted on each row). Stops are at tones 1, 3, 5, 7, 9.
 // Buildings and objects use the brand hues (the two accent colors a person picks).
 export const NATURAL = {
-  grass: ['Grass', '#E6EDCC', '#BDD08E', '#8FB061', '#63873F', '#385223'],
-  forest: ['Forest', '#D4E1C5', '#9ABB85', '#5E8D52', '#3D6839', '#1F3E1E'],
-  olive: ['Olive', '#ECEBCF', '#C9C88F', '#9A9B58', '#666B37', '#30351A'],
-  sand: ['Sand', '#FBF6DC', '#F0E4B0', '#E3D08A', '#B7A161', '#6B5C33'],
-  earth: ['Earth', '#EAD9C8', '#C9A27E', '#9B6B45', '#70482C', '#3E2616'],
-  rock: ['Rock', '#EEECE8', '#CAC6BF', '#96918A', '#64605B', '#302E2B'],
-  snow: ['Snow', '#F4F8FB', '#D9E6F0', '#AFC6D8', '#6F8CA3', '#2F4354'],
-  sea: ['Sea', '#DCF3F2', '#93D6DC', '#3F9FC0', '#1F5F96', '#0D2B55'],
-  autumn: ['Autumn', '#F8E6C4', '#EFBE74', '#D98A35', '#A3531F', '#4D2410'],
-  coral: ['Coral', '#FBE3DC', '#F3B3A4', '#E38573', '#AE5145', '#55231F'],
-  amethyst: ['Amethyst', '#EAE4F4', '#C3B4E0', '#957DC4', '#614C93', '#2B2148'],
-  plaster: ['Plaster', '#F8F4EC', '#E6DDCD', '#C2B49F', '#857968', '#3E372F'],
+  grass: ['Grass', '#E2EBD7', '#ADC78C', '#80A64A', '#556A2E', '#2B321E'],   // Green 28% + Yellow 27% + Neutral
+  forest: ['Forest', '#DAEDD7', '#93CD8C', '#57AE4A', '#3A6E30', '#21321D'],   // Green 45% + Yellow 12% + Neutral
+  olive: ['Olive', '#E9EBD7', '#C1C689', '#A0A443', '#696828', '#30301A'],   // Yellow 42% + Green 18% + Neutral
+  sand: ['Sand', '#F7F0E2', '#F7E1B7', '#F7D28D', '#C5AB7B', '#615848'],   // Yellow 45% + Neutral
+  earth: ['Earth', '#EFE3D7', '#BD9B78', '#A86F34', '#6B4821', '#3A2E21'],   // Orange 27% + Yellow 20% + Neutral
+  rock: ['Rock', '#EBEBEB', '#C5C5C5', '#909090', '#606060', '#2E2E2E'],   // Neutral only
+  snow: ['Snow', '#ECF4FF', '#C7DDFF', '#92B5E8', '#6A82A6', '#38404C'],   // Blue 38% + Neutral
+  sea: ['Sea', '#DDF1FB', '#8FCBF6', '#3B93F7', '#146EF5', '#062A6B'],   // pale shallows, then the hue of Webflow Blue (#146EF5 at tone 7)
+  autumn: ['Autumn', '#F9E6D1', '#F0B676', '#E9881F', '#995C18', '#3C2710'],   // Orange 45% + Yellow 37% + Neutral
+  coral: ['Coral', '#FADFDB', '#FAA79C', '#EE715D', '#A2493E', '#41231F'],   // Red 40% + Orange 28% + Neutral
+  amethyst: ['Amethyst', '#E8E3F8', '#C1B2F1', '#8970D9', '#5B4799', '#26203B'],   // Purple 50% + Blue 6% + Neutral
+  plaster: ['Plaster', '#F3F0EA', '#E6DCCA', '#BCAC8D', '#8A7E69', '#3D3932'],   // Yellow 20% + Neutral
 };
 export const NATURAL_IDS = Object.keys(NATURAL);
 export const HUE_LABEL = { blue: 'Blue', darkblue: 'Dark Blue', red: 'Red', orange: 'Orange', yellow: 'Yellow', green: 'Green', purple: 'Purple', pink: 'Pink', neutral: 'Neutral' };

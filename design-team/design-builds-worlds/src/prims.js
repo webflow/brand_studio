@@ -53,7 +53,7 @@ export function wireLines(mesh, material, type) {
   const g = new THREE.InstancedBufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(e.pos, 3)); g.setAttribute('aSlab', new THREE.BufferAttribute(e.slab, 1));
   g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(e.pos.length).fill(0), 3));
-  g.setAttribute('aPal', mesh.geometry.attributes.aPal); g.setAttribute('aAux', mesh.geometry.attributes.aAux); g.setAttribute('instanceMatrix', mesh.instanceMatrix);
+  g.setAttribute('aPal', mesh.geometry.attributes.aPal); g.setAttribute('aAux', mesh.geometry.attributes.aAux); g.setAttribute('aTile', mesh.geometry.attributes.aTile); g.setAttribute('instanceMatrix', mesh.instanceMatrix);
   g.instanceCount = mesh.count;
   const line = new THREE.LineSegments(g, material); line.frustumCulled = false; line.matrixAutoUpdate = false; line.matrix.copy(mesh.matrix); line.renderOrder = 2;
   return line;
@@ -64,23 +64,23 @@ export class PrimBatch {
     this.material = material; this.dynamic = dynamic; this.shadow = shadow; this.order = order;
     this.group = new THREE.Group();
     this.group.matrixAutoUpdate = true;
-    this.sets = unitGeos().map(() => ({ n: 0, cap: 0, m: null, pal: null, aux: null, mesh: null, meshCap: 0 }));
+    this.sets = unitGeos().map(() => ({ n: 0, cap: 0, m: null, pal: null, aux: null, til: null, mesh: null, meshCap: 0 }));
     this.total = 0;
   }
   reset() { for (const s of this.sets) s.n = 0; this.total = 0; }
-  add(type, e, row, tone, kind, prm, tx, tz, sens, lod) {
+  add(type, e, row, tone, kind, prm, tx, tz, sens, lod, tile = 255) {   // tile = the index of the tile that the shape is on (255 = none). The load-in uses it: all the shapes of one tile rise as one.
     const s = this.sets[type];
     if (s.n >= s.cap) {
       const cap = Math.max(32, s.cap * 2);
-      const m = new Float32Array(cap * 16), pal = new Uint8Array(cap * 4), aux = new Uint8Array(cap * 4);
-      if (s.m) { m.set(s.m); pal.set(s.pal); aux.set(s.aux); }
-      s.m = m; s.pal = pal; s.aux = aux; s.cap = cap;
+      const m = new Float32Array(cap * 16), pal = new Uint8Array(cap * 4), aux = new Uint8Array(cap * 4), til = new Uint8Array(cap);
+      if (s.m) { m.set(s.m); pal.set(s.pal); aux.set(s.aux); til.set(s.til); }
+      s.m = m; s.pal = pal; s.aux = aux; s.til = til; s.cap = cap;
     }
     const i = s.n++;
     s.m.set(e, i * 16);
     const o = i * 4;
     s.pal[o] = row; s.pal[o + 1] = Math.max(0, Math.min(200, Math.round(tone * 20))); s.pal[o + 2] = kind; s.pal[o + 3] = prm;
-    s.aux[o] = tx; s.aux[o + 1] = tz; s.aux[o + 2] = sens; s.aux[o + 3] = lod;
+    s.aux[o] = tx; s.aux[o + 1] = tz; s.aux[o + 2] = sens; s.aux[o + 3] = lod; s.til[i] = tile;
     this.total++;
   }
   commit() {
@@ -97,11 +97,12 @@ export class PrimBatch {
         if (base.attributes.aSlab) g.setAttribute('aSlab', base.attributes.aSlab.clone());
         g.setAttribute('aPal', new THREE.InstancedBufferAttribute(s.pal, 4, false));
         g.setAttribute('aAux', new THREE.InstancedBufferAttribute(s.aux, 4, false));
+        g.setAttribute('aTile', new THREE.InstancedBufferAttribute(s.til, 1, false));
         const mesh = new THREE.InstancedMesh(g, this.material, 1);
         mesh.instanceMatrix = new THREE.InstancedBufferAttribute(s.m, 16);
         if (this.dynamic) {
           mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-          g.attributes.aPal.setUsage(THREE.DynamicDrawUsage); g.attributes.aAux.setUsage(THREE.DynamicDrawUsage);
+          g.attributes.aPal.setUsage(THREE.DynamicDrawUsage); g.attributes.aAux.setUsage(THREE.DynamicDrawUsage); g.attributes.aTile.setUsage(THREE.DynamicDrawUsage);
         }
         mesh.frustumCulled = false; mesh.matrixAutoUpdate = false; mesh.renderOrder = this.order;
         if (this.shadow) mesh.layers.enable(1);   // layer 1: things that cast a shadow
@@ -112,6 +113,7 @@ export class PrimBatch {
         s.mesh.instanceMatrix.needsUpdate = true;
         s.mesh.geometry.attributes.aPal.needsUpdate = true;
         s.mesh.geometry.attributes.aAux.needsUpdate = true;
+        s.mesh.geometry.attributes.aTile.needsUpdate = true;
       }
       s.mesh.count = s.n; s.mesh.visible = true;
     });
@@ -216,7 +218,7 @@ export class Builder {
     else if ((type === CYL || type === HEX) && tx === 0 && tz === 0) type = POST;   // no taper: one layer is the same shape with a fifth of the triangles
     if (this.rec) recPrim(this, type, m, kind);
     this.batch.add(type, m.elements, col[0], col[1], kind, Math.round((o.p ?? col[3] ?? 0) * 255),
-      Math.round(tx * 255), Math.round(tz * 255), Math.round((o.sens ?? this.sens) * 255), (o.lod ?? this.lod) + 4 * pat);
+      Math.round(tx * 255), Math.round(tz * 255), Math.round((o.sens ?? this.sens) * 255), (o.lod ?? this.lod) + 4 * pat, this.tile);
     this.count++;
     return this;
   }

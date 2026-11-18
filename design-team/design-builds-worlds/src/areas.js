@@ -11,6 +11,7 @@ import { addDetails, polyDist } from './details.js';
 import { addStormEye } from './sky.js';
 import { addAnimals, AREA_ANIMALS } from './animals.js';
 import { OCEAN_R, SEABED_R } from './world.js';
+import { DRAW } from './sea.js';
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 
 // A real mirror for the lake: the scene is drawn a second time from under the water plane, and the lake shows that picture.
@@ -108,10 +109,14 @@ export const AREAS = [
   {
     id: 'north-ice-crown', name: 'North ice crown', ring: 'north', hues: ['snow', 'amethyst'], extra: 'white',
     details: ['sleigh', 'snowman'],   // hidden details that only this area has
-    look: 'Stacked concentric ice terraces, lighter toward the top. Tall white spires. A ring of low arches.',
-    motion: 'Aurora ribbons in the sky.', season: 'The ice stays all year.', seasonal: { flowers: ['purple', 'pink'] }, az: 1.2,
+    look: 'Stacked concentric ice terraces, lighter toward the top. Tall white spires. A ring of low arches. A large white wolf stands on the ice.',
+    motion: 'Aurora ribbons in the sky. The wolf breathes, moves its tail, and howls from time to time.', season: 'The ice stays all year.', seasonal: { flowers: ['purple', 'pink'] }, az: 1.2,
     animals: { rMin: 0.55, rMax: 0.8, yAt: (x, z) => { const d = Math.hypot(x, z); return d > 0.8 ? null : d > 0.68 ? 0.11 : d > 0.53 && d < 0.64 ? 0.18 : null; } },   // they stand on the two lowest ice terraces
-    build({ b, terrain }) {
+    build({ b, terrain, area, anim }) {
+      // A large white arctic wolf stands on the second ice terrace. It moves, so it is drawn each frame. A visitor selects it to read the Wolfdew story (Webflow lore, menu.js).
+      const WA = 2.2, WX = Math.cos(WA) * 0.58, WZ = Math.sin(WA) * 0.58;
+      anim((db, fb, t) => { db.push(WX, 0.18, WZ, -WA, 0.8); DRAW.wolf(db, REDUCED ? 3 : t); db.pop(); });
+      area.taps = [{ key: 'wolf', label: 'Wolfdew', sub: () => 'Webflow backwards', at: [WX, 0.18, WZ], R: 0.14, a0: 0.0, a1: 0.31, tap: () => true }];
       terrain({ h: () => 0.05, top: { row: ROW.snow, tone: 1.8, step: 0 }, side: C('snow', 4.4), sens: 0 });
       [0.82, 0.66, 0.5, 0.36, 0.24].forEach((R, i) => b.cyl(R, 0.07, C('snow', 3.4 - i * 0.8), { y: 0.04 + i * 0.07 }));
       b.hex(0.055, 0.52, C('snow', 0.2), { y: 0.39, t: 0.92 });
@@ -138,7 +143,7 @@ export const AREAS = [
     details: ['dragon', 'campfire'],   // hidden details that only this area has
     marks: [['Crater', 0, 0], ['Ring of fire', 0.72, 0]],
     look: 'One very large volcano that stands in the sea: its lower part is under the water. It has a wide open crater, and you can look in and see its lake of magma. A ring of fire glows on the sea floor around it, with five small cones that come out of the water at the edge.',
-    motion: 'From time to time the volcano erupts: a fountain of magma, glowing rocks that fly out, and a tall column of ash. Magma runs down to the sea, and steam rises where it meets the water. Select the volcano to make it erupt.', season: '', seasonal: { flowers: ['yellow', 'orange'], floes: false, keep: (x, z) => Math.hypot(x, z) > 0.8 }, az: 1.3, tilt: 0.6, lift: 0.4, dist: 1.25,
+    motion: 'When a visitor selects the volcano, it erupts: a fountain of magma, glowing rocks that fly out, and a tall column of ash. Magma runs down to the sea, and steam rises where it meets the water..', season: '', seasonal: { flowers: ['yellow', 'orange'], floes: false, keep: (x, z) => Math.hypot(x, z) > 0.8 }, az: 1.3, tilt: 0.6, lift: 0.4, dist: 1.25,
     lights: [[0, 0.9, 0, 1.3, [1, 0.55, 0.28]], [0.7, 0.12, 0, 0.5, [1, 0.5, 0.2]], [-0.35, 0.12, 0.6, 0.5, [1, 0.5, 0.2]], [-0.35, 0.12, -0.6, 0.5, [1, 0.5, 0.2]]],
     build({ b, terrain, tile, anim, area }) {
       const sat = []; for (let k = 0; k < 5; k++) { const a = tile.rot0 + k * 1.2566; sat.push([Math.cos(a) * 0.87, Math.sin(a) * 0.87]); }
@@ -167,16 +172,15 @@ export const AREAS = [
       sat.forEach(([x, z], k) => b.cyl(0.03, 0.012, C('orange', 5, 2, k * 0.2), { x, z, y: H(x, z) + 0.008 }));
       // Obsidian spires at the outer edge.
       for (let i = 0; i < 9; i++) { const a = tile.rot0 + 0.63 + i * 0.698, d = 0.88 + (i % 3) * 0.04, x = Math.cos(a) * d, z = Math.sin(a) * d; if (edgeE(tile, x, z) < 0.09 || sat.some(([sx, sz]) => Math.hypot(x - sx, z - sz) < 0.16)) continue; b.box(0.035, 0.08 + (i % 3) * 0.05, 0.035, C('neutral', 9.2), { x, y: H(x, z) - 0.006, z, t: 0.7, ry: i }); }
-      // The eruptions. One comes by itself 48 seconds after the last one. A click on the volcano starts one, and the wait starts again.
-      const PERIOD = 48, LEN = 8, st = { t0: 30 - PERIOD, now: 0, flow: 0, last: 0 };   // t0 = when the last eruption began. The first one comes 30 seconds after the start.
+      // The eruptions. The volcano is quiet until the visitor selects it: that is its easter egg. It does not erupt by itself.
+      const LEN = 8, st = { t0: -100, now: 0, flow: 0, last: 0 };   // t0 = when the last eruption began
       const erupt = () => { if (st.now - st.t0 < LEN + 4) return false; st.t0 = st.now; return true; };
       area.taps = [{ key: 'volcano', label: 'Volcano', sub: () => (st.now - st.t0 < LEN + 4 ? 'It erupts now' : 'Select it to make it erupt'), at: [0, 0.55, 0], R: 0.42, a0: -0.25, a1: 0.5, tap: erupt }];
       anim((db, fb, t) => {
         st.now = t;
-        if (t - st.t0 > PERIOD) st.t0 = t;                                                           // an eruption by itself, 48 seconds after the last one began (a click starts the wait again)
         const since = t - st.t0;
         const se = REDUCED ? -1 : since < LEN + 4 ? since : -1;                                      // seconds since the eruption began, or -1
-        const pre = REDUCED || se >= 0 ? 0 : smooth(PERIOD - 6, PERIOD, since);                       // before it: more smoke, a brighter lake
+        const pre = 0;                       // no build-up now: the volcano does not erupt by itself
         const k = se < 0 ? 0 : smooth(0, 0.7, se) * (1 - smooth(LEN - 1.5, LEN, se));                 // how strong the eruption is now
         st.flow += Math.min(0.1, Math.max(0, t - st.last)) * (1 + k * 3); st.last = t;               // the magma goes faster in an eruption
         flows.forEach((a, i) => lavaFlow(db, st.flow, a, RIM, SHORE, H, i * 0.21, 0.046 + k * 0.02));
@@ -404,6 +408,7 @@ export const AREAS = [
       const FY = 0.44, K = 1.0, Z0 = 0.13;
       b.push(0, FY, Z0, 0, K);
       b.box(1.36, 0.05, 1.36, C('neutral', 8), { x: 0.005, y: -0.05, z: -0.13 }); b.box(1.3, 0.012, 1.3, C('blue', 5, 2, 0.4), { x: 0.005, y: -0.062, z: -0.13 });   // the plate, and a blue glow under it
+      const tile0 = b.tile; b.tile = 93;   // 93 = the panels of the Designer (not the plate, not the island): in the load-in they are dark, then they power on (shaders.js)
       const g = 0, BL = C('blue', 5), GLOW = C('blue', 5, 2, 0.5), W = C('neutral', 0.3), UI = C('neutral', 7.5), UI2 = C('neutral', 6.2), TX = C('neutral', 3), INK = C('neutral', 8.8);
       const slab = (w, h, d, col, x, z) => b.box(w, h, d, col, { x, y: g, z });   // a panel on the plate
       const mark = (W0, col, at, nx = 40) => { const M = markRuns(nx); for (const [mx, mw, my] of M.runs) at(mx * W0 - W0 / 2, mw * W0, my * W0, M.cell * W0, M.h * W0, col); };
@@ -462,7 +467,7 @@ export const AREAS = [
       b.box(0.2, 0.004, 0.008, UI2, { x: 0.5, y: ys, z: 0.34 }); b.box(0.022, 0.014, 0.022, W, { x: 0.54, y: ys, z: 0.34 });
       b.box(0.21, 0.014, 0.04, BL, { x: 0.5, y: ys, z: 0.41 });
 
-      b.pop();
+      b.tile = tile0; b.pop();
 
       // ---- The cursor: it goes from the selected element to the Publish button and back, and it clicks at each end.
       const SHAPE = []; for (let k = 0; k < 8; k++) SHAPE.push([0, (k + 1) * 0.72, k]); SHAPE.push([0, 2.6, 8], [2.4, 4.2, 8], [2.9, 4.7, 9], [3.4, 5.2, 10]);
@@ -474,7 +479,7 @@ export const AREAS = [
         db.pop(); db.pop();
       });
 
-      // ---- The rocket. A click on the Publish button launches it: fire, smoke, and up into space. After some time a lift brings up a new rocket.
+      // ---- The rocket. A click on the Publish button launches it: fire, smoke, up into space, and then a jump to light speed. After some time a lift brings up a new rocket.
       const PX = 0.92, PZ = -0.3, PY = H(PX, PZ), RH = 0.36;   // the pad, and the height of the rocket
       b.cyl(0.17, 0.012, C('neutral', 7.6), { x: PX, y: PY, z: PZ }); b.cyl(0.15, 0.004, C('neutral', 6.4), { x: PX, y: PY + 0.012, z: PZ });
       ring(12, 0.16, (x, z, a, i) => b.box(0.03, 0.005, 0.016, i % 2 ? C('yellow', 4) : INK, { x: PX + x, y: PY + 0.012, z: PZ + z, ry: -a + PI / 2 }));
@@ -487,9 +492,9 @@ export const AREAS = [
       light(PX, PY + 0.2, PZ, 0.5, [0.62, 0.78, 1.0]);
       const st = { t0: -99, now: 0 };
       area.rocket = st;
-      // The parts of one launch, in seconds: 0 fire starts, 1.3 it lifts off, 7.6 it is gone, 9 the lift goes down, 10.4 a new rocket comes up, 12.8 it is ready.
-      // The rocket stays in view for a long way: it starts to get small only when it is about two planet radii up, far past the orbit lines.
-      const T_UP = 1.3, T_GONE = 7.6, T_DOWN = 9, T_NEW = 10.4, T_READY = 12.8;
+      // The parts of one launch, in seconds: 0 fire starts, 1.3 it lifts off, 5.4 it stops its climb for a moment, 5.9 it jumps: in a quarter of a second it is a line of light that goes out of view. 9 the lift goes down, 10.4 a new rocket comes up, 12.8 it is ready.
+      // The rocket does not get small and go away: it jumps to light speed.
+      const T_UP = 1.3, T_JUMP = 5.4, T_GO = 5.9, T_GONE = 6.15, T_DOWN = 9, T_NEW = 10.4, T_READY = 12.8;
       area.launch = () => { if (st.now - st.t0 < T_READY) return false; st.t0 = st.now; return true; };
       // What the pointer can find here (see discover.js): the Publish button launches the rocket; the rocket shows what to do.
       const ready = () => st.now - st.t0 > T_READY;
@@ -516,10 +521,26 @@ export const AREAS = [
         db.cyl(0.072, 0.008, C('neutral', live && tt > T_UP && tt < T_NEW ? 8.6 : 5.4), { x: PX, y: PY + 0.014 + liftY, z: PZ });
         if (!live) { draw(db, 0, 1, 0, 0); if (!REDUCED) for (let i = 0; i < 2; i++) { const f = (t * 0.25 + i * 0.5) % 1; db.ball(0.012 + f * 0.012, SM, { x: PX + 0.06, y: PY + 0.03 + f * 0.07, z: PZ + 0.05 }); } return; }   // ready: a little steam at the base
         if (REDUCED) { if (tt > T_NEW) draw(db, 0, 1, 0, 0); return; }   // reduced motion: no flight. The rocket is gone, then a new one is there.
-        if (tt < T_GONE) {
-          const y = alt(tt), gone = 1 - smooth(T_GONE - 1.2, T_GONE, tt);
-          draw(db, y, gone, tt < T_UP ? 0.25 + 0.5 * (tt / T_UP) : 1, tt < T_UP ? Math.sin(t * 70) * 0.003 : 0);
+        const YJ = alt(T_JUMP) + 0.5, LIGHT = [ROW.plaster, 0.1, 6, 0];   // where it jumps from
+        if (tt < T_JUMP) draw(db, alt(tt), 1, tt < T_UP ? 0.25 + 0.5 * (tt / T_UP) : 1, tt < T_UP ? Math.sin(t * 70) * 0.003 : 0);
+        else if (tt < T_GO) {
+          // Before the jump: it goes up slowly, then it moves back a little, as a thing that gets ready to spring. It shakes, and its fire gets short and bright.
+          const k = (tt - T_JUMP) / (T_GO - T_JUMP), y = alt(T_JUMP) + 0.5 * (1 - (1 - k) * (1 - k)) - 0.1 * smooth(0.55, 1, k);
+          draw(db, y, 1, 1 - 0.75 * k, Math.sin(t * 90) * 0.004 * k);
+          fb.box(0.2, 0.2, 0.2, [ROW.sea, 1.4, 0, 0.3 * k], { x: PX, y: PY + y - 0.06, z: PZ, ry: t * 3 });
+        } else if (tt < T_GONE) {
+          // The jump: the rocket is a line of light that gets long very fast and goes up out of view.
+          const k = (tt - T_GO) / (T_GONE - T_GO), y0 = YJ + k * k * 30, L = 0.4 + k * 26;
+          db.box(0.05 * (1 - k * 0.6), L, 0.05 * (1 - k * 0.6), LIGHT, { x: PX, y: PY + y0, z: PZ });
+          fb.box(0.14, L, 0.14, [ROW.sea, 1.6, 0, 0.45 * (1 - k * 0.5)], { x: PX, y: PY + y0, z: PZ });
         } else if (tt > T_NEW) draw(db, liftY, 1, 0, 0);
+        // After the jump: a thin line of light stays for a moment where the rocket went, and a ring of light grows at the place of the jump. Then they are gone.
+        if (tt >= T_GO && tt < T_GO + 0.9) {
+          const k = (tt - T_GO) / 0.9, al = (1 - k) * (1 - k);
+          fb.box(0.02, 60, 0.02, [ROW.plaster, 0.1, 0, al * 0.8 * smooth(0, 0.25, k * 4)], { x: PX, y: PY + YJ, z: PZ }); fb.box(0.07, 60, 0.07, [ROW.sea, 1.6, 0, al * 0.25], { x: PX, y: PY + YJ, z: PZ });
+          const R = 0.1 + k * 1.3; for (let i = 0; i < 16; i++) { const a = i * 0.3927; fb.box(R * 0.42, 0.012, 0.03, [ROW.plaster, 0.1, 0, al * 0.7], { x: PX + Math.cos(a) * R, y: PY + YJ, z: PZ + Math.sin(a) * R, ry: -a + PI / 2 }); }
+          fb.box(0.3 * (1 - k), 0.3 * (1 - k), 0.3 * (1 - k), [ROW.plaster, 0.1, 0, al * 0.6], { x: PX, y: PY + YJ - 0.15 * (1 - k), z: PZ });
+        }
         // Smoke on the ground: it rolls out from the pad in a ring, then it gets thin.
         const g = tt - 0.15;
         if (g > 0 && tt < T_DOWN + 1) for (let i = 0; i < 18; i++) {
@@ -533,7 +554,7 @@ export const AREAS = [
         }
         // The trail: a column of smoke where the rocket was. Each puff grows, moves a little with the wind, and goes away.
         for (let i = 0; i < 30; i++) {
-          const born = T_UP + i * 0.13, age = tt - born; if (age < 0 || age > 3.6) continue;
+          const born = T_UP + i * 0.13, age = tt - born; if (age < 0 || age > 3.6 || born > T_JUMP) continue;
           const s = (0.035 + age * 0.045) * (1 - age / 3.6);
           db.ball(s, i % 3 ? SM : SM2, { x: PX + Math.sin(i * 1.7) * 0.02 + age * 0.03, y: PY + alt(born) - 0.02, z: PZ + Math.cos(i * 2.3) * 0.02 });
         }
@@ -608,25 +629,45 @@ export const AREAS = [
   {
     id: 'storm-eye', name: 'Storm eye', ring: 'lower', hues: ['sea', 'snow', 'yellow'],
     details: ['bottle', 'umbrella'],   // hidden details that only this area has
-    marks: [['Lighthouse', 0, 0]],
-    look: 'Spiral storm arms seen from above. A calm round center with a small lighthouse.',
-    motion: 'Soft cloud layers turn in spiral arms. Soft lightning now and then. Select the lighthouse for an electric storm: it grows over the open ocean next to this area.', season: '', seasonal: { n: 14, keep: (x, z) => Math.hypot(x, z) > 0.06 }, az: 1.1, tilt: 0.7,
+    marks: [['Wizard tower', 0, 0]],
+    look: 'Spiral storm arms seen from above. A calm round center with the dark tower of a wizard: black stone, a pointed roof, green light in the windows, and a ball of purple light over it.',
+    motion: 'Soft cloud layers turn in spiral arms. Soft lightning now and then. Select the tower for an electric storm: it grows over the open ocean next to this area.', season: '', seasonal: { n: 14, keep: (x, z) => Math.hypot(x, z) > 0.06 }, az: 1.1, tilt: 0.7,
     build({ b, terrain, anim, light, world, tile, area }) {
       const H = terrain({ h: (x, z) => lerp(0.07, -0.13, smooth(0.11, 0.22, Math.hypot(x, z))), top: { row: ROW.sand, tone: 2.8, step: 0 }, side: C('sea', 8.4), water: C('sea', 7), sens: 0 });
       b.sens = 0;
-      const col = { p: () => C('rock', 5), s: () => C('plaster', 1), a: () => C('yellow', 5), W: C('plaster', 0.3), K: C('neutral', 8.5), win: () => win('rock', 7.6, 0.1), lamp: win('plaster', 0.4, 0.02), r: rng(3) };
-      b.push(0, H(0, 0) - 0.01, 0, 0, 0.5); HEROES.lighthouse.build(b, col); const base = b.top.clone(); b.pop();
-      anim((db, fb, t, env) => HEROES.lighthouse.anim(db, fb, t, env), { base });
-      for (const ph of [0, PI]) light(0, 0.38, 0, 3.4, [1, 0.86, 0.6], { base, phase: ph });
-      light(0, 0.38, 0, 0.6);
+      // The tower of a dark wizard, on the small island in the calm eye: a tall, bent tower of black stone with a pointed roof, a side turret, and green light in its windows.
+      // A ball of purple light floats over the top of the roof, with sparks that go around it.
+      const TY = H(0, 0) - 0.01, ST = C('rock', 8.3), ST2 = C('rock', 9.2), RF = C('purple', 8.4), RF2 = C('purple', 7), GW = [ROW.green, 3.6, 6, 0];
+      b.push(0, TY, 0, 0.5, 1.2);
+      b.cyl(0.085, 0.022, ST2, {}); b.cyl(0.07, 0.02, ST, { y: 0.02 });                                       // the rock that it stands on
+      ring(5, 0.078, (x, z, a, i) => b.hex(0.012 + (i % 2) * 0.005, 0.05 + (i % 3) * 0.022, ST2, { x, z, y: 0.01, t: 0.9 }), 0.4);   // sharp rocks around it
+      b.hex(0.052, 0.2, ST, { y: 0.04, t: 0.24 });                                                            // the lower part of the tower: it gets thin as it goes up
+      b.hex(0.04, 0.14, ST, { x: 0.006, y: 0.24, t: 0.08 }); b.hex(0.045, 0.012, ST2, { x: 0.004, y: 0.235 });   // the upper part is a little to one side: the tower is bent
+      b.hex(0.062, 0.016, ST2, { x: 0.01, y: 0.378 }); b.hex(0.056, 0.055, ST, { x: 0.01, y: 0.39 });         // the wide room at the top
+      ring(6, 0.058, (x, z) => b.box(0.014, 0.018, 0.014, ST2, { x: x + 0.01, z, y: 0.445 }));                 // the teeth of its wall
+      b.cone(0.058, 0.15, RF, { x: 0.01, y: 0.445 }); b.cone(0.022, 0.07, RF2, { x: 0.016, y: 0.56, rz: -0.25 });   // the pointed roof, with a bent tip
+      b.cyl(0.02, 0.1, ST, { x: -0.05, y: 0.16, z: 0.012 }); b.cyl(0.024, 0.01, ST2, { x: -0.05, y: 0.255, z: 0.012 }); b.cone(0.026, 0.06, RF, { x: -0.05, y: 0.265, z: 0.012 }); b.box(0.03, 0.012, 0.02, ST2, { x: -0.034, y: 0.15, z: 0.01 });   // a side turret
+      b.box(0.022, 0.034, 0.008, ST2, { y: 0.04, z: 0.05 }); b.box(0.012, 0.022, 0.006, GW, { y: 0.045, z: 0.054 });   // the door, with green light behind it
+      for (const [x, y, z] of [[0, 0.13, 0.043], [0.03, 0.19, -0.026], [0.006, 0.29, 0.036], [-0.027, 0.33, -0.016]]) b.box(0.01, 0.02, 0.01, GW, { x, y, z });   // windows on the way up
+      ring(3, 0.052, (x, z) => b.box(0.014, 0.022, 0.014, GW, { x: x + 0.01, z, y: 0.405 }), 0.5);             // the windows of the top room
+      b.box(0.006, 0.006, 0.006, GW, { x: -0.05, y: 0.21, z: 0.032 });
+      const base = b.top.clone(); b.pop();
+      anim((db, fb, t) => {
+        const oy = 0.69 + Math.sin(t * 1.3) * 0.012, pulse = 0.5 + 0.5 * Math.sin(t * 2.7);
+        db.ball(0.022 + pulse * 0.003, [ROW.purple, 2.6, 6, 0], { x: 0.02, y: oy - 0.022, z: 0 }); db.ball(0.011, [ROW.plaster, 0.2, 6, 0], { x: 0.02, y: oy - 0.011, z: 0 });
+        fb.box(0.09, 0.09, 0.09, [ROW.purple, 3, 0, 0.14 + pulse * 0.1], { x: 0.02, y: oy - 0.045, z: 0, ry: t * 0.5 }); fb.box(0.05, 0.05, 0.05, [ROW.purple, 1.6, 0, 0.3], { x: 0.02, y: oy - 0.025, z: 0, ry: -t * 0.8 });
+        for (let k = 0; k < 3; k++) { const a = t * 1.9 + k * 2.094; db.box(0.007, 0.007, 0.007, [ROW.green, 3, 6, 0], { x: 0.02 + Math.cos(a) * 0.045, y: oy - 0.004 + Math.sin(a * 1.3 + k) * 0.014, z: Math.sin(a) * 0.045 }); }
+      }, { base });
+      light(0, 0.69, 0, 1.1, [0.75, 0.5, 1]);
+      light(0, 0.1, 0.06, 0.5, [0.5, 1, 0.5]);
       // The storm: see-through cloud layers with spiral arms. They turn around the calm eye (see addStormEye).
       addStormEye(world, tile);
       // Lightning: a glow inside the cloud and a bolt that goes down to the sea in a zigzag. It flashes two or three times, then it is gone.
-      // One small strike comes by itself every 7.3 seconds. A click on the lighthouse starts the electric storm: for 7 seconds, large bolts with branches,
+      // One small strike comes by itself every 7.3 seconds. A click on the tower starts the electric storm: for 7 seconds, large bolts with branches,
       // and the storm grows over each tile next to this one that is open ocean: dark clouds come over it, and lightning hits the sea there too.
       const DUR = 7, ls = { t0: -99, now: 0 };
       area.storm = ls;
-      area.taps = [{ key: 'tower', label: 'Lighthouse', sub: () => (ls.now - ls.t0 < DUR ? 'An electric storm' : 'Select it for an electric storm'), at: [0, H(0, 0), 0], R: 0.11, a0: 0.0, a1: 0.5, tap: () => { if (ls.now - ls.t0 < DUR) return false; ls.t0 = ls.now; return true; } }];
+      area.taps = [{ key: 'tower', label: 'Wizard tower', sub: () => (ls.now - ls.t0 < DUR ? 'An electric storm' : 'Select it for an electric storm'), at: [0, H(0, 0), 0], R: 0.11, a0: 0.0, a1: 0.72, tap: () => { if (ls.now - ls.t0 < DUR) return false; ls.t0 = ls.now; return true; } }];
       // One piece of a bolt: a thin box from the lower point (b) up to the upper point (a). A large bolt has a wide, faint glow around its white core.
       const piece = (fb, ax, ay, az, bx, by, bz, w, al, big) => {
         const vx = ax - bx, vy = ay - by, vz = az - bz, L = Math.hypot(vx, vy, vz), o = { x: bx, y: by, z: bz, rz: -Math.asin(vx / L), rx: Math.atan2(vz, vy) };

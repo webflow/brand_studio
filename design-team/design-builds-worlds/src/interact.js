@@ -21,7 +21,7 @@ export function setupInteraction(app) {
   function showTip(reg, tile, x, y) {
     if (!tile) { tip.hidden = true; return; }
     const tt = reg ? regionTitle(reg) : null;
-    tip.innerHTML = reg ? `${reg.name.replace(/[<&]/g, '')}<small>${tt.num}${reg.kind === 'sample' ? ' · Sample' : ''}</small>` : `${app.canClaim && app.canClaim() ? 'Claim this region' : 'Free tile'}<small>Tile ${String(tile.index).padStart(3, '0')}</small>`;
+    tip.innerHTML = reg ? `${reg.name.replace(/[<&]/g, '')}<small>${tt.num}${reg.kind === 'sample' ? ' · Sample' : ''}</small>` : `${app.canClaim && app.canClaim() ? (app.myRegion && app.myRegion() === 'hidden' ? 'Put your region here' : 'Claim this region') : 'Free tile'}<small>Tile ${String(tile.index).padStart(3, '0')}</small>`;
     tip.style.left = x + 'px'; tip.style.top = y + 'px'; tip.hidden = false;
   }
   function thingTip(c, x, y) { tip.innerHTML = `${c.label}<small>${String(c.sub).replace(/[<&]/g, '')}</small>`; tip.style.left = (c.sx ?? x) + 'px'; tip.style.top = Math.max(96, (c.sy ?? y) + 14) + 'px'; tip.hidden = false; }

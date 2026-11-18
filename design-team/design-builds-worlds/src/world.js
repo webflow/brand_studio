@@ -61,7 +61,7 @@ export class World {
       uHoverC: { value: new THREE.Vector3() }, uHoverR: { value: 0 }, uHoverTile: { value: -1 },
       uTime: { value: 0 }, uLod: { value: 0 },
       uKeyDir: { value: new THREE.Vector3(0, 1, 0) }, uDetail: { value: 1 }, uBg: { value: rgb(WHITE) },
-      uLitC: { value: new THREE.Vector3() }, uLitR: { value: 0 }, uLitTile: { value: -1 }, uLitK: { value: 0 }, uHole: { value: new THREE.Vector4(0, 1, 0, 2) }, uWave: { value: new THREE.Vector4(0, 1, 0, -1) }, uWire: { value: 0 }, uCut: { value: 0 }, uCutD: { value: 0.16 }, uCutR: { value: 1e9 }, uCutXR: { value: 0 }, uCutM: { value: new THREE.Matrix4() }, uCutE: { value: [0, 1, 2, 3, 4, 5].map(() => new THREE.Vector3(0, 0, 1)) }, uCutX1: { value: new THREE.Vector3() }, uCutX3: { value: new THREE.Vector3() }, uHiC: { value: new THREE.Vector3() }, uHiU: { value: new THREE.Vector3(0, 1, 0) }, uHiP: { value: new THREE.Vector3() }, uHiCol: { value: new THREE.Vector3(0.078, 0.431, 0.961) }, uMoonDir: { value: new THREE.Vector3(0, 1, 0) },
+      uLitC: { value: new THREE.Vector3() }, uLitR: { value: 0 }, uLitTile: { value: -1 }, uLitK: { value: 0 }, uHole: { value: new THREE.Vector4(0, 1, 0, 2) }, uWave: { value: new THREE.Vector4(0, 1, 0, -1) }, uWire: { value: 0 }, uBuild: { value: new THREE.Vector4(0, 1, 0, 99) }, uBuildT: { value: new Float32Array(96).fill(-100) }, uCut: { value: 0 }, uCutD: { value: 0.16 }, uCutR: { value: 1e9 }, uCutXR: { value: 0 }, uCutM: { value: new THREE.Matrix4() }, uCutE: { value: [0, 1, 2, 3, 4, 5].map(() => new THREE.Vector3(0, 0, 1)) }, uCutX1: { value: new THREE.Vector3() }, uCutX3: { value: new THREE.Vector3() }, uHiC: { value: new THREE.Vector3() }, uHiU: { value: new THREE.Vector3(0, 1, 0) }, uHiP: { value: new THREE.Vector3() }, uHiCol: { value: new THREE.Vector3(0.078, 0.431, 0.961) }, uMoonDir: { value: new THREE.Vector3(0, 1, 0) },
       uLights: { value: Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, 0, 0)) },
       uLightDir: { value: Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, 0, -1)) },
       uLightCol: { value: Array.from({ length: 8 }, () => new THREE.Vector3(1, 0.86, 0.6)) },
@@ -181,20 +181,20 @@ export class World {
   }
   // For each ocean point: the distance to the nearest raised tile. The water is pale and shallow near a tile.
   setShore(tiles) {
-    const g = this.ocean.geometry, p = g.attributes.position, h = g.attributes.aH, v = new THREE.Vector3();
+    const g = this.ocean.geometry, p = g.attributes.position, h = g.attributes.aH, ax = g.attributes.aAux, v = new THREE.Vector3();
     const near = tiles.map((t) => ({ t, cos: Math.cos(Math.asin(Math.min(1, t.rcirc)) + 0.14) }));
     for (let i = 0; i < p.count; i++) {
       v.fromBufferAttribute(p, i).normalize();
-      let best = 1;
+      let best = 1, bt = 255;
       for (const { t, cos } of near) {
         const d = v.dot(t.center); if (d < cos) continue;
         const x = v.dot(t.e1) / d / t.rin, z = v.dot(t.e3) / d / t.rin;
         const dist = Math.max(0, -edgeE(t, x, z)) * t.rin;
-        if (dist < best) best = dist;
+        if (dist < best) { best = dist; bt = t.index; }
       }
-      h.setX(i, best);
+      h.setX(i, best); ax.setX(i, bt);   // bt = the tile that this point of the sea is near. In the load-in, the sea is plain open water there until that tile comes up.
     }
-    h.needsUpdate = true;
+    h.needsUpdate = true; ax.needsUpdate = true; if (this.seabed) this.seabed.geometry.attributes.aAux.needsUpdate = true;   // the seabed uses the same list
   }
 
   _sky() {
@@ -259,6 +259,27 @@ export class World {
     this.postRT = null;
   }
 
+  // The load-in. The sea is there from the start, and so is the Webflow island, but it is dark. It powers on. Then the other islands rise out of the sea, one after the other: the ones near the Webflow island first.
+  // The cost: each block has the index of its tile (one byte), and the shader moves it down by an amount that it reads from a list of 93 start times.
+  startBuild(home) {
+    const dir = home.center.clone().normalize(), T = this.U.uBuildT.value; let last = 0;
+    for (const t of this.tiles) {
+      if (t.index > 91) continue;
+      const ang = Math.acos(Math.max(-1, Math.min(1, t.center.clone().normalize().dot(dir))));
+      T[t.index] = t === home ? -100 : 0.9 + (ang / Math.PI) * 1.6 + ((t.index * 0.618) % 1) * 0.22;   // the time of the ring of light at this tile, and a small wait that is different for each tile
+      last = Math.max(last, T[t.index]);
+    }
+    T[92] = -100;
+    this.U.uBuild.value.set(dir.x, dir.y, dir.z, 0);
+    this.build = { t: 0, fast: false, wait: false, end: last + 0.85 };
+    this.warm = 3;   // for the first frames all the parts of the planet are drawn, also the ones on the far side: their data goes to the graphics card now, not when they come into view
+  }
+  stepBuild(dt) {
+    const b = this.build; if (b.hold != null) b.t = b.hold; else b.t += Math.min(dt, 0.05) * (b.fast ? 7 : 1);
+    if (b.wait && !b.fast) b.t = Math.min(b.t, 0.5);   // the quality is not set yet: the screen can flicker, but the islands wait   // hold = a fixed time, for a picture of one moment
+    this.U.uBuild.value.w = b.t;
+    if (b.t >= b.end) { this.U.uBuild.value.w = 99; this.build = null; }
+  }
   // Easter eggs. One wave on the ocean, from the point under dir. The wireframe view of the planet.
   wave(dir) { this.waveAt = this.lastT || 0; this.U.uWave.value.set(dir.x, dir.y, dir.z, 0).normalize(); this.U.uWave.value.w = 0; }
   // The wireframe view: only outlines. Land, buildings, and objects show the edges of their blocks. An empty tile shows the outline of the tile.
@@ -445,9 +466,11 @@ export class World {
 
     if (this.aurora) for (const m of this.aurora) m.visible = CONFIG.dynamics.aurora;
     // Skip chunks on the far side.
-    this.chunks.forEach((c, i) => { c.group.visible = c.center.dot(camDir) > limb - 0.78; this.waterChunks[i][0].group.visible = this.waterChunks[i][1].group.visible = c.group.visible; });
+    const warm = this.warm > 0; if (warm) this.warm--;
+    this.chunks.forEach((c, i) => { c.group.visible = warm || c.center.dot(camDir) > limb - 0.78; this.waterChunks[i][0].group.visible = this.waterChunks[i][1].group.visible = c.group.visible; });
     U.uWave.value.w = this.waveAt != null && t - this.waveAt < 9 ? Math.max(0, t - this.waveAt) : -1;
     if (this.wire || this.wireK > 0) this.stepWire(dt);
+    if (this.build) this.stepBuild(dt);
     for (const f of this.tickers) f(t, U.uLod.value);
     this.runAnimators(t, dt, camDir, limb);
 

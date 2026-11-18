@@ -1,6 +1,39 @@
 // Screenshot sets for each checkpoint.
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export const SETS = {
+  sea: [
+    { name: 'planet1', q: 't=0.30&season=0.3&tier=high&cam=-75,16,4.2', wait: 2500 },
+    { name: 'planet2', q: 't=0.30&season=0.3&tier=high&cam=-140,-20,3.0', wait: 2500 },
+    { name: 'trench', q: 'tier=high&open=a4&light=studio&nopanel=1', w: 1100, h: 760, wait: 1800 },
+    { name: 'atoll', q: 'tier=high&open=a9&light=studio&nopanel=1', w: 1100, h: 760, wait: 1800 },
+    { name: 'island', q: 'tier=high&open=a6&light=studio&nopanel=1', w: 1100, h: 760, wait: 1800 },
+    { name: 'region', q: 'tier=high&open=3&light=studio&season=0.3&nopanel=1', w: 1100, h: 760, wait: 1800 },
+  ],
+  pal: [
+    { name: 'planet1', q: 't=0.30&season=0.3&tier=high&cam=-75,16,4.2', wait: 2500 },
+    { name: 'planet2', q: 't=0.30&season=0.3&tier=high&cam=-140,-20,3.0', wait: 2500 },
+    { name: 'planet3', q: 't=0.30&season=0.3&tier=high&cam=20,-10,3.0', wait: 2500 },
+    ...[3, 5, 9, 12, 16].map((n) => ({ name: 'r' + n, q: `tier=high&open=${n}&light=studio&season=0.3&nopanel=1`, w: 1100, h: 760, wait: 1800 })),
+    ...[0, 2, 3, 7, 10].map((n) => ({ name: 'a' + n, q: `tier=high&open=a${n}&light=studio&nopanel=1`, w: 1100, h: 760, wait: 1800 })),
+  ],
+  lore: [
+    { name: 'wolf', q: 'tier=high&open=a0&light=studio&nopanel=1', w: 1100, h: 760, wait: 2000 },
+    { name: 'wolf-close', q: 'tier=high&open=a0&light=studio&nopanel=1', w: 1100, h: 760, dpr: 2, wait: 2000, run: async (page) => { await page.evaluate(() => { const f = window.__dbw.cam.focus; f.dist *= 0.5; f.tilt = 1.05; f.az = (f.az || 0) + 2.4; }); await sleep(1200); } },
+    { name: 'modal', q: 't=0.30&season=0.3&tier=high', wait: 2500, run: async (page) => { await page.evaluate(() => { localStorage.removeItem('dbw-lore'); const a = window.__dbw, ar = a.areas.find((q) => q.def.id === 'north-ice-crown'), v = ar.tile.center.clone().normalize(); a.cam.auto = false; a.cam.lon = Math.atan2(v.z, v.x); a.cam.lat = 1.2; a.cam.changed(); }); await sleep(900); await page.evaluate(() => window.__dbw.tapThing('wolf')); await sleep(500); } },
+    { name: 'menu', q: 't=0.30&season=0.3&tier=high', wait: 2500, run: async (page) => { await page.click('#settingsBtn'); await sleep(400); await page.evaluate(() => { const e = document.querySelector('#settings'); e.scrollTop = e.scrollHeight; }); await sleep(300); } },
+  ],
+  intro: [0.2, 0.66, 0.95, 1.5, 2.0, 2.6].map((tt) => ({ name: 't' + tt, q: 'intro=1&tier=high&t=0.30&season=0.3', wait: 0, run: async (page) => { await page.waitForFunction(() => window.__dbw && window.__dbw.world.build, { timeout: 8000 }); await page.evaluate((tt) => { window.__dbw.world.build.hold = tt; }, tt); await sleep(700); return null; } })),
+  wiz: [{ name: 'tower', q: 'tier=high&open=a8&light=studio&nopanel=1', w: 1100, h: 760, dpr: 2, wait: 2200, run: async (page) => { await page.evaluate(() => { const f = window.__dbw.cam.focus; f.dist *= 0.42; f.tilt = 1.15; }); await sleep(1200); } }],
+  rocket: [4.2, 5.8, 6.0, 6.1, 6.35].map((x) => ({ name: 'x' + x, q: 'tier=high&t=0.30&season=0.3&cam=0,0,4.6', wait: 2200, run: async (page) => { await page.evaluate((x) => { const a = window.__dbw, r = a.areas[6], v = r.tile.center.clone().normalize(); a.cam.auto = false; a.cam.lon = Math.atan2(v.z, v.x) + 1.15; a.cam.lat = Math.asin(v.y) * 0.6; a.cam.changed(); const pin = () => { r.rocket.t0 = a.world.lastT - x; requestAnimationFrame(pin); }; pin(); }, x); await sleep(900); } })),
+  mine: [
+    { name: 'menu', q: 'design=1&light=studio&tier=high', wait: 2800, run: async (page) => { await page.evaluate(() => { const a = window.__dbw; const c = JSON.parse(JSON.stringify(a.samples[0].cfg)); c.name = 'Test land'; a.practice.cfg = c; a.exitDesign(true); }); await sleep(900); await page.click('#settingsBtn'); await sleep(400); await page.evaluate(() => { const e = document.querySelector('#settings'); e.scrollTop = e.scrollHeight; }); await sleep(300); } },
+    { name: 'ask', q: 'design=1&light=studio&tier=high', wait: 2800, run: async (page) => { await page.evaluate(() => { const a = window.__dbw; const c = JSON.parse(JSON.stringify(a.samples[0].cfg)); a.practice.cfg = c; a.exitDesign(true); }); await sleep(900); await page.click('#settingsBtn'); await sleep(400); await page.evaluate(() => document.querySelector('#menuMine [data-act="delete"]').click()); await sleep(300); } },
+  ],
+  ice: [
+    { name: 'north', q: 't=0.30&season=0.3&tier=high&cam=0,68,2.5', wait: 2500 },
+    { name: 'south', q: 't=0.30&season=0.3&tier=high&cam=0,-68,2.5', wait: 2500 },
+    { name: 'close', q: 't=0.30&season=0.3&tier=high&cam=-120,60,1.7', wait: 2500, dpr: 2 },
+  ],
   cp1: [
     { name: '1-planet-day', q: 't=0.30&tier=high&cam=-75,16,4.2' },
     { name: '2-sunrise-line', q: 't=0.30&tier=high&cam=-10,22,3.2' },

@@ -19,8 +19,20 @@ uniform vec4 uSeasonW;
 uniform float uLod;
 uniform float uTime;
 uniform mat4 uShadowMat;
+// The load-in: the islands rise out of the sea, one tile after the other. uBuild.xyz = the direction of the Webflow island, uBuild.w = the time in seconds (50 or more = the planet is complete).
+// uBuildT = for each tile, the time at which it starts to rise (4 tiles in each vector; slot 92 is for a thing with no tile: it is always up). The result is how far down the tile is now (0 = in its place).
+uniform vec4 uBuild; uniform vec4 uBuildT[24];
+float buildDrop(float tile) {
+  if (uBuild.w >= 50.0) return 0.0;
+  float t = min(tile, 92.0), r = floor(t * 0.25 + 0.01), m = t - r * 4.0; vec4 q = uBuildT[int(r)];
+  float u = clamp((uBuild.w - (m < 0.5 ? q.x : m < 1.5 ? q.y : m < 2.5 ? q.z : q.w)) / 0.8, 0.0, 1.0) - 1.0;
+  return -(2.4 * u * u * u + 1.4 * u * u) * 0.3;   // it comes up fast, goes a little too high, then goes down into its place
+}
+#ifdef USE_INSTANCING
+attribute float aTile;
+#endif
 uniform vec4 uWave;   // one large wave on the ocean: xyz = where it starts (a direction), w = its age in seconds (under 0 = no wave)
-varying float vWv, vWx;
+varying float vWv, vWx, vPw;
 uniform float uCut, uCutR, uCutXR; uniform mat4 uCutM; uniform vec3 uCutE[6]; uniform vec3 uCutX1, uCutX3;   // cut-out photo: keep only what stands on one tile
 bool cutOff(vec3 ow) { vec3 o = (uCutM * vec4(ow, 1.0)).xyz; bool off = o.y > 8.0 || o.y < -4.0 || dot(o.xz, o.xz) > uCutR * uCutR; for (int i = 0; i < 6; i++) { if (uCutE[i].x * o.x + uCutE[i].y * o.z + uCutE[i].z < -0.004) off = true; } vec2 xb = vec2(dot(ow, uCutX1), dot(ow, uCutX3)); if (uCutXR > 0.0 && dot(xb, xb) < uCutXR * uCutXR) off = true; return off; }
 varying vec3 vN;
@@ -37,7 +49,7 @@ attribute float aSlab;
 void main() {
   vec3 p = position;
   vec3 n = normal;
-  vPal = aPal; vAux = aAux; vWv = 0.0; vWx = 0.0;
+  vPal = aPal; vAux = aAux; vWv = 0.0; vWx = 0.0; vPw = 0.0;
   float kind = aPal.z;
   vH = 0.0;
   vInst = 0.0;
@@ -62,6 +74,8 @@ void main() {
     p *= s;
     mat4 im = instanceMatrix;
     vec4 wp = modelMatrix * im * vec4(p, 1.0);
+    wp.xyz -= normalize(wp.xyz) * buildDrop(aTile);
+    vPw = step(92.5, aTile) * step(aTile, 93.5);
     if (kind > 14.5 && kind < 15.5 && aPal.w > 0.5) {   // an autumn leaf in the air: it goes down, then it starts again at the top
       float fl = fract(uTime * 0.07 + aPal.w * 0.037); vec3 upw = normalize(wp.xyz);
       wp.xyz -= upw * fl * (aPal.w / 255.0) * 0.02; wp.xyz += normalize(cross(upw, vec3(0.3, 1.0, 0.2))) * sin(uTime * 2.0 + aPal.w) * 0.0012;
@@ -74,6 +88,8 @@ void main() {
     vec4 wp = modelMatrix * vec4(p, 1.0);
     vec3 wn = mat3(modelMatrix) * n;
     vH = aH;
+    if (kind > 8.5 && kind < 9.5 || kind > 13.5 && kind < 14.5) vH = mix(aH, 1.0, clamp(buildDrop(aAux.x) / 0.3, 0.0, 1.0));   // the load-in: no pale shore and no foam around a tile that is not up
+    wp.xyz -= normalize(wp.xyz) * buildDrop(aAux.w);   // a shape that is not a block has the index of its tile here (the sea has 255: it does not move)
     if (kind > 8.5 && kind < 9.5 && uWave.w >= 0.0) {
       // The wave is one ring that grows from its start point. It has a steep front and a long back. It gets low as it goes, and it stops after a short way.
       // The front is not a perfect circle: it is a little ahead in some directions and a little behind in others, and its height changes along it.
@@ -129,8 +145,9 @@ uniform vec4 uSeasonW;
 uniform float uWindowTone;
 uniform vec3 uFocusC;
 uniform float uCut, uCutD; uniform mat4 uCutM;
-varying float vWv, vWx;
+varying float vWv, vWx, vPw;
 uniform float uWire;
+uniform vec4 uBuild;
 uniform vec4 uHole;   // the bed of the open sea has a round opening here (xyz = direction, w = cos of its size). A sea tile with a trench shows its own, deeper floor.
 uniform float uFocusR, uFocusK, uFocusTile, uDim;
 uniform vec3 uHoverC;
@@ -343,7 +360,9 @@ void main() {
   base = mix(base, pal(${ROW.autumn}.0, 2.3) * vec3(0.9, 0.88, 0.8), grassy * uSeasonW.w * (1.0 - snow) * 0.72);
   if (kind == 3.0) base = mix(base, pal(floor(vPal.w + 0.5), clamp(tone, 3.5, 6.5)), uSeasonW.z * 0.85);
   bool wet = kind == 5.0 || kind == 9.0;
-  if (kind == 14.0) base *= vec3(0.62, 0.86, 0.9) * (0.9 + 0.35 * step(0.72, vnoise(floor(vW * 64.0) / 3.0 + uTime * 0.25)));   // under water: cooler, with moving light
+  if (kind == 14.0) { float dk = smoothstep(0.0, 0.085, vH); base = mix(base * vec3(0.7, 0.9, 1.0), pal(${ROW.sea}.0, 6.4 + (tone - 4.4) * 0.5), dk * 0.54); }   // pale sand at a shore, blue where the sea is deep
+  if (kind == 9.0 || kind == 14.0) base = mix(base, vec3(dot(base, vec3(0.3, 0.55, 0.15))) * vec3(0.94, 1.0, 1.08), 0.36);   // the open sea is a little less saturated than the brand blue, so the land stays the subject
+  if (kind == 14.0) base *= (0.9 + 0.35 * step(0.72, vnoise(floor(vW * 64.0) / 3.0 + uTime * 0.25)));   // under water: cooler, with moving light
   float dif = clamp(ndl, 0.0, 1.0);
   #ifdef SPACE
     dif = max(dif, 0.3 + 0.45 * clamp(dot(N, up), 0.0, 1.0));   // things in orbit always get some light
@@ -361,7 +380,7 @@ void main() {
   if (wet) {
     vec3 Nw = normalize(up + (vec3(vnoise(vW * 210.0 + uTime * 0.3), vnoise(vW * 210.0 + 17.0), vnoise(vW * 210.0 + 31.0 - uTime * 0.25)) - 0.5) * 0.14 + (vec3(vnoise(vW * 620.0 - uTime * 0.5), 0.5, vnoise(vW * 620.0 + 9.0 + uTime * 0.4)) - 0.5) * 0.1);
     float F = 0.03 + 0.97 * pow(1.0 - max(dot(Nw, V), 0.0), 5.0);
-    vec3 skyR = mix(vec3(0.8, 0.87, 0.95), vec3(0.4, 0.58, 0.86), max(dot(reflect(-V, Nw), up), 0.0));
+    vec3 skyR = mix(vec3(0.78, 0.88, 1.0), vec3(0.3, 0.55, 0.95), max(dot(reflect(-V, Nw), up), 0.0));
     cDay = mix(base * (skyA * 0.9 + dif * sunC * 0.75), skyR, F * 0.7);
     sp = pow(max(dot(Nw, Hh), 0.0), 320.0) * 2.2 * lit0 * mix(1.0, sh, uShadowK);
     msp = pow(max(dot(Nw, normalize(uMoonDir + V)), 0.0), 160.0) * moonUp;
@@ -435,6 +454,12 @@ void main() {
     col = mix(col, vec3(0.86, 0.93, 0.97), foam);
     alpha = max(alpha, smoothstep(0.03, 0.3, vWv));
   }
+  if (uBuild.w < 50.0) {
+    // The load-in: the screen of the Designer on the Webflow island is dark, then it powers on (it flickers two times, then it is bright). Then a faint ring of light goes out over the sea, and the islands rise as it gets to them.
+    float tb = uBuild.w, on = smoothstep(0.55, 0.9, tb) * (1.0 - 0.6 * step(0.62, tb) * step(tb, 0.7)) + 0.35 * step(0.3, tb) * step(tb, 0.38);
+    if (vPw > 0.5) col *= 0.08 + 0.92 * min(on, 1.0);   // only the panels of the Designer: no flash, and no change to the plate, the island, or the sea
+    if (kind == 9.0) { float rr = (tb - 0.9) / 1.6 * 3.1416, dr = acos(clamp(dot(normalize(vW), uBuild.xyz), -1.0, 1.0)) - rr; col += vec3(0.45, 0.7, 1.0) * exp(-dr * dr / 0.0012) * 0.5 * smoothstep(0.24, 0.42, rr) * (1.0 - smoothstep(1.2, 3.0, rr)); }   // the ring starts outside the Webflow island
+  }
   if (uWire > 0.0) { col = mix(col, uBg, uWire); if (kind == 9.0 || kind == 5.0) alpha *= 1.0 - uWire; }   // on the way into the wireframe view: the colors go to the backdrop color, and the water goes away
   gl_FragColor = vec4(col, alpha * uAlpha);
 }
@@ -451,6 +476,18 @@ attribute vec4 aAux;
 uniform float uLod;
 varying vec4 vPal;
 varying vec3 vW;
+// The load-in: the islands rise out of the sea, one tile after the other. uBuild.xyz = the direction of the Webflow island, uBuild.w = the time in seconds (50 or more = the planet is complete).
+// uBuildT = for each tile, the time at which it starts to rise (4 tiles in each vector; slot 92 is for a thing with no tile: it is always up). The result is how far down the tile is now (0 = in its place).
+uniform vec4 uBuild; uniform vec4 uBuildT[24];
+float buildDrop(float tile) {
+  if (uBuild.w >= 50.0) return 0.0;
+  float t = min(tile, 92.0), r = floor(t * 0.25 + 0.01), m = t - r * 4.0; vec4 q = uBuildT[int(r)];
+  float u = clamp((uBuild.w - (m < 0.5 ? q.x : m < 1.5 ? q.y : m < 2.5 ? q.z : q.w)) / 0.8, 0.0, 1.0) - 1.0;
+  return -(2.4 * u * u * u + 1.4 * u * u) * 0.3;   // it comes up fast, goes a little too high, then goes down into its place
+}
+#ifdef USE_INSTANCING
+attribute float aTile;
+#endif
 void main() {
   vec3 p = position;
   vPal = aPal;
@@ -463,6 +500,7 @@ void main() {
     else if (lod > 0.5) p *= smoothstep(0.1, 0.34, uLod);
     if (uCut > 0.5 && cutOff((modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz)) p *= 0.0;
     vec4 wp = modelMatrix * instanceMatrix * vec4(p, 1.0);
+    wp.xyz -= normalize(wp.xyz) * buildDrop(aTile);   // the load-in: an effect goes up with its tile
   #else
     vec4 wp = modelMatrix * vec4(p, 1.0);
   #endif

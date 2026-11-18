@@ -7,6 +7,7 @@
     <div id="settings" hidden role="dialog" aria-label="Menu">
       <div id="menuYou"><button id="designBtn" class="btn primary">Design your region</button><button id="goBtn" class="btn" hidden>Go to your region</button></div>
       <div id="menuPass"></div>
+      <div id="menuMine" hidden></div>
       <div id="menuQ"></div>
       <div id="menuReset"><button id="resetBtn" class="btn small">Reset passport</button></div>
     </div>
@@ -22,3 +23,5 @@
 <aside id="panel" hidden></aside>
 <div id="thumb" hidden aria-hidden="true"><canvas id="thumbC" width="240" height="180"></canvas></div>
 <div id="modal" hidden></div>
+<div id="ask" hidden><div class="lorecard" role="alertdialog" aria-modal="true" aria-labelledby="askT"><h2 id="askT">Are you sure you want to delete your region?</h2><div class="askrow"><button id="askNo" class="btn">Cancel</button><button id="askYes" class="btn danger">Delete my region</button></div></div></div>
+<div id="lore" hidden><div class="lorecard" role="dialog" aria-modal="true" aria-labelledby="loreT"><img id="loreI" alt="" hidden><small>Webflow lore</small><h2 id="loreT"></h2><div id="loreP"></div><button id="loreX" class="btn primary">Close</button></div></div>

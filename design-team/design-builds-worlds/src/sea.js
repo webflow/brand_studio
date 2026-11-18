@@ -16,6 +16,26 @@ export const LEGENDS = [['whiteWhale', 'White whale'], ['kraken', 'Kraken'], ['c
 // The model of each legend of the sea, in its own units (y = up, z = the way it looks). The ocean draws it, and the passport makes a picture of it.
 // tt = the time (for the parts that move). ph = a number that is different for each one.
 export const DRAW = {
+  // The white arctic wolf of the North ice crown (not a legend of the sea: it is here so that the passport can make its picture in the same way). Its coat is white with a blue tint.
+  // It stands and breathes, and its tail moves. From time to time it lifts its head to howl, and its ears move. tt = the time.
+  wolf(b, tt = 3) {
+    const W = C('snow', 1.4), W2 = C('snow', 2.7), W3 = C('snow', 3.6), K = [ROW.neutral, 9, 0, 0], EYE = [ROW.blue, 4, 6, 0];
+    const cyc = tt % 11, howl = Math.min(1, Math.max(0, (cyc - 6.5) / 0.8)) * Math.min(1, Math.max(0, (10 - cyc) / 0.8)), hk = howl * howl * (3 - 2 * howl);   // 0 = it looks ahead, 1 = it howls
+    const br = Math.sin(tt * 1.6) * 0.004, tail = Math.sin(tt * 1.3) * 0.22 + Math.sin(tt * 3.1) * 0.06, ear = Math.max(0, Math.sin(tt * 0.9 + 1) - 0.92) * 6 * Math.sin(tt * 22);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) { b.box(0.036, 0.12, 0.04, W2, { x: sx * 0.04, z: sz * 0.115 }); b.box(0.04, 0.016, 0.05, W3, { x: sx * 0.04, z: sz * 0.115 + 0.006 }); }   // legs and paws
+    b.box(0.12, 0.11 + br, 0.3, W, { y: 0.11 }); b.box(0.1, 0.02, 0.26, W2, { y: 0.1 });            // body (it breathes), and its darker under side
+    b.box(0.14, 0.15 + br, 0.13, W, { y: 0.1, z: 0.1 }); b.box(0.11, 0.05, 0.1, W2, { y: 0.075, z: 0.12 });   // the thick fur of the chest
+    b.push(0, 0.2 + br, 0.13, Math.sin(tt * 0.45) * 0.25 * (1 - hk), 1, -hk * 0.95);                 // the neck and the head turn a little, and go up for a howl
+    b.box(0.09, 0.1, 0.09, W, { y: 0.0, z: 0.01 });                                                 // neck
+    b.box(0.105, 0.09, 0.1, W, { y: 0.07, z: 0.05 });                                               // head
+    for (const sx of [-1, 1]) { b.box(0.03, 0.05, 0.022, W, { x: sx * 0.034, y: 0.155, z: 0.025, rz: -sx * ear * 0.3 }); b.box(0.014, 0.03, 0.006, W3, { x: sx * 0.034, y: 0.16, z: 0.037 }); b.box(0.014, 0.012, 0.006, EYE, { x: sx * 0.028, y: 0.118, z: 0.1 }); b.box(0.03, 0.03, 0.03, W2, { x: sx * 0.05, y: 0.075, z: 0.06 }); }   // ears, eyes, and the fur of the cheeks
+    b.box(0.056, 0.03, 0.075, W2, { y: 0.084, z: 0.13 }); b.box(0.026, 0.02, 0.02, K, { y: 0.098, z: 0.162 });   // snout and nose
+    b.box(0.044, 0.012, 0.06, W2, { y: 0.07 - hk * 0.014, z: 0.125 }); b.box(0.036, 0.004, 0.05, K, { y: 0.082 - hk * 0.007, z: 0.128 });   // the jaw (it opens for a howl) and the mouth
+    b.pop();
+    b.push(0, 0.2, -0.15, tail, 1, 0);                                                              // a thick tail that hangs down and moves from side to side
+    b.box(0.055, 0.055, 0.1, W, { y: -0.05, z: -0.04 }); b.box(0.05, 0.05, 0.09, W, { y: -0.09, z: -0.11 }); b.box(0.036, 0.036, 0.05, W2, { y: -0.115, z: -0.16 });
+    b.pop();
+  },
   whiteWhale(b, tt, ph) {
     const tail = Math.sin(tt * 1.8 + ph) * 0.35, W = C('snow', 0.5), W2 = C('snow', 1.8);
     b.box(0.13, 0.11, 0.3, W, { y: -0.055 }); b.box(0.125, 0.125, 0.15, W, { y: -0.062, z: 0.2 }); b.box(0.07, 0.02, 0.12, W2, { y: -0.08, z: 0.2 });
@@ -97,7 +117,7 @@ export const DRAW = {
 };
 
 // A small picture of the model of one legend, for the passport. It is made one time, then kept. If the picture cannot be made, the result is ''.
-const PICS = new Map(), POSE = { whiteWhale: 0.6, kraken: 4.4, charybdis: 0.4, titanic: 0.25, nessie: 0.9, queenAnne: 0.2 };   // POSE: a time at which the model has a good pose
+const PICS = new Map(), POSE = { wolf: 3,  whiteWhale: 0.6, kraken: 4.4, charybdis: 0.4, titanic: 0.25, nessie: 0.9, queenAnne: 0.2 };   // POSE: a time at which the model has a good pose
 export function legendPicture(world, id, px = 224) {
   if (PICS.has(id)) return PICS.get(id);
   let url = '';
@@ -154,30 +174,71 @@ export function addSeaLife(app) {
   things.forEach((th, i) => { const [label, hr, a0, a1] = INFO[th.kind]; Object.assign(th, { id: i, label, hr, a0, a1, pos: null }); });
   world.seaThings = things;
   // A region is made on a tile that has a sea thing: the thing moves to a free tile with no other thing, so that no legend is lost.
+  // It goes to a tile next to this one if one is free. If not, it goes to the free tile that is nearest.
   app.clearSeaTile = (tile) => {
-    const used = new Set(things.map((th) => th.tile)), spare = free.filter((t) => !used.has(t) && t !== tile);
-    for (const th of things) if (th.tile === tile && spare.length) { th.tile = spare.splice(Math.floor(spare.length / 2), 1)[0]; th.pos = null; }
+    const mine = app.practice && app.practice.cfg ? app.practice.tile : null;
+    for (const th of things) {
+      if (th.tile !== tile) continue;
+      const used = new Set(things.map((q) => q.tile)), ok = (t) => t && t.index < 92 && t !== tile && t !== mine && !app.byTile.has(t.index) && !used.has(t);
+      const near = tile.neighbors.map((ni) => world.tiles[ni]).filter(ok);
+      const to = near.length ? near[Math.floor(th.ph * 7) % near.length] : world.tiles.filter(ok).sort((a, b) => b.center.dot(tile.center) - a.center.dot(tile.center))[0];
+      if (to) { th.tile = to; th.rad = to.rin * (0.4 + ((th.ph * 3) % 1) * 0.22); th.pos = null; }
+    }
   };
 
-  // Small icebergs float on the empty ocean tiles next to the two poles. They go away from a tile when a region is made there.
-  for (const pole of app.areas.filter((q) => q.def.ring === 'north' || q.def.ring === 'south')) for (const ni of pole.tile.neighbors) {
-    const tile = world.tiles[ni]; if (app.byTile.has(ni)) continue;
-    const ir = rng(ni * 13 + 5), bergs = [];
-    for (let i = 0; i < 5; i++) { const a = ir() * TAU, d = 0.15 + Math.sqrt(ir()) * 0.55; bergs.push({ x: Math.cos(a) * d, z: Math.sin(a) * d, s: 0.6 + ir() * 0.9, ry: ir() * 3, ph: ir() * 6, kind: i % 3 }); }
+  // The ice around the two poles: on each empty ocean tile next to a pole there are many icebergs, and flat pieces of pack ice between them. There is more ice on the side of the pole.
+  // They go away from a tile when a region is made there.
+  // One iceberg: most of it is under the water (pale blue, you see it through the sea). At the water it has a blue line. Over the water it is white, with faces in shade.
+  const ICE = C('snow', 0.45), ICE2 = C('snow', 1.5), ICE3 = C('snow', 2.5), UNDER = C('sea', 2.3), UNDER2 = C('sea', 3.4);
+  const berg = (db, k) => {
+    if (k === 0) {   // a tall iceberg with a sharp peak and a second, lower peak
+      db.hex(0.105, 0.05, UNDER, { y: -0.058 }); db.hex(0.075, 0.05, UNDER2, { y: -0.105, t: -0.0 });
+      db.hex(0.088, 0.012, ICE3, { y: -0.006 }); db.hex(0.08, 0.04, ICE2, { y: 0.006, t: 0.2 });
+      db.pyr(0.1, 0.17, 0.08, ICE, { x: -0.014, y: 0.04, ry: 0.5, rz: 0.1, t: 0.86 }); db.pyr(0.06, 0.09, 0.05, ICE2, { x: 0.042, y: 0.036, z: 0.018, ry: -0.3, rz: -0.18, t: 0.8 });
+      db.box(0.03, 0.03, 0.028, ICE, { x: -0.05, y: 0.04, z: -0.03, ry: 0.7 });
+    } else if (k === 1) {   // a flat-topped iceberg, long and low, with steep sides
+      db.box(0.25, 0.06, 0.17, UNDER, { y: -0.066 }); db.box(0.22, 0.012, 0.15, ICE3, { y: -0.006 });
+      db.box(0.215, 0.045, 0.145, ICE, { y: 0.006 }); db.box(0.13, 0.02, 0.1, ICE, { x: -0.035, y: 0.051, z: 0.01, ry: 0.12 }); db.box(0.05, 0.014, 0.05, ICE2, { x: 0.07, y: 0.051, z: -0.03, ry: 0.5 });
+      db.box(0.012, 0.04, 0.06, ICE2, { x: 0.109, y: 0.008, z: 0.02 });
+    } else if (k === 2) {   // an iceberg that leans: one side is high, the other goes down into the sea
+      db.hex(0.1, 0.055, UNDER, { y: -0.06 }); db.box(0.17, 0.012, 0.12, ICE3, { y: -0.006, ry: 0.2 });
+      db.box(0.16, 0.07, 0.11, ICE, { y: -0.012, ry: 0.2, rz: 0.26 }); db.pyr(0.08, 0.09, 0.075, ICE2, { x: -0.045, y: 0.045, z: 0.01, ry: 0.7, rz: 0.2, t: 0.7 });
+      db.box(0.05, 0.02, 0.05, ICE, { x: 0.06, y: 0.0, z: 0.05, ry: 0.4 });
+    } else {   // small pieces that broke off
+      db.box(0.07, 0.03, 0.06, UNDER, { y: -0.036 }); db.box(0.06, 0.028, 0.05, ICE, { y: -0.004, ry: 0.3 }); db.pyr(0.04, 0.04, 0.035, ICE2, { x: 0.004, y: 0.022, ry: 0.5, t: 0.7 });
+      db.box(0.035, 0.016, 0.03, ICE, { x: 0.07, y: -0.004, z: 0.03, ry: 1.0 }); db.box(0.026, 0.012, 0.022, ICE2, { x: -0.05, y: -0.004, z: 0.05, ry: 0.2 });
+    }
+  };
+  // The ice is only on the empty ocean tiles that are next to the North ice crown or the South aurora basin. The pieces are small and there are many: from far away it looks like the edge of a polar ice cap.
+  // At the side of the pole the pack ice is almost closed, with large flat plates. It gets open, with small pieces, on the way out.
+  const iced = new Set();
+  const iceOn = (pole, ni, nB, nF) => {
+    const tile = world.tiles[ni]; if (!tile || ni > 91 || app.byTile.has(ni) || iced.has(ni)) return; iced.add(ni);
+    const ir = rng(ni * 13 + 5), bergs = [], floes = [];
+    // The direction of the pole, in the units of this tile. A place on the side of the pole is more probable.
+    const px = pole.tile.center.dot(tile.e1), pz = pole.tile.center.dot(tile.e3), pl = Math.hypot(px, pz) || 1;
+    const side = (x, z) => (x * px + z * pz) / pl;   // 1 = at the pole, -1 = far from it
+    const spot = (min, list) => { for (let q = 0; q < 60; q++) { const a = ir() * TAU, d = 0.06 + Math.sqrt(ir()) * 0.86, x = Math.cos(a) * d, z = Math.sin(a) * d, k = (side(x, z) + 1) / 2; if (ir() > 0.06 + 0.94 * k * k) continue; if (list.every((g) => Math.hypot(g.x - x, g.z - z) > min)) return [x, z]; } return null; };
+    for (let i = 0; i < nB; i++) { const s = i < 3 ? 0.7 + ir() * 0.2 : i < 12 ? 0.42 + ir() * 0.2 : 0.26 + ir() * 0.16, at = spot(0.085 + s * 0.06, bergs); if (at) bergs.push({ x: at[0], z: at[1], s, ry: ir() * TAU, ph: ir() * 6, kind: i < 3 ? i : Math.floor(ir() * 4) }); }
+    for (let i = 0; i < nF; i++) { const at = spot(0.05, floes); if (!at) continue; const k = (side(at[0], at[1]) + 1) / 2, w = 0.025 + k * k * 0.075 + ir() * 0.02; floes.push({ x: at[0], z: at[1], w, d: w * (0.6 + ir() * 0.4), ry: ir() * TAU, ph: ir() * 6, n: i % 4 }); }
     world.addAnimator(tile, (db, fb, t) => {
       if (app.practice && app.practice.cfg && app.practice.tile === tile) return;
       const tt = REDUCED ? 0 : t;
       for (const g of bergs) {
-        db.push(g.x + Math.sin(tt * 0.05 + g.ph) * 0.03, Math.sin(tt * 0.8 + g.ph) * 0.004, g.z + Math.cos(tt * 0.04 + g.ph) * 0.03, g.ry + tt * 0.01, g.s, Math.sin(tt * 0.6 + g.ph) * 0.03);
-        db.box(0.15, 0.05, 0.12, C('sea', 1.6), { y: -0.05 });                                             // the part under the water
-        db.box(0.13, 0.035, 0.1, C('snow', 0.6), { y: -0.004 });
-        if (g.kind !== 2) db.box(0.08, 0.05, 0.065, C('snow', 0.2), { x: -0.015, y: 0.03, z: 0.008, ry: 0.4 });
-        if (g.kind === 0) db.box(0.04, 0.045, 0.035, C('snow', 0.9), { x: -0.02, y: 0.08, ry: 0.2, t: 0.6 });
-        if (g.kind === 1) db.box(0.035, 0.02, 0.03, C('snow', 0.4), { x: 0.07, y: -0.004, z: 0.07 });
+        db.push(g.x + Math.sin(tt * 0.05 + g.ph) * 0.006, Math.sin(tt * 0.7 + g.ph) * 0.002, g.z + Math.cos(tt * 0.04 + g.ph) * 0.006, g.ry + Math.sin(tt * 0.03 + g.ph) * 0.1, g.s, Math.sin(tt * 0.5 + g.ph) * 0.022);
+        berg(db, g.kind);
         db.pop();
       }
+      // Pack ice: thin flat pieces, some with a second piece on top. They move up and down a little with the sea.
+      for (const f of floes) {
+        const y = -0.004 + Math.sin(tt * 0.9 + f.ph) * 0.0015;
+        db.box(f.w, 0.006, f.d, f.n === 1 ? ICE2 : ICE, { x: f.x, y, z: f.z, ry: f.ry });
+        if (f.n === 0 && f.w > 0.05) db.box(f.w * 0.5, 0.005, f.d * 0.55, ICE, { x: f.x + 0.006, y: y + 0.006, z: f.z, ry: f.ry + 0.5, lod: 1 });
+      }
     }, { minLod: 0 });
-  }
+  };
+  const poles = app.areas.filter((q) => q.def.ring === 'north' || q.def.ring === 'south');
+  for (const pole of poles) for (const ni of pole.tile.neighbors) iceOn(pole, ni, 30, 80);
 
   // Put the builder at a point on a circle inside the tile. y = up, z = the way it moves.
   const place = (b, th, a, radius, scale, rec) => {

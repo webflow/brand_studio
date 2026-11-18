@@ -391,6 +391,7 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   await p.evaluate(() => { window.__dbw.tapThing('sat'); window.__dbw.tapThing('sat'); }); await sleep(300);
   ok('a second click on the satellite turns it off', await p.evaluate(() => window.__dbw.world.wire === false));
   await sleep(1200);
+  ok('the volcano does not erupt by itself: it waits for a click', await p.evaluate(() => window.__dbw.areas[2].taps[0].sub() === 'Select it to make it erupt'));
   ok('the volcano: a click makes it erupt, and it does not erupt two times at once', await p.evaluate(() => { const a = window.__dbw; return a.tapThing('volcano') === true && a.areas[2].taps[0].tap() === false; }));
   ok('the lighthouse: a click starts a lightning storm', await p.evaluate(() => { const a = window.__dbw; const q = a.areas[8].taps[0]; return q.key === 'tower' && q.tap() === true && q.tap() === false; }));   // the storm eye can be on the far side, so the test calls its action directly
   ok('the electric storm goes over the tiles next to the storm eye that are open ocean, and not over the others', await p.evaluate(() => { const a = window.__dbw, se = a.areas[8], nb = se.tile.neighbors, free = nb.filter((i) => a.world.tileFree(i)), used = nb.filter((i) => !a.world.tileFree(i)); return se.storm.now - se.storm.t0 < 7 && nb.length === 5 && free.length + used.length === 5 && free.every((i) => !a.byTile.has(i)) && used.every((i) => a.byTile.has(i)) && free.length > 0; }), await p.evaluate(() => { const a = window.__dbw; return a.areas[8].tile.neighbors.map((i) => (a.world.tileFree(i) ? 'free' : 'used')).join(','); }));
@@ -403,6 +404,60 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   else ok('a real click on the sun starts the flare and does not zoom', true, 'the sun is not in the frame; the direct test above covers the action');
   await done(p, 'action clicks');
 }
+// ---- a region is made on a tile with a sea creature: the creature goes to a tile next to it
+{
+  const p = await open('tier=low&t=0.3');
+  const r = await p.evaluate(() => { const a = window.__dbw, out = []; for (const th of a.world.seaThings.slice(0, 20)) { const t0 = th.tile, others = new Set(a.world.seaThings.filter((q) => q !== th).map((q) => q.tile.index)); const freeNb = t0.neighbors.filter((ni) => ni < 92 && !a.byTile.has(ni) && !others.has(ni)); a.clearSeaTile(t0); out.push({ moved: th.tile !== t0, next: t0.neighbors.includes(th.tile.index), had: freeNb.length > 0, free: !a.byTile.has(th.tile.index), alone: a.world.seaThings.filter((q) => q.tile === th.tile).length === 1 }); } return out; });
+  ok('a sea creature on a claimed tile moves to a free tile next to it (or to the nearest free tile), and no two share a tile', r.length === 20 && r.every((q) => q.moved && q.free && q.alone && (q.next || !q.had)) && r.filter((q) => q.next).length >= 15, JSON.stringify(r.filter((q) => !q.next || !q.moved).slice(0, 4)));
+  await done(p, 'sea creature move');
+}
+
+// ---- the visitor's region in the menu: hide it, put it on a new tile, move it, delete it
+{
+  const p = await open('design=1&light=studio&tier=low', undefined, { wait: 2600 });
+  await p.evaluate(() => { const a = window.__dbw; const c = JSON.parse(JSON.stringify(a.samples[0].cfg)); c.name = 'Test land'; a.practice.cfg = c; a.exitDesign(true); }); await sleep(600);
+  const t0 = await p.evaluate(() => window.__dbw.practice.tile.index);
+  await p.click('#settingsBtn'); await sleep(300);
+  ok('your region: a saved region has Move, Hide, and Delete in the menu', await p.evaluate(() => window.__dbw.myRegion() === 'placed' && [...document.querySelectorAll('#menuMine button')].map((b) => b.textContent).join() === 'Move,Hide,Delete' && !document.querySelector('#designBtn').hidden));
+  await p.evaluate(() => document.querySelector('#menuMine [data-act="hide"]').click()); await sleep(3200);
+  ok('your region: Hide takes it off the planet, keeps it, and frees its tile', await p.evaluate(() => { const a = window.__dbw; return a.myRegion() === 'hidden' && !a.practice.cfg && !a.practice.mesh.visible && a.canClaim(); }));
+  await p.click('#settingsBtn'); await sleep(300);
+  ok('your region: a hidden region shows "Put it on the planet" and no design button', await p.evaluate(() => document.querySelector('#designBtn').hidden && !!document.querySelector('#menuMine [data-act="place"]') && document.querySelector('#menuMine').textContent.includes('hidden')));
+  await p.evaluate(() => document.querySelector('#menuMine [data-act="place"]').click()); await sleep(200);
+  const t1 = await p.evaluate((t0) => { const a = window.__dbw, free = a.world.tiles.find((t) => t.index < 92 && !a.byTile.has(t.index) && t.index !== t0); a.claimTile(free); return { t: a.practice.tile.index, st: a.myRegion(), name: a.practice.cfg && a.practice.cfg.name, mode: a.mode, vis: a.practice.mesh.visible }; }, t0); await sleep(500);
+  ok('your region: a click on an empty tile puts it there as it was saved, with no design mode', t1.st === 'placed' && t1.t !== t0 && t1.name === 'Test land' && t1.mode !== 'design' && t1.vis, JSON.stringify(t1));
+  ok('your region: Move takes it off its tile and waits for a new tile', await p.evaluate(() => { const a = window.__dbw; return a.moveRegion() === true && a.myRegion() === 'hidden' && document.querySelector('#toast').textContent.includes('Select an empty tile'); }));
+  await p.evaluate((t0) => { const a = window.__dbw; a.claimTile(a.world.tiles.find((t) => t.index === t0)); }, t0); await sleep(400);
+  ok('your region: it can go back on its first tile', await p.evaluate((t0) => window.__dbw.myRegion() === 'placed' && window.__dbw.practice.tile.index === t0, t0));
+  await p.click('#settingsBtn'); await sleep(300);
+  ok('your region: the controls are under the passport, not at the top of the menu', await p.evaluate(() => { const m = document.querySelector('#menuMine'); return m.previousElementSibling.id === 'menuPass' && !document.querySelector('#menuYou #menuMine') && m.textContent.includes('Your region'); }));
+  await p.evaluate(() => document.querySelector('#menuMine [data-act="delete"]').click()); await sleep(200);
+  ok('your region: Delete opens a window that asks, with a red button and Cancel', await p.evaluate(() => { const a = document.querySelector('#ask'), y = document.querySelector('#askYes'); return !a.hidden && a.textContent.includes('Are you sure you want to delete your region?') && y.textContent === 'Delete my region' && getComputedStyle(y).backgroundColor === 'rgb(213, 0, 26)' && document.querySelector('#askNo').textContent === 'Cancel' && document.activeElement.id === 'askNo' && window.__dbw.myRegion() === 'placed'; }));
+  await p.evaluate(() => document.querySelector('#askNo').click()); await sleep(150);
+  ok('your region: Cancel closes the window and keeps the region', await p.evaluate(() => document.querySelector('#ask').hidden && window.__dbw.myRegion() === 'placed'));
+  await p.evaluate(() => document.querySelector('#menuMine [data-act="delete"]').click()); await sleep(150);
+  await p.evaluate(() => document.querySelector('#askYes').click()); await sleep(300);
+  ok('your region: "Delete my region" deletes it', await p.evaluate(() => { const a = window.__dbw; return a.myRegion() === 'none' && !a.practice.cfg && a.canClaim() && document.querySelector('#ask').hidden; }));
+  await done(p, 'your region');
+}
+
+// ---- the load-in: the Webflow island powers on, then the other islands rise out of the sea
+{
+  const p = await open('intro=1', undefined, { wait: 300 });
+  const a0 = await p.evaluate(() => { const a = window.__dbw, w = a.world, u = w.U.uBuild.value, T = w.U.uBuildT.value, d = a.home.tile.center.clone().normalize(); const o = [...T].slice(0, 92).filter((x) => x > 0); return { on: !!w.build, w: u.w, dot: u.x * d.x + u.y * d.y + u.z * d.z, home: T[a.home.tile.index], n: o.length, min: Math.min(...o), max: Math.max(...o), free: T[92], auto: a.cam.auto }; });
+  ok('load-in: it starts at the Webflow island, which is up; the 91 other tiles wait for their turn', a0.on && a0.w < 2 && a0.dot > 0.999 && a0.home === -100 && a0.free === -100 && a0.n === 91 && a0.min >= 0.9 && a0.max < 2.8 && a0.auto === false, JSON.stringify(a0));
+  await sleep(4500);
+  ok('load-in: after about 3.5 seconds the planet is complete', await p.evaluate(() => { const w = window.__dbw.world; return !w.build && w.U.uBuild.value.w >= 50; }), await p.evaluate(() => String(window.__dbw.world.U.uBuild.value.w)));
+  await done(p, 'load-in');
+  const p2 = await open('intro=1', undefined, { wait: 200 });
+  await p2.keyboard.press('ArrowRight'); await sleep(1000);
+  ok('load-in: a key press makes it finish fast', await p2.evaluate(() => !window.__dbw.world.build && window.__dbw.world.U.uBuild.value.w >= 50));
+  await p2.close();
+  const q = await open('', undefined, { wait: 600, reduced: true }); const r1 = await q.evaluate(() => !window.__dbw.world.build && window.__dbw.world.U.uBuild.value.w >= 50); await q.close();
+  const q2 = await open('tier=high', undefined, { wait: 600 }); const r2 = await q2.evaluate(() => !window.__dbw.world.build); await q2.close();
+  ok('load-in: it does not play with reduced motion, or when the address asks for a fixed view', r1 && r2);
+}
+
 // ---- legends of the sea: six of them in the ocean, a click marks one in the passport
 {
   const p = await open('t=0.4&season=0.3');
@@ -460,10 +515,22 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   await p.click('#settingsBtn'); await sleep(300);
   ok('a visited area shows a filled blue pentagon with a solid ring, not a check mark', await p.evaluate(() => { const on = document.querySelector('.stamps.areas .stamp.on .badge'), off = document.querySelector('.stamps.areas .stamp:not(.on) .badge'); const cs = getComputedStyle(on); return on.querySelector('path').getAttribute('fill') === 'currentColor' && on.querySelector('path').getAttribute('d').startsWith('M12 4l8') && cs.borderTopStyle === 'solid' && off.querySelector('path').getAttribute('fill') === 'none' && getComputedStyle(off).borderTopStyle === 'dashed' && /rgb\(\d+, \d+, 2\d\d\)/.test(cs.color); }));
   ok('the easter eggs section has no helper text, and the menu ends with a reset button', await p.evaluate(() => !document.querySelector('#menuPass').textContent.includes('Some things') && document.querySelector('#settings').lastElementChild.id === 'menuReset'));
+  // Webflow lore: the white wolf on the North ice crown
+  await p.evaluate(() => { const a = window.__dbw, ar = a.areas.find((q) => q.def.id === 'north-ice-crown'), v = ar.tile.center.clone().normalize(); a.cam.auto = false; a.cam.flyGoal = null; a.cam.lon = Math.atan2(v.z, v.x); a.cam.lat = Math.max(-1.2, Math.min(1.2, Math.asin(v.y))); a.cam.changed(); }); await sleep(700);
+  ok('Webflow lore: the passport shows Wolfdew as not found, with its name', await p.evaluate(() => { const st = document.querySelectorAll('.stamp.lorest'); return st.length === 1 && !st[0].classList.contains('on') && st[0].textContent.includes('Wolfdew') && document.querySelector('#menuPass').textContent.includes('0 of 1 found') && document.querySelector('#lore').hidden; }));
+  ok('Webflow lore: a click on the wolf opens its story and marks it in the passport', await p.evaluate(() => { const a = window.__dbw; const hit = a.tapThing('wolf'); const box = document.querySelector('#lore'); return hit && a.lore().join() === 'wolfdew' && !box.hidden && document.querySelector('#loreT').textContent === 'Wolfdew' && document.querySelector('#loreP').textContent.includes('Webflow, backwards') && document.activeElement.id === 'loreX' && JSON.parse(localStorage.getItem('dbw-lore')).length === 1; }));
+  ok('Webflow lore: the found wolf shows a picture of its model in the passport and in the story', await p.evaluate(() => { const im = document.querySelector('button.stamp.lorest.on .badge.pic img'), im2 = document.querySelector('#loreI'); return !!im && im.src.startsWith('data:image/png') && !im2.hidden && im2.src === im.src; }));
+  await p.keyboard.press('Escape'); await sleep(200);
+  ok('Webflow lore: Escape closes the story, and the menu stays open', await p.evaluate(() => document.querySelector('#lore').hidden && !document.querySelector('#settings').hidden));
+  await p.evaluate(() => document.querySelector('button.stamp.lorest.on').click()); await sleep(2600);
+  const m4 = await mid(null, 'north-ice-crown');
+  ok('Webflow lore: a found stamp brings the ice crown to the middle and opens the story again', m4.facing > 0.9 && !m4.open && await p.evaluate(() => !document.querySelector('#lore').hidden && document.querySelector('#settings').hidden), JSON.stringify(m4));
+  await p.evaluate(() => document.querySelector('#loreX').click()); await sleep(200);
+  await p.click('#settingsBtn'); await sleep(300);
   await p.evaluate(() => document.querySelector('#resetBtn').click());
   ok('the first click on Reset passport only asks', await p.evaluate(() => document.querySelector('#resetBtn').textContent === 'Select again to reset' && window.__dbw.eggs().length === 7 && window.__dbw.passport().length > 0));
   await p.evaluate(() => document.querySelector('#resetBtn').click()); await sleep(200);
-  ok('the second click empties the passport: areas, legends, easter eggs', await p.evaluate(() => { const a = window.__dbw, t = document.querySelector('#menuPass').textContent; return a.eggs().length === 0 && a.legends().length === 0 && a.passport().length === 0 && t.includes('0 of 12 visited') && t.includes('0 of 6 found') && t.includes('0 of 7 found') && !localStorage.getItem('dbw-eggs') && !localStorage.getItem('dbw-passport') && !localStorage.getItem('dbw-legends') && document.querySelector('#resetBtn').textContent === 'Reset passport'; }));
+  ok('the second click empties the passport: areas, legends, easter eggs', await p.evaluate(() => { const a = window.__dbw, t = document.querySelector('#menuPass').textContent; return a.eggs().length === 0 && a.legends().length === 0 && a.lore().length === 0 && t.includes('0 of 1 found') && a.passport().length === 0 && t.includes('0 of 12 visited') && t.includes('0 of 6 found') && t.includes('0 of 7 found') && !localStorage.getItem('dbw-eggs') && !localStorage.getItem('dbw-passport') && !localStorage.getItem('dbw-legends') && document.querySelector('#resetBtn').textContent === 'Reset passport'; }));
   await done(p, 'easter eggs');
 }
 await browser.close();
