@@ -20,6 +20,8 @@ html{background:#080808}
 html,body{margin:0;height:100%;overflow:hidden;color:var(--k);font-family:var(--f);font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
 body{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 #c{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none;touch-action:none;cursor:grab}
+/* An embed can ask for room at the top (see app.setInset): the menu button moves down by that amount. */
+html.has-inset #hud #topright{top:var(--inset)}
 /* No title, time, or season in the corner (the passport in the menu has the time and the season). The element stays for the tests. */
 #hud #brand{display:none}
 .embed-dark #hint{color:rgba(255,255,255,.72)}

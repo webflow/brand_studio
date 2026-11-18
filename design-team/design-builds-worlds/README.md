@@ -30,16 +30,19 @@ If you cannot add an attribute to the canvas, name the canvas on the script tag:
 - It starts when the canvas comes near the view, and it stops drawing while it is out of view.
 - The passport and the visitor's region stay in the storage of the browser, for the address of the page.
 
-### Options (attributes of the canvas)
+### Options (attributes of the canvas, or of the script tag)
 
 | Attribute | Effect |
 |---|---|
 | `data-tier="low"`, `medium`, `high`, `max` | Sets the quality level. Default: it measures the frame rate, then picks one. |
 | `data-wheel="zoom"` or `page` | What the mouse wheel does. Default: `page` when the page scrolls (zoom needs Ctrl or the Command key, or a pinch), `zoom` when the page does not scroll. |
 | `data-bg="white"` | A white backdrop. Default: the backdrop is clear, so the page shows behind the planet. Tiles that are not in focus fade to the color of the page. |
+| `data-inset="48px"` | Room at the top and the bottom: the planet stays that far from the edges, and the menu button moves down by the same amount. Any CSS length of the page works, for example `var(--_layout---section-spacing--small)`. It follows the page when the window changes size. |
 | `data-font-url="https://.../font.woff2"` | A font file for the text. Default: the WF Visual Sans file that the page loaded, if there is one. If not, a system font. |
 
-From your own code: `DesignBuildsWorlds.mount(canvasOrSelector, { tier, wheel, fontUrl })`.
+The same attributes also work on the script tag.
+
+From your own code: `DesignBuildsWorlds.mount(canvasOrSelector, { tier, wheel, bg, inset, fontUrl })`.
 
 ### Limits
 

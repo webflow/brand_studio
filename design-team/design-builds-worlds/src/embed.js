@@ -12,9 +12,11 @@
 //   data-tier="low | medium | high | max"   the quality level (default: it measures, then picks one)
 //   data-wheel="zoom | page"                what the mouse wheel does (default: "page" when the page scrolls, "zoom" when it does not)
 //   data-bg="white"                         a white backdrop (default: clear, so the page shows behind the planet)
+//   data-inset="48px"                       room at the top and the bottom: the planet stays that far from the edges, and the menu button moves down
+//                                           by the same amount. Any CSS length of the page works, for example var(--my-section-spacing)
 //   data-font-url="https://.../font.woff2"  a font file for the text (default: the WF Visual Sans file that the page loaded, if there is one; if not, a system font)
-// Or, on the script tag: data-target="a CSS selector for the canvas".
-// Or, from your own code: DesignBuildsWorlds.mount(canvasOrSelector, { tier, wheel, fontUrl }).
+// The same options also work on the script tag. And on the script tag: data-target="a CSS selector for the canvas".
+// Or, from your own code: DesignBuildsWorlds.mount(canvasOrSelector, { tier, wheel, bg, inset, fontUrl }).
 const HTML = __DBW_HTML__;
 const SCRIPT = document.currentScript;
 const QUERY_OPTIONS = ['tier', 'wheel', 'bg', 't', 'season', 'samples'];
@@ -43,10 +45,15 @@ function mount(target, options = {}) {
   frame.style.border = '0';
   if (getComputedStyle(el).display === 'inline') frame.style.display = 'block';
   const q = new URLSearchParams();
-  for (const k of QUERY_OPTIONS) { const v = options[k] ?? el.dataset[k]; if (v != null && v !== '') q.set(k, v); }
+  const opt = (k) => options[k] ?? el.dataset[k] ?? (SCRIPT ? SCRIPT.dataset[k] : undefined);   // an option: from the code, from the canvas, or from the script tag
+  for (const k of QUERY_OPTIONS) { const v = opt(k); if (v != null && v !== '') q.set(k, v); }
+  // The inset is a CSS length of the page (it can be a variable of the page). Measure it in pixels, at the place of the canvas.
+  const insetCss = opt('inset'), host = el.parentNode;
+  const insetPx = () => { if (!insetCss) return 0; const p = document.createElement('div'); p.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;width:0;height:' + insetCss; host.appendChild(p); const v = p.getBoundingClientRect().height; p.remove(); return Math.round(v * 100) / 100; };
+  if (insetCss) q.set('inset', insetPx());
   q.set('bgcolor', pageColor(el.parentElement));
   if (q.get('bg') !== 'white') { frame.style.background = 'transparent'; frame.style.colorScheme = 'light'; }   // colorScheme: a browser gives a frame a solid backdrop if the page is in the dark scheme and the frame is not
-  const fontUrl = options.fontUrl ?? el.dataset.fontUrl ?? siteFont();
+  const fontUrl = opt('fontUrl') ?? siteFont();
   const head = (fontUrl ? `<style>@font-face{font-family:"WF Visual Sans";src:url(${JSON.stringify(new URL(fontUrl, location.href).href)}) format("woff2");font-weight:100 900;font-style:normal;font-display:swap}</style>` : '')
     + `<style>html{background:${q.get('bg') === 'white' ? '#fff' : 'transparent'}!important}</style>`
     + `<script>window.__DBW_EMBED=1;window.__DBW_QUERY=${JSON.stringify(q.toString())}<\/script>`;
@@ -56,6 +63,8 @@ function mount(target, options = {}) {
   const r = frame.getBoundingClientRect(), bare = Math.round(r.width) === 300 && Math.round(r.height) === 150;   // bare: the size of a canvas that the page gave no size
   if (bare || r.width < 200) frame.style.width = '100%';
   if (bare || r.height < 200) frame.style.height = 'min(100vh, 760px)';
+  // The length can change with the size of the window (a clamp, a breakpoint): measure it again.
+  if (insetCss) window.addEventListener('resize', () => { try { if (frame.contentWindow && frame.contentWindow.__dbwInset) frame.contentWindow.__dbwInset(insetPx()); } catch (e) { /* the frame is not ready */ } });
   // Stop the drawing while the frame is not in view.
   if ('IntersectionObserver' in window) new IntersectionObserver((es) => { try { if (frame.contentWindow) frame.contentWindow.__DBW_PAUSED = !es[es.length - 1].isIntersecting; } catch (e) { /* the frame is not ready */ } }, { rootMargin: '120px' }).observe(frame);
   return frame;

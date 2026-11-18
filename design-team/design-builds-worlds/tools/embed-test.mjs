@@ -44,6 +44,14 @@ ok('on the screen the corners of the frame have the color of the page, not white
 const ph = await inner((w) => { const a = w.__dbw, c = a.photoCanvas(a.samples[2], 0, 'noon', 1, 0.25, 0, 0, 'off', 'white'), d = c.getContext('2d').getImageData(4, 4, 1, 1).data; return { px: [...d], clearA: a.world.renderer.getClearAlpha(), backdrop: a.world.backdrop.visible }; });
 ok('a photo from the embed still has its white backdrop, and the live view is clear again after it', ph.px[0] > 245 && ph.px[1] > 245 && ph.px[2] > 245 && ph.px[3] === 255 && ph.clearA === 0 && ph.backdrop === false, JSON.stringify(ph));
 
+// Room around the planet: data-inset is a length of the host page (here a variable: 4vw = 51.2 px at this width).
+const ins = await inner((w) => { const a = w.__dbw, b = w.document.querySelector('#settingsBtn').getBoundingClientRect(); return { top: Math.round(b.top * 10) / 10, max: +a.config.camera.zoomMax.toFixed(3), dist: +a.cam.dist.toFixed(3), h: w.innerHeight }; });
+ok('data-inset: the menu button is down by the inset (51.2 px), and the planet is smaller, with that much room at the top and the bottom', Math.abs(ins.top - 51.2) < 0.6 && Math.abs(ins.max - 4.2 / (1 - 102.4 / ins.h)) < 0.02 && Math.abs(ins.dist - ins.max) < 0.02, JSON.stringify(ins));
+await page.setViewport({ width: 900, height: 800 }); await sleep(600);
+const ins2 = await inner((w) => Math.round(w.document.querySelector('#settingsBtn').getBoundingClientRect().top * 10) / 10);
+ok('data-inset follows the page when the window changes size (4vw = 36 px at 900 px)', Math.abs(ins2 - 36) < 0.6, String(ins2));
+await page.setViewport({ width: 1280, height: 800 }); await sleep(600);
+
 // The wheel: with no key it scrolls the page. With Ctrl it zooms the planet.
 const r = await page.evaluate(() => { const b = document.querySelector('iframe').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
 await page.mouse.move(r.x, r.y);
