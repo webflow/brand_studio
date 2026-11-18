@@ -451,7 +451,8 @@ async function boot(stage, poster) {
   const coverTex = new Texture(coverSrc); coverTex.colorSpace = SRGBColorSpace;
   coverTex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); coverTex.needsUpdate = true;
   mats.cover.map = coverTex;
-  const spineColor = new Color(); const want = (stage.dataset.spineColor || '').trim();
+  const spineColor = new Color(); let want = (stage.dataset.spineColor || '').trim();
+  if (/^([0-9a-f]{3}|[0-9a-f]{6})$/i.test(want)) want = '#' + want;      // a CMS color field can give hex without the # (for example 5FED75)
   spineColor.set(want && CSS.supports('color', want) ? want : spine);     // empty or unreadable value: use the cover edge color
   mats.spine.color.copy(spineColor).multiplyScalar(.85);                  // spine reads slightly darker than the cover
 

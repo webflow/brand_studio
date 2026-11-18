@@ -10,7 +10,7 @@ The page always ships a normal `<img>`. This script only upgrades it. If anythin
 
 ## Use it
 
-**1. Markup.** Put one element with `data-ebook-3d` on the page. Put the cover `<img>` inside it. `data-spine-color` is optional (any CSS color). If it is empty, the script uses the average color of the cover's left edge.
+**1. Markup.** Put one element with `data-ebook-3d` on the page. Put the cover `<img>` inside it. `data-spine-color` is optional (any CSS color; hex with or without the `#`, for example `#5FED75` or `5FED75`). If it is empty, the script uses the average color of the cover's left edge.
 
 `data-finish` is optional. It sets the cover material: `paper` (default, satin paper), `cloth` (fine woven book cloth) or `leather` (pebbled leather grain). The value is not case-sensitive, and `fabric`, `linen`, `buckram`, `pebble` and `leatherette` also work. An empty or unknown value uses paper. In Webflow, bind it to a CMS option field.
 
