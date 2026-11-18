@@ -14,9 +14,12 @@
 //   data-bg="white"                         a white backdrop (default: clear, so the page shows behind the planet)
 //   data-inset="48px"                       room at the top and the bottom: the planet stays that far from the edges, and the menu button moves down
 //                                           by the same amount. Any CSS length of the page works, for example var(--my-section-spacing)
+//   data-inset-mobile="24px"                the same, for a narrow window (default width: 767px or less; change it with data-mobile-width="478")
+//   data-align-right=".container .btn"      a CSS selector of an element of the page. The menu button and the passport line up with the right edge of that element
+//                                           (it is measured again when the window changes size)
 //   data-font-url="https://.../font.woff2"  a font file for the text (default: the WF Visual Sans file that the page loaded, if there is one; if not, a system font)
 // The same options also work on the script tag. And on the script tag: data-target="a CSS selector for the canvas".
-// Or, from your own code: DesignBuildsWorlds.mount(canvasOrSelector, { tier, wheel, bg, inset, fontUrl }).
+// Or, from your own code: DesignBuildsWorlds.mount(canvasOrSelector, { tier, wheel, bg, inset, insetMobile, mobileWidth, alignRight, fontUrl }).
 const HTML = __DBW_HTML__;
 const SCRIPT = document.currentScript;
 const QUERY_OPTIONS = ['tier', 'wheel', 'bg', 't', 'season', 'samples'];
@@ -48,9 +51,13 @@ function mount(target, options = {}) {
   const opt = (k) => options[k] ?? el.dataset[k] ?? (SCRIPT ? SCRIPT.dataset[k] : undefined);   // an option: from the code, from the canvas, or from the script tag
   for (const k of QUERY_OPTIONS) { const v = opt(k); if (v != null && v !== '') q.set(k, v); }
   // The inset is a CSS length of the page (it can be a variable of the page). Measure it in pixels, at the place of the canvas.
-  const insetCss = opt('inset'), host = el.parentNode;
-  const insetPx = () => { if (!insetCss) return 0; const p = document.createElement('div'); p.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;width:0;height:' + insetCss; host.appendChild(p); const v = p.getBoundingClientRect().height; p.remove(); return Math.round(v * 100) / 100; };
-  if (insetCss) q.set('inset', insetPx());
+  const insetCss = opt('inset'), insetMobile = opt('insetMobile'), mobileWidth = +opt('mobileWidth') || 767, alignSel = opt('alignRight'), host = el.parentNode;
+  const lengthPx = (css) => { if (!css) return 0; const p = document.createElement('div'); p.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;width:0;height:' + css; host.appendChild(p); const v = p.getBoundingClientRect().height; p.remove(); return Math.round(v * 100) / 100; };
+  const insetPx = () => lengthPx(insetMobile && window.matchMedia('(max-width:' + mobileWidth + 'px)').matches ? insetMobile : insetCss);
+  // How far the right edge of the element that the page named is from the right edge of the frame. 0 if there is no such element, or it is to the right of the frame.
+  const rightPx = (fr) => { if (!alignSel) return 0; let t = null; try { t = document.querySelector(alignSel); } catch (e) { /* not a selector */ } if (!t) return 0; const a = t.getBoundingClientRect(), b = (fr || el).getBoundingClientRect(); return Math.max(0, Math.round((b.right - a.right) * 100) / 100); };
+  if (insetCss || insetMobile) q.set('inset', insetPx());
+  if (alignSel) q.set('insetRight', rightPx());
   q.set('bgcolor', pageColor(el.parentElement));
   if (q.get('bg') !== 'white') { frame.style.background = 'transparent'; frame.style.colorScheme = 'light'; }   // colorScheme: a browser gives a frame a solid backdrop if the page is in the dark scheme and the frame is not
   const fontUrl = opt('fontUrl') ?? siteFont();
@@ -63,8 +70,9 @@ function mount(target, options = {}) {
   const r = frame.getBoundingClientRect(), bare = Math.round(r.width) === 300 && Math.round(r.height) === 150;   // bare: the size of a canvas that the page gave no size
   if (bare || r.width < 200) frame.style.width = '100%';
   if (bare || r.height < 200) frame.style.height = 'min(100vh, 760px)';
-  // The length can change with the size of the window (a clamp, a breakpoint): measure it again.
-  if (insetCss) window.addEventListener('resize', () => { try { if (frame.contentWindow && frame.contentWindow.__dbwInset) frame.contentWindow.__dbwInset(insetPx()); } catch (e) { /* the frame is not ready */ } });
+  // The length can change with the size of the window (a clamp, a breakpoint), and the element can move: measure again.
+  const apply = () => { try { if (frame.contentWindow && frame.contentWindow.__dbwInset) frame.contentWindow.__dbwInset(insetPx(), alignSel ? rightPx(frame) : undefined); } catch (e) { /* the frame is not ready */ } };
+  if (insetCss || insetMobile || alignSel) { window.addEventListener('resize', apply); frame.addEventListener('load', apply); setTimeout(apply, 1200); }   // the last one: the page can change its layout when its fonts load
   // Stop the drawing while the frame is not in view.
   if ('IntersectionObserver' in window) new IntersectionObserver((es) => { try { if (frame.contentWindow) frame.contentWindow.__DBW_PAUSED = !es[es.length - 1].isIntersecting; } catch (e) { /* the frame is not ready */ } }, { rootMargin: '120px' }).observe(frame);
   return frame;

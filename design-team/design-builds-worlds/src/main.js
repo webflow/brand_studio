@@ -47,9 +47,11 @@ setupMenu(app);
 setupExport(app);
 // Room around the planet (the embed script sets it, from a length of the page around the frame): the planet stays this many pixels
 // away from the top and from the bottom of the view, and the menu button moves down by the same amount.
+// The menu button (and the passport under it) can also line up with an element of the page: right = how far its right edge is from the right edge of the view.
 const ZOOM_MAX0 = CONFIG.camera.zoomMax; let insetPx = 0;
-app.setInset = (px) => {
+app.setInset = (px, right) => {
   insetPx = Math.max(0, +px || 0);
+  if (right !== undefined) { const r = Math.max(0, +right || 0); document.documentElement.style.setProperty('--inset-right', r + 'px'); document.documentElement.classList.toggle('has-inset-right', r > 0); }
   document.documentElement.style.setProperty('--inset', insetPx + 'px'); document.documentElement.classList.toggle('has-inset', insetPx > 0);
   const k = Math.max(0.45, 1 - (2 * insetPx) / (window.innerHeight || 1)), atMax = cam.dist >= CONFIG.camera.zoomMax - 0.01;
   CONFIG.camera.zoomMax = ZOOM_MAX0 / k;   // the camera can go out more, so the planet is smaller in the view
@@ -57,7 +59,7 @@ app.setInset = (px) => {
   cam.changed();
 };
 window.__dbwInset = app.setInset;
-if (QUERY.get('inset')) app.setInset(QUERY.get('inset'));
+if (QUERY.get('inset') || QUERY.get('insetRight')) app.setInset(QUERY.get('inset'), QUERY.get('insetRight'));
 window.addEventListener('resize', () => { if (insetPx) app.setInset(insetPx); });
 if (QUERY.has('design')) setTimeout(() => app.enterDesign(), 60);
 if (QUERY.has('open')) { const v = QUERY.get('open'); const reg = v[0] === 'a' ? app.areas[+v.slice(1)] : app.samples[+v - 1]; if (reg) setTimeout(() => app.openRegion(reg, { dur: 0.01, noPanel: QUERY.has('nopanel') }), 50); }

@@ -51,6 +51,14 @@ await page.setViewport({ width: 900, height: 800 }); await sleep(600);
 const ins2 = await inner((w) => Math.round(w.document.querySelector('#settingsBtn').getBoundingClientRect().top * 10) / 10);
 ok('data-inset follows the page when the window changes size (4vw = 36 px at 900 px)', Math.abs(ins2 - 36) < 0.6, String(ins2));
 await page.setViewport({ width: 1280, height: 800 }); await sleep(600);
+// The passport fits inside the inset (the same room at the bottom as at the top), and the menu button and the passport line up with the right edge of the element that data-align-right names (the header: 1090 px at this width).
+const pp = await inner(async (w) => { const d = w.document; if (!d.querySelector('#settings').offsetParent) d.querySelector('#settingsBtn').click(); await new Promise((r) => setTimeout(r, 500)); const s = d.querySelector('#settings').getBoundingClientRect(), b = d.querySelector('#settingsBtn').getBoundingClientRect(); return { sr: Math.round(s.right), br: Math.round(b.right), gap: Math.round((w.innerHeight - s.bottom) * 10) / 10, h: w.innerHeight }; });
+const hdr = await page.evaluate(() => Math.round(document.querySelector('header').getBoundingClientRect().right));
+ok('the passport stays inside the inset (the same room at the bottom as at the top), and lines up with the right edge of the element of data-align-right', pp.gap >= 51.2 - 0.6 && pp.sr === hdr && pp.br === hdr, JSON.stringify({ ...pp, hdr }));
+await page.setViewport({ width: 600, height: 800 }); await sleep(700);
+const mob = await inner((w) => Math.round(w.document.querySelector('#settingsBtn').getBoundingClientRect().top * 10) / 10);
+ok('data-inset-mobile: in a narrow window (700 px or less) the inset is the mobile one (20 px)', Math.abs(mob - 20) < 0.6, String(mob));
+await page.setViewport({ width: 1280, height: 800 }); await sleep(600);
 
 // The wheel: with no key it scrolls the page. With Ctrl it zooms the planet.
 const r = await page.evaluate(() => { const b = document.querySelector('iframe').getBoundingClientRect(); return { x: b.x + b.width / 2, y: b.y + b.height / 2 }; });
