@@ -12,8 +12,10 @@ The page always ships a normal `<img>`. This script only upgrades it. If anythin
 
 **1. Markup.** Put one element with `data-ebook-3d` on the page. Put the cover `<img>` inside it. `data-spine-color` is optional (any CSS color). If it is empty, the script uses the average color of the cover's left edge.
 
+`data-finish` is optional. It sets the cover material: `paper` (default, satin paper), `cloth` (fine woven book cloth) or `leather` (pebbled leather grain). The value is not case-sensitive, and `fabric`, `linen`, `buckram`, `pebble` and `leatherette` also work. An empty or unknown value uses paper. In Webflow, bind it to a CMS option field.
+
 ```html
-<div class="ebook-stage" data-ebook-3d data-spine-color="#1a5cff">
+<div class="ebook-stage" data-ebook-3d data-spine-color="#1a5cff" data-finish="paper">
   <img src="COVER.jpg" alt="Cover of the ebook" width="850" height="1100" fetchpriority="high">
 </div>
 ```
@@ -45,6 +47,8 @@ The book takes the cover's own shape: any width/height ratio from 0.5 (tall) to 
 Replace `COMMIT_SHA` with the commit that contains this file. Replace `sha384-HASH` with the output of `npm run sri`.
 
 ## Behavior
+
+The book rests almost straight on and turns toward the cursor (about 29 degrees at the window edge). On touch screens, dragging a finger over the book turns it. The key light is at the top left, and it dims as the book turns toward it.
 
 The lighting adapts to the cover: covers with large white areas get brighter, more even light, and covers with large black areas get less reflection. The paper grain is sized for the book's on-screen size.
 

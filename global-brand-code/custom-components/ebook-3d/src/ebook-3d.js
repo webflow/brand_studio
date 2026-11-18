@@ -28,7 +28,17 @@ const AMBIENT = { y: 0.10, x: 0.05 };          // idle sway
 const ENV_BASE = 0.45, SPOT_BASE = 2.45;
 const LIGHT = [-13, 16, 18];                   // key light position: top left, in front
 // Satin: a narrow glint, not a veil.
-const FINISH = { roughness: .28, clearcoat: 0, clearcoatRoughness: .5, sheen: .1, sheenRoughness: .5, bump: 1.3, tooth: .85, specular: .25 };
+// Cover finishes, chosen by the data-finish attribute on the stage (bind it to a CMS option field). Unknown or empty values use paper.
+//   paper: satin paper with a fine tooth (the default).  cloth: woven book cloth: fine, soft, uneven (about 320 threads across).  leather: fine pebbled leather grain (about 220 pebbles across).
+// repeat: how often the bump tile repeats across the cover (x, y). bumpFloor: the share of relief kept on very dark covers.
+const FINISHES = {
+  paper:   { kind: 'grain', roughness: .28, clearcoat: 0,  clearcoatRoughness: .5,  sheen: .1,  sheenRoughness: .5,  bump: 1.3, tooth: .85, specular: .25, repeat: [.8, 1],     bumpFloor: .15, print: .4 },
+  cloth:   { kind: 'weave', roughness: .62, clearcoat: 0,  clearcoatRoughness: .5,  sheen: .5,  sheenRoughness: .6,  bump: .9, tooth: .9,  specular: .1,  repeat: [2.5, 3.1], bumpFloor: .4, print: .2 },
+  leather: { kind: 'cell',  roughness: .36, clearcoat: .12, clearcoatRoughness: .35, sheen: .08, sheenRoughness: .5,  bump: .8, tooth: 1,   specular: .45, repeat: [3.4, 4.25], bumpFloor: .4, print: .22 },
+};
+const FINISH_NAMES = { paper: 'paper', cloth: 'cloth', fabric: 'cloth', linen: 'cloth', buckram: 'cloth', leather: 'leather', pebble: 'leather', pebbled: 'leather', leatherette: 'leather' };
+let FINISH = FINISHES.paper;                   // set in boot from the stage attribute (one book per page)
+const pickFinish = v => FINISH_NAMES[String(v || '').trim().toLowerCase().replace(/[\s_]+/g, '-')] || 'paper';
 
 /* ---------- Small helpers ---------- */
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -37,7 +47,63 @@ const range = (a, b, n) => Array.from({ length: n + 1 }, (_, i) => a + (b - a) *
 
 /* ---------- Procedural textures ---------- */
 let grainCanvas, grainMul, grainScr;
+// Builds a tileable height map from a function, plus a centred copy for the cover color and the multiply/screen layers.
+function patternTexture(heightAt, centre, mulAmt, scrAmt) {
+  const n = 512, hc = document.createElement('canvas'), pc = document.createElement('canvas');
+  hc.width = hc.height = pc.width = pc.height = n;
+  const hg = hc.getContext('2d'), pg = pc.getContext('2d'), hd = hg.createImageData(n, n), pd = pg.createImageData(n, n);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const h = Math.min(1, Math.max(0, heightAt(x, y))), k = (y * n + x) * 4, v = h * 255, c = 128 + (h - centre) * 230;
+    hd.data[k] = hd.data[k + 1] = hd.data[k + 2] = v; hd.data[k + 3] = 255;
+    pd.data[k] = pd.data[k + 1] = pd.data[k + 2] = Math.min(255, Math.max(0, c)); pd.data[k + 3] = 255;
+  }
+  hg.putImageData(hd, 0, 0); pg.putImageData(pd, 0, 0);
+  const mk = fn => { const o = document.createElement('canvas'); o.width = o.height = n; const og = o.getContext('2d'), od = og.createImageData(n, n);
+    for (let i = 0; i < n * n; i++) { const v = fn(pd.data[i * 4] / 255); od.data[i * 4] = od.data[i * 4 + 1] = od.data[i * 4 + 2] = v; od.data[i * 4 + 3] = 255; }
+    og.putImageData(od, 0, 0); return o; };
+  grainMul = mk(v => 255 * (1 - mulAmt * Math.max(0, (.5 - v) * 2)));      // darker in the gaps
+  grainScr = mk(v => 255 * scrAmt * Math.max(0, (v - .5) * 2));            // lighter on the tops
+  grainCanvas = pc;
+  const t = new CanvasTexture(hc);
+  t.wrapS = t.wrapT = RepeatWrapping; t.repeat.set(...FINISH.repeat); t.anisotropy = 4;
+  return t;
+}
+function weaveTexture() {            // book cloth: a tight plain weave of round threads, with a very slight wander so it is not a perfect grid
+  const n = 512, cell = 4, TAU = Math.PI * 2, cnt = n / cell;
+  const rnd = (k) => { const v = Math.sin(k * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };   // stable per-thread randomness
+  const ph = Array.from({ length: cnt * 2 }, (_, i) => rnd(i + 1) * TAU), wd = Array.from({ length: cnt * 2 }, (_, i) => (rnd(i + 91) - .5) * .5);
+  return patternTexture((x, y) => {
+    // Threads wander a little: the sample position is nudged by slow waves (whole numbers of cycles per tile, so the tile still repeats).
+    const wx = x + .35 * Math.sin(TAU * 3 * y / n + 1.1) + .2 * Math.sin(TAU * 7 * y / n + 2.3);
+    const wy = y + .35 * Math.sin(TAU * 3 * x / n + 4.1) + .2 * Math.sin(TAU * 7 * x / n + .6);
+    const ix = Math.floor(wx / cell), iy = Math.floor(wy / cell);
+    const ixm = (ix % cnt + cnt) % cnt, iym = (iy % cnt + cnt) % cnt;
+    const lx = (wx / cell) - ix, ly = (wy / cell) - iy;
+    const warpOver = ((ixm + iym) & 1) === 0;                    // vertical thread on top, or horizontal thread on top
+    const ti = warpOver ? ixm : cnt + iym, along = warpOver ? y : x;
+    const across = Math.sin(Math.PI * (warpOver ? lx : ly)), end = .8 + .2 * Math.sin(Math.PI * (warpOver ? ly : lx));
+    return .12 + .88 * across * end * (1 + wd[ti] + .12 * Math.sin(TAU * 2 * along / n + ph[ti])) * (1 + .1 * Math.sin(TAU * 2 * x / n + 1.7) * Math.sin(TAU * 3 * y / n + .4));
+  }, .62, .2, .1);
+}
+function cellTexture() {             // pebbled leather: rounded cells separated by fine creases (a jittered-grid cell pattern, wrapped so it tiles)
+  const n = 512, cs = 8, cnt = n / cs;
+  const rnd = (i, j, k) => { const v = Math.sin(i * 127.1 + j * 311.7 + k * 74.7) * 43758.5453; return v - Math.floor(v); };
+  const pts = []; for (let j = 0; j < cnt; j++) for (let i = 0; i < cnt; i++) pts.push([(i + .15 + .7 * rnd(i, j, 1)) * cs, (j + .15 + .7 * rnd(i, j, 2)) * cs, .8 + .4 * rnd(i, j, 3)]);
+  return patternTexture((x, y) => {
+    const ci = Math.floor(x / cs), cj = Math.floor(y / cs);
+    let d1 = 1e9, d2 = 1e9, sz = 1;
+    for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+      const gi = ((ci + di) % cnt + cnt) % cnt, gj = ((cj + dj) % cnt + cnt) % cnt, p = pts[gj * cnt + gi];
+      const px = p[0] + (ci + di - gi) * cs, py = p[1] + (cj + dj - gj) * cs, d = Math.hypot(x - px, y - py) / p[2];
+      if (d < d1) { d2 = d1; d1 = d; sz = p[2]; } else if (d < d2) d2 = d;
+    }
+    const crease = Math.min(1, (d2 - d1) / 2.2);                    // 0 in the creases between cells, 1 in the middle of a cell
+    return .1 + .9 * Math.pow(crease, .7) * (.9 + .1 * Math.min(1, sz));
+  }, .6, .3, .1);
+}
 function grainTexture() {            // paper surface: fine tooth + fibres; bump map and printed into the cover color
+  if (FINISH.kind === 'weave') return weaveTexture();
+  if (FINISH.kind === 'cell') return cellTexture();
   const n = 512, c = document.createElement('canvas'); c.width = c.height = n;
   const g = c.getContext('2d', { willReadFrequently: true }), d = g.createImageData(n, n);
   // Paper tooth: band-limited noise (a 3x3 average minus a 5x5 average). Its specks are about 1.5 to 3 pixels wide and soft, and it has no
@@ -82,7 +148,7 @@ function grainTexture() {            // paper surface: fine tooth + fibres; bump
   grainScr = mk(v => 255 * 0.09 * Math.max(0, (v - .5) * 2));           // lighter where the grain is high, up to 9%
   grainCanvas = fc;                  // the soft layer baked into the cover color (see coverCanvas)
   const t = new CanvasTexture(c);
-  t.wrapS = t.wrapT = RepeatWrapping; t.repeat.set(0.8, 1); t.anisotropy = 4;   // about one texel per pixel or coarser: finer grain aliases into faint streaks on dark covers
+  t.wrapS = t.wrapT = RepeatWrapping; t.repeat.set(...FINISH.repeat); t.anisotropy = 4;   // about one texel per pixel or coarser: finer grain aliases into faint streaks on dark covers
   return t;
 }
 function pageEdgeTexture() {         // edge of a stack of sheets; dark gaps double as the bump map
@@ -131,7 +197,10 @@ const lift  = u => 0.004 + 0.11 * u * u;            // covers peel away from the
 const wave  = (u, v) => 0.008 * Math.sin(u * 5.2 + v * 2.1) + 0.005 * Math.sin(u * 11 - v * 3.7 + 1.3)
   + 0.07 * Math.pow(sstep(.7, 1, u), 2) * Math.pow(Math.abs(v - .5) * 2, 3);           // waviness + lifted outer corners
 const GAP = 0.003;                                  // covers never sink into the page block
-const zF = (u, v) => pHalf(u) + TC + Math.max(GAP, lift(u) + wave(u, v) + hinge(u));
+// Edge bevel: the front cover rolls down a little along its three trimmed edges (fore-edge, top, bottom), so each edge catches a thin line of light.
+const BEVEL_W = 0.07, BEVEL_D = 0.025;               // how far in the roll starts, and how far the edge drops, in inches
+const bevel = (u, v) => { const d = Math.min((1 - u) * (W / 2 - XL), v * H, (1 - v) * H), t = 1 - sstep(0, BEVEL_W, d); return BEVEL_D * t * t; };
+const zF = (u, v) => pHalf(u) + TC + Math.max(GAP, lift(u) + wave(u, v) + hinge(u) - bevel(u, v));
 const zB = (u, v) => -(pHalf(u) + TC + Math.max(GAP, 0.4 * lift(u) + 0.6 * wave(u + .3, v)));
 const ao = (u) => 1 - 0.05 * Math.exp(-Math.pow((u - 0.035) / 0.03, 2)) - 0.02 * (1 - sstep(0, 0.14, u));   // light baked shading at the hinge
 const SR = 0.12;                                    // how far the rounded spine bulges out to the left
@@ -180,7 +249,7 @@ function buildBook(mats) {
   const grp = new Group();
   const add = (geo, mat) => { const m = new Mesh(geo, mat); m.castShadow = true; grp.add(m); return m; };
 
-  add(grid(USF, VSF, (u, v) => [X(u), Y(v), zF(u, v)], ao, 0), mats.cover);               // front: the CMS image
+  add(grid(USF, VSF, (u, v) => [X(u), Y(v), zF(u, v)], (u, v) => ao(u) * (1 + .16 * bevel(u, v) / BEVEL_D), 0), mats.cover);   // the rolled edge also reads a little lighter, like worn ink               // front: the CMS image
   add(grid(US, VS, (u, v) => [X(u), Y(v), zF(u, v) - TC], undefined, 0), mats.core);                 // front, inside face
   add(grid(US, VS, (u, v) => [X(u), Y(v), zB(u, v)], () => 1, 0), mats.spine);                       // back cover (seen only as a thin edge behind the pages)
   const coverEdges = (zf, d) => {
@@ -243,9 +312,9 @@ function coverCanvas(img, maxWidth, shownPx) {          // shownPx: about how ma
     // A speck is about 2 pixels of the grain image, so it is sized from the cover's on-screen size, not its texture size.
     // The grain grows and shrinks with the cover, so it stays the same size relative to the book (paper does not change size). Floor and cap keep it visible and stable.
     const px = Math.max(120, shownPx || 400), gp = Math.min(GRAIN_PX * 1.4, Math.max(GRAIN_MIN, GRAIN_PX * px / GRAIN_REF));
-    const scale = (gp / 2) * cw / px;
+    const scale = FINISH.kind !== 'grain' ? cw / (512 * FINISH.repeat[0]) : (gp / 2) * cw / px;   // cloth: the printed weave lines up with the bump weave
     const paint = (src, op, alpha) => { const pat = g.createPattern(src, 'repeat'); pat.setTransform(new DOMMatrix().scale(scale)); g.globalCompositeOperation = op; g.globalAlpha = alpha; g.fillStyle = pat; g.fillRect(0, 0, cw, ch); };
-    paint(grainCanvas, 'overlay', FINISH.tooth * .4);   // mid-tones: keeps the average color and brightness
+    paint(grainCanvas, 'overlay', FINISH.tooth * FINISH.print);   // mid-tones: keeps the average color and brightness
     paint(grainMul, 'multiply', FINISH.tooth * .5);    // white areas: faint darker flecks
     paint(grainScr, 'screen', FINISH.tooth * .5);      // black areas: faint lighter flecks
     g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
@@ -332,6 +401,7 @@ async function boot(stage, poster) {
   spot.position.set(...LIGHT); scene.add(spot, spot.target);
   const camera = new PerspectiveCamera(28, 1, 1, 200);
 
+  FINISH = FINISHES[pickFinish(stage.dataset.finish)];
   const grain = grainTexture();
   const shared = { roughness: FINISH.roughness, clearcoat: FINISH.clearcoat, clearcoatRoughness: FINISH.clearcoatRoughness, sheen: FINISH.sheen, sheenRoughness: FINISH.sheenRoughness, sheenColor: new Color(0xffffff), bumpMap: grain, bumpScale: FINISH.bump, specularIntensity: FINISH.specular };
   const edgeTex = pageEdgeTexture();
@@ -377,7 +447,7 @@ async function boot(stage, poster) {
   mats.cover.specularIntensity = mats.spine.specularIntensity = FINISH.specular * specK;
   const baseLight = { env: ENV_BASE * envK, spot: SPOT_BASE * spotK, spec: FINISH.specular * specK };   // draw() dims these as the book turns toward the light
   // Relief on a near-black cover shows up as faint streaks in the reflections, so scale it down as the cover gets darker.
-  mats.cover.bumpScale = mats.spine.bumpScale = FINISH.bump * (0.15 + 0.85 * Math.min(1, lum * 2.5));
+  mats.cover.bumpScale = mats.spine.bumpScale = FINISH.bump * (FINISH.bumpFloor + (1 - FINISH.bumpFloor) * Math.min(1, lum * 2.5));
   const coverTex = new Texture(coverSrc); coverTex.colorSpace = SRGBColorSpace;
   coverTex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); coverTex.needsUpdate = true;
   mats.cover.map = coverTex;
@@ -461,7 +531,7 @@ async function boot(stage, poster) {
       firstDone = true; stage.classList.add('ebook3d-ready');
       readyMs = Math.round(performance.now() - t0);                       // time from the start of boot to the first drawn frame
       performance.mark('ebook3d-ready');
-      setState(stage, 'ready', { ms: readyMs, lowEnd, coarse, reduce });
+      setState(stage, 'ready', { ms: readyMs, lowEnd, coarse, reduce, finish: pickFinish(stage.dataset.finish) });
     }
     if (stats) {
       frames++; acc += dt; cpuAcc += rt; cpuMax = Math.max(cpuMax, rt); worst = Math.max(worst, dt * 1000);
