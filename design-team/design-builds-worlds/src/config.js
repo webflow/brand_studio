@@ -37,6 +37,9 @@ export const QUERY = new URLSearchParams(window.__DBW_QUERY || location.search);
 // The backdrop is clear: the planet has no white rectangle behind it (the option bg=white gives the white backdrop again).
 // PAGE_BG = the color behind the planet. In an embed, the embed script reads it from the page around the frame.
 // On the full page it is Webflow black, or the option bgcolor=rrggbb. Tiles that are not in focus fade to this color, and the wireframe view uses it.
+// How much of the planet is in sunlight. A real planet has 0.5. This one has more, as a style: the line between day and night is moved to the night side.
+// The part of a sphere where dot(up, sun) > c is (1 - c) / 2 of its surface. The day line was at c = 0.02, so DAY_SHIFT is added to the dot in every shader and in world.dayAt.
+export const DAY_SIDE = 0.7, DAY_SHIFT = 2 * DAY_SIDE - 1 + 0.02, DAY_GLSL = DAY_SHIFT.toFixed(3), DAY_LIFT = (DAY_SHIFT + 0.1).toFixed(3);   // DAY_LIFT: how much higher the light of a low sun comes from
 export const CLEAR = QUERY.get('bg') !== 'white';
 const bgc = QUERY.get('bgcolor') || '';
 export const HOST_BG = !CLEAR ? '#FFFFFF' : /^[0-9a-f]{6}$/i.test(bgc) ? '#' + bgc.toUpperCase() : EMBED ? '#FFFFFF' : '#080808';

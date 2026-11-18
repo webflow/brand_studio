@@ -7,6 +7,7 @@
 // Instanced aAux = (taper x, taper z, season sense, lod + 4 * pattern).
 // patterns: 1 roof courses, 2 bricks, 3 planks, 5 stone courses, 6 window frame
 import { ROWS, COLS, ROW } from './palette.js';
+import { DAY_GLSL, DAY_LIFT } from './config.js';
 
 export const VERT = /* glsl */`
 attribute vec4 aPal;
@@ -183,7 +184,7 @@ float shadowAt(vec3 wp, vec3 n, float ndl) {
   #endif
 }
 float dayOf(vec3 up) {
-  float d = smoothstep(-0.14, 0.18, dot(up, uSunDir)) * 3.0;
+  float d = smoothstep(-0.14, 0.18, dot(up, uSunDir) + ${DAY_GLSL}) * 3.0;   // the day side is larger than a half (see DAY_SIDE)
   float i = floor(d);
   return (i + smoothstep(0.28, 0.72, d - i)) / 3.0;
 }
@@ -229,10 +230,11 @@ void main() {
     inH = isO * step(abs(vAux.w - uHoverTile), 0.5);
     inL = isO * step(abs(vAux.w - uLitTile), 0.5);
   }
-  float dayDot = dot(up, uSunDir);
+  float sunDot = dot(up, uSunDir);            // the real height of the sun
+  float dayDot = sunDot + ${DAY_GLSL};          // the height that the day and its colors use: the day side is larger than a half
   float dayReal = dayOf(up);
   #ifdef ALWAYS_DAY
-    dayReal = 1.0; dayDot = max(dayDot, 0.5);
+    dayReal = 1.0; dayDot = max(dayDot, 0.5); sunDot = max(sunDot, 0.5);
   #endif
   float nightReal = 1.0 - dayReal;
   // A tile under the pointer at night gets a spotlight from above: a soft round pool of light.
@@ -326,10 +328,12 @@ void main() {
   tone = mix(tone, 0.0, snow);
   ink *= 1.0 - snow * 0.6;
 
-  vec3 Ls = normalize(mix(uSunDir, normalize(uLitC * 1.6 + uKeyDir * 0.25 - vW), litAmt));
+  // Where the sun is low or just under the horizon, its light comes from a little higher, so the added part of the day side has sunlight too. Shadows go away there (they would have no end).
+  vec3 sunL = normalize(uSunDir + up * (${DAY_LIFT} * (1.0 - smoothstep(0.1, 0.7, sunDot))));
+  vec3 Ls = normalize(mix(sunL, normalize(uLitC * 1.6 + uKeyDir * 0.25 - vW), litAmt));
   float ndl = dot(N, Ls);
   float sh = 1.0;
-  if (uShadowOn > 0.5 && dayDot > -0.15 && ndl > 0.02) sh = mix(shadowAt(vW, N, ndl), 1.0, litAmt);
+  if (uShadowOn > 0.5 && sunDot > -0.02 && ndl > 0.02) sh = mix(mix(1.0, shadowAt(vW, N, ndl), smoothstep(-0.02, 0.2, sunDot)), 1.0, litAmt);
 
   // Smooth light from the sun and the sky, real water, a tone curve.
   vec3 base = pal(row, tone + ink * 0.7);
@@ -476,7 +480,7 @@ vec3 pal(float row, float tone) {
 }
 void main() {
   float kind = floor(vPal.z + 0.5);
-  float day = smoothstep(-0.12, 0.16, dot(normalize(vW), uSunDir));
+  float day = smoothstep(-0.12, 0.16, dot(normalize(vW), uSunDir) + ${DAY_GLSL});
   float a = vPal.w / 255.0;
   if (kind == 1.0) a *= 1.0 - day;
   else if (kind == 2.0) a *= day;

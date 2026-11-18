@@ -1,6 +1,6 @@
 // The scene: renderer, shared uniforms, materials, ocean, sky rings, orbit marks, clouds, sun, shadows.
 import * as THREE from 'three';
-import { CONFIG, REDUCED, CLEAR, HOST_BG, isDark } from './config.js';
+import { CONFIG, REDUCED, CLEAR, HOST_BG, isDark, DAY_SHIFT } from './config.js';
 import { makePaletteTexture, ROW, WHITE } from './palette.js';
 import { VERT, FRAG, FRAG_DEPTH, FX_VERT, FX_FRAG, FRAG_HI } from './shaders.js';
 import { wireLines, PrimBatch, MeshAcc, Builder } from './prims.js';
@@ -366,7 +366,7 @@ export class World {
       this.sunTan.set(Math.sin(a), 0, -Math.cos(a));
     }
   }
-  dayAt(dir) { return smooth(-0.12, 0.16, dir.dot(this.sunDir)); }
+  dayAt(dir) { return smooth(-0.12, 0.16, dir.dot(this.sunDir) + DAY_SHIFT); }   // the day side is larger than a half (see DAY_SIDE in config.js)
 
   syncConfig() {
     const U = this.U, C = CONFIG;

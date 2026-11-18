@@ -1,7 +1,7 @@
 // Things above and around the planet: soft particle clouds, weather systems (wind, a storm with rain),
 // small 3D objects on the orbit lines, and the outline that shows a free tile under the pointer.
 import * as THREE from 'three';
-import { CONFIG, REDUCED } from './config.js';
+import { CONFIG, REDUCED, DAY_GLSL } from './config.js';
 import { PrimBatch, Builder } from './prims.js';
 import { ROW, regionPalette } from './palette.js';
 import { colors } from './heroes.js';
@@ -78,7 +78,7 @@ void main(){
   float th0 = 0.61 + uLayer * 0.045;
   float dens = smoothstep(th0, th0 + 0.035, n);
   if (dens < 0.01) discard;
-  float day = smoothstep(-0.15, 0.25, dot(p, uSunDir));
+  float day = smoothstep(-0.15, 0.25, dot(p, uSunDir) + ${DAY_GLSL});
   float h = uLayer / 3.0;
   vec3 lit = mix(vec3(0.78, 0.84, 0.92), vec3(1.0), h);                         // the base is in shade, the top is white
   lit = mix(lit, lit * vec3(0.56, 0.61, 0.7), stormK * (0.7 - h * 0.6));
@@ -118,7 +118,7 @@ void main(){
   float th0 = 0.36 + uLayer * 0.06;
   float dens = smoothstep(th0, th0 + 0.035, n);
   if (dens < 0.01) discard;
-  float day = smoothstep(-0.15, 0.25, dot(normalize(vW), uSunDir));
+  float day = smoothstep(-0.15, 0.25, dot(normalize(vW), uSunDir) + ${DAY_GLSL});
   float h = uLayer / 4.0;
   vec3 lit = mix(vec3(0.5, 0.56, 0.68), vec3(0.97, 0.98, 1.0), h);
   vec3 col = mix(mix(vec3(0.13, 0.17, 0.28), vec3(0.32, 0.38, 0.52), h), lit, day);
@@ -136,7 +136,7 @@ void main(){
   float wide = mix(0.7, 0.96, sin(h * 2.67)) + (n - 0.5) * 0.3;                   // the cloud is widest a little over the middle of its height. Its edge is not a circle.
   float dens = (1.0 - smoothstep(wide - 0.2, wide, r)) * smoothstep(0.16, 0.38, n + (1.0 - r) * 0.5);
   if (dens < 0.02) discard;
-  float day = smoothstep(-0.15, 0.25, dot(normalize(vW), uSunDir));
+  float day = smoothstep(-0.15, 0.25, dot(normalize(vW), uSunDir) + ${DAY_GLSL});
   vec3 lit = mix(vec3(0.78, 0.84, 0.92), vec3(1.0), h);                         // the base is in shade, the top is white (as the clouds of the planet)
   vec3 col = mix(mix(vec3(0.14, 0.18, 0.3), vec3(0.3, 0.36, 0.5), h), lit, day);
   gl_FragColor = vec4(col, dens * 0.5);
@@ -157,7 +157,7 @@ void main(){
   float wide = 0.84 + (n - 0.5) * 0.42;                                           // the edge is not a circle
   float dens = 1.0 - smoothstep(wide - 0.2, wide, r);
   if (dens < 0.02) discard;
-  float day = smoothstep(-0.15, 0.25, dot(normalize(vW), uSunDir));
+  float day = smoothstep(-0.15, 0.25, dot(normalize(vW), uSunDir) + ${DAY_GLSL});
   vec3 lit = mix(vec3(0.8, 0.86, 0.94), vec3(1.0), 0.35 + 0.65 * h) * mix(1.0, 0.9, smoothstep(0.35, 0.9, r));   // white at the top, a little shade at the edge of each puff
   vec3 col = mix(mix(vec3(0.16, 0.2, 0.32), vec3(0.32, 0.38, 0.52), h), lit, day);
   gl_FragColor = vec4(col, dens * 0.46);
@@ -241,7 +241,7 @@ export class Weather {
       this.rain = new THREE.LineSegments(g, new THREE.ShaderMaterial({
         uniforms: { uTime: world.U.uTime, uSunDir: world.U.uSunDir },
         vertexShader: 'attribute float aEnd; attribute float aPhase; uniform float uTime; varying float vA; varying vec3 vW; void main(){ float f = fract(uTime * 1.25 + aPhase); float rr = mix(1.175, 1.0, f) + aEnd * 0.022; vec4 wp = modelMatrix * vec4(position * rr, 1.0); vW = wp.xyz; vA = (1.0 - smoothstep(0.85, 1.0, f)) * smoothstep(0.0, 0.1, f); gl_Position = projectionMatrix * viewMatrix * wp; }',
-        fragmentShader: 'uniform vec3 uSunDir; varying float vA; varying vec3 vW; void main(){ float day = smoothstep(-0.15, 0.2, dot(normalize(vW), uSunDir)); gl_FragColor = vec4(mix(vec3(0.45, 0.55, 0.75), vec3(0.86, 0.91, 0.97), day), vA * 0.6); }',
+        fragmentShader: 'uniform vec3 uSunDir; varying float vA; varying vec3 vW; void main(){ float day = smoothstep(-0.15, 0.2, dot(normalize(vW), uSunDir) + ' + DAY_GLSL + '); gl_FragColor = vec4(mix(vec3(0.45, 0.55, 0.75), vec3(0.86, 0.91, 0.97), day), vA * 0.6); }',
         transparent: true, depthWrite: false,
       }));
       this.rain.frustumCulled = false; this.rain.renderOrder = 5; this.storm.grp.add(this.rain);
@@ -263,7 +263,7 @@ export class Weather {
             vec3 p = vec3(cos(la) * cos(lo), sin(la), cos(la) * sin(lo)) * 1.062; vW = p;
             vA = sin(3.1416 * aSeg) * sin(3.1416 * life) * uK * (1.0 - smoothstep(0.4, 0.75, uLod));
             gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0); }`,
-        fragmentShader: 'uniform vec3 uSunDir; varying float vA; varying vec3 vW; void main(){ float day = smoothstep(-0.15, 0.2, dot(normalize(vW), uSunDir)); gl_FragColor = vec4(vec3(1.0), vA * (0.16 + 0.44 * day)); }',
+        fragmentShader: 'uniform vec3 uSunDir; varying float vA; varying vec3 vW; void main(){ float day = smoothstep(-0.15, 0.2, dot(normalize(vW), uSunDir) + ' + DAY_GLSL + '); gl_FragColor = vec4(vec3(1.0), vA * (0.16 + 0.44 * day)); }',
         transparent: true, depthWrite: false,
       }));
       this.wind.frustumCulled = false; this.wind.renderOrder = 4; this.group.add(this.wind);

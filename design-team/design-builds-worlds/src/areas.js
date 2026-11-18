@@ -1,6 +1,6 @@
 // The 12 unique areas (pentagon tiles). Hand-designed recipes. Not claimable. Max 3 hues each.
 import * as THREE from 'three';
-import { CONFIG, REDUCED } from './config.js';
+import { CONFIG, REDUCED, DAY_GLSL } from './config.js';
 import { Builder } from './prims.js';
 import { rimmed, edgeE, voxelH, buildVoxelTerrain, VOX } from './terrain.js';
 import { roundTile } from './goldberg.js';
@@ -20,7 +20,7 @@ function addMirror(world, tile, cz, rad) {
   const geo = new THREE.CircleGeometry(rad, 48);
   const vs = 'uniform mat4 textureMatrix; varying vec4 vUv; varying vec3 vW; void main(){ vUv = textureMatrix * vec4(position, 1.0); vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }';
   const fs = (refl) => `uniform sampler2D tDiffuse; uniform float uTime; uniform vec3 uSunDir; varying vec4 vUv; varying vec3 vW;
-    void main(){ vec3 up = normalize(vW), Vd = normalize(cameraPosition - vW); float F = pow(1.0 - max(dot(Vd, up), 0.0), 3.0), day = smoothstep(-0.15, 0.25, dot(up, uSunDir));
+    void main(){ vec3 up = normalize(vW), Vd = normalize(cameraPosition - vW); float F = pow(1.0 - max(dot(Vd, up), 0.0), 3.0), day = smoothstep(-0.15, 0.25, dot(up, uSunDir) + ${DAY_GLSL});
       vec3 tint = mix(vec3(0.03, 0.07, 0.16), vec3(0.2, 0.46, 0.56), day);
       ${refl ? 'vec2 uv = vUv.xy / vUv.w + vec2(sin(vW.x * 700.0 + vW.z * 300.0 + uTime * 1.2), cos(vW.z * 650.0 - uTime)) * 0.0012; vec3 col = mix(tint, texture2D(tDiffuse, uv).rgb, 0.66 + 0.3 * F);' : 'vec3 col = mix(tint, mix(vec3(0.1, 0.14, 0.26), vec3(0.93, 0.96, 0.98), day), 0.5 + 0.3 * F);'}
       gl_FragColor = vec4(col, 1.0); }`;
@@ -892,7 +892,7 @@ export function addAurora(world) {
         float band = floor(vUv.y / max(top, 0.05) * 3.0);
         vec3 col = band < 0.5 ? uA : (band < 1.5 ? mix(uA, uB, 0.5) : uB);
         float fold = 0.8 + 0.2 * step(0.5, fract(vUv.x * 18.0 + sin(vUv.y * 3.0 + uTime * 0.3 + uPhase) * 0.3));
-        float night = 1.0 - smoothstep(-0.25, 0.3, dot(normalize(vW), uSunDir));
+        float night = 1.0 - smoothstep(-0.25, 0.3, dot(normalize(vW), uSunDir) + ${DAY_GLSL});
         float alpha = body * fold * (0.9 - band * 0.2) * (0.16 + 0.74 * night) * uOn;
         if (alpha < 0.01) discard; gl_FragColor = vec4(col, alpha); }`,
     transparent: true, depthWrite: false, side: THREE.DoubleSide,
