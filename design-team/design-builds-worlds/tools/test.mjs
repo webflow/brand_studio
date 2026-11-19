@@ -540,6 +540,10 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   await p2.keyboard.press('ArrowRight'); await sleep(1000);
   ok('load-in: a key press makes it finish fast', await p2.evaluate(() => !window.__dbw.world.build && window.__dbw.world.U.uBuild.value.w >= 50));
   await p2.close();
+  const ps = await open('intro=1', undefined, { wait: 250 });
+  const slow = await ps.evaluate(() => { const w = window.__dbw.world, b = w.build; if (!b) return null; b.wait = false; const t0 = b.t; b.last = performance.now() - 400; w.stepBuild(0.016); const d1 = b.t - t0; b.last = performance.now() - 9000; const t1 = b.t; w.stepBuild(0.016); return { d1: +d1.toFixed(2), d2: +(b.t - t1).toFixed(2) }; });
+  ok('load-in: it follows the real clock (a frame that comes 0.4 seconds late moves it 0.4 seconds), and one frame moves it half a second at most', !!slow && slow.d1 > 0.36 && slow.d1 < 0.46 && slow.d2 > 0.45 && slow.d2 < 0.55, JSON.stringify(slow));
+  await ps.close();
   const q = await open('', undefined, { wait: 600, reduced: true }); const r1 = await q.evaluate(() => !window.__dbw.world.build && window.__dbw.world.U.uBuild.value.w >= 50); await q.close();
   const q2 = await open('tier=high', undefined, { wait: 600 }); const r2 = await q2.evaluate(() => !window.__dbw.world.build); await q2.close();
   ok('load-in: it does not play with reduced motion, or when the address asks for a fixed view', r1 && r2);

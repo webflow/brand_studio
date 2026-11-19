@@ -299,7 +299,10 @@ export class World {
     this.warm = 3;   // for the first frames all the parts of the planet are drawn, also the ones on the far side: their data goes to the graphics card now, not when they come into view
   }
   stepBuild(dt) {
-    const b = this.build; if (b.hold != null) b.t = b.hold; else b.t += Math.min(dt, 0.05) * (b.fast ? 7 : 1);
+    // The load-in follows the real clock, not the number of frames: on a slow device it takes the same time, with fewer steps. (Before, each frame moved it by 0.05 seconds at most, so with few frames it was in slow motion.)
+    // One frame moves it by half a second at most, so a tab that was in the background does not jump to the end.
+    const b = this.build, now = performance.now(), real = Math.min(0.5, Math.max(0, (now - (b.last ?? now)) / 1000)); b.last = now;
+    if (b.hold != null) b.t = b.hold; else b.t += (real || Math.min(dt, 0.05)) * (b.fast ? 7 : 1);
     if (b.wait && !b.fast) b.t = Math.min(b.t, 0.5);   // the quality is not set yet: the screen can flicker, but the islands wait   // hold = a fixed time, for a picture of one moment
     this.U.uBuild.value.w = b.t;
     if (b.t >= b.end) { this.U.uBuild.value.w = 99; this.build = null; }
