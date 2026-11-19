@@ -7,7 +7,7 @@ const KEY = 'dbw-passport', KEY2 = 'dbw-legends', KEY3 = 'dbw-eggs', KEY4 = 'dbw
 // The easter eggs: things that do something when the visitor selects them.
 // [id, name, the key of the thing (see discover.js), the unique area that has it (or null: it is in orbit), a line icon]
 const EGGS = [
-  ['flare', 'Solar Flare', 'sun', null, '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>'],
+  ['flare', 'Heat Wave', 'sun', null, '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>'],
   ['wave', 'Tidal Wave', 'moon', null, '<path d="M3 16c3 0 4-2 5-4.5C9.2 8.5 11 7 13.5 7c2.5 0 4 1.6 4 3.5 0 1.4-1 2.3-2.2 2.3"/><path d="M3 20c2-1.4 4-1.4 6 0s4 1.4 6 0 4-1.4 6 0"/>'],
   ['wire', 'Wireframe', 'sat', null, '<path d="M12 3l7.8 4.5v9L12 21l-7.8-4.5v-9z"/><path d="M4.2 7.5L12 12l7.8-4.5M12 12v9"/>'],
   ['meteor', 'Meteor Shower', 'comet', null, '<path d="M20.5 3.500L11 13"/><path d="M20.5 9.500l-5 5M14.500 3.500l-5 5"/><circle cx="7.500" cy="16.500" r="3.500"/>'],

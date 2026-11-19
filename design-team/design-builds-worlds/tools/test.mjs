@@ -197,7 +197,7 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   ok('a new region rises from the ocean', low > 0.02 && up === 0, `${low.toFixed(3)} -> ${up}`);
   ok('two accent colors, natural land', await p.evaluate(() => { const a = window.__dbw; document.querySelector('.steps button[data-step="3"]').click(); return a.practice.cfg.hues.length === 2 && document.querySelectorAll('.huepick').length === 2; }));
   ok('every region and area has animals', await p.evaluate(() => { const a = window.__dbw; return [...a.samples, ...a.areas].every((r) => (r.animals || []).length >= 3); }), await p.evaluate(() => { const a = window.__dbw; return Math.min(...[...a.samples, ...a.areas].map((r) => (r.animals || []).length)) + ' or more per tile'; }));
-  ok('weather: clouds, wind, and a storm are in the scene', await p.evaluate(() => { const w = window.__dbw.world.weather; return w.shells.length >= 3 && w.shells[0].visible && w.wind.visible && w.rain.parent.visible; }));
+  ok('weather: clouds and wind are in the scene, and the hurricane is not there before a click on the sun', await p.evaluate(() => { const w = window.__dbw.world.weather; return w.shells.length >= 3 && w.shells[0].visible && w.wind.visible && !w.rain.parent.visible && w.cloudU.uStormOn.value === 0 && window.__dbw.world.heat(window.__dbw.world.lastT).ice === 1; }));
   ok('orbit lines carry 3D objects', await p.evaluate(() => window.__dbw.world.orbiters.length === 2));
   await done(p, 'new style');
 }
@@ -265,7 +265,7 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   ok('the full page has a dark backdrop (Webflow black), with no white rectangle and no halo', await p.evaluate(() => { const a = window.__dbw, w = a.world; return getComputedStyle(document.documentElement).backgroundColor === 'rgb(8, 8, 8)' && getComputedStyle(document.body).backgroundColor === 'rgba(0, 0, 0, 0)' && w.backdrop.visible === false && w.rings.visible === false && w.renderer.getClearAlpha() === 0 && w.U.uBg.value.toArray().map((v) => Math.round(v * 255)).join(',') === '8,8,8'; }));
   const q = await open('t=0.3&bg=white');
   await sleep(500);
-  ok('the option bg=white gives the white backdrop and the glow again', await q.evaluate(() => { const w = window.__dbw.world; return getComputedStyle(document.documentElement).backgroundColor === 'rgb(255, 255, 255)' && w.backdrop.visible === true && w.rings.visible === true && w.renderer.getClearAlpha() === 1; }));
+  ok('the option bg=white gives the white backdrop, and the planet has no glow there too', await q.evaluate(() => { const w = window.__dbw.world; return getComputedStyle(document.documentElement).backgroundColor === 'rgb(255, 255, 255)' && w.backdrop.visible === true && w.rings.visible === false && w.renderer.getClearAlpha() === 1; }));
   await q.close();
   const bk = await p.evaluate(() => { const a = window.__dbw, px = (back) => { const c = a.photoCanvas(a.samples[2], 0, 'noon', 1, 0.25, 'off', 0, 'off', back), d = c.getContext('2d').getImageData(3, 3, 1, 1).data; return [...d]; }; const white = px('white'), black = px('black'), clear = px('clear'); document.querySelector('#settingsBtn').click(); return { white, black, clear, liveAlpha: a.world.renderer.getClearAlpha(), halo: a.world.rings.visible, bg: a.world.U.uBg.value.toArray().map((v) => Math.round(v * 255)).join(',') }; });
   ok('a photo can have a white, a black, or a transparent backdrop, and the live view is as before after it', bk.white[0] > 245 && bk.white[1] > 245 && bk.white[2] > 245 && bk.white[3] === 255 && bk.black[0] < 14 && bk.black[1] < 14 && bk.black[2] < 14 && bk.black[3] === 255 && bk.clear[3] === 0 && bk.liveAlpha === 0 && bk.halo === false && bk.bg === '8,8,8', JSON.stringify(bk));
@@ -454,6 +454,34 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   await done(p, 'area link');
 }
 
+// ---- the pointer makes small waves on the sea
+{
+  const p = await open('tier=low&t=0.3&cam=-75,-8,2.6');
+  const before = await p.evaluate(() => window.__dbw.world.U.uRipOn.value);
+  for (let i = 0; i <= 20; i++) { await p.mouse.move(520 + i * 15, 520 - Math.sin(i * 0.35) * 70); await sleep(40); }
+  await sleep(150);
+  const r = await p.evaluate(() => { const w = window.__dbw.world, a = [...w.U.uRip.value], ages = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => a[i * 4 + 3]), len = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => Math.hypot(a[i * 4], a[i * 4 + 1], a[i * 4 + 2])); return { on: w.U.uRipOn.value, live: ages.filter((x) => x >= 0).length, max: Math.max(...ages), unit: len.filter((l, i) => ages[i] >= 0).every((l) => Math.abs(l - 1) < 0.01) }; });
+  ok('the pointer on the sea makes small waves that stay as a trail: ten rings at most, each at a place on the sea, each under three seconds old', before === 0 && r.on === 1 && r.live >= 5 && r.live <= 10 && r.max < 3 && r.unit, JSON.stringify(r));
+  await sleep(3600);
+  ok('the waves fade and stop when the pointer does not move', await p.evaluate(() => { const w = window.__dbw.world; return w.U.uRipOn.value === 0 && !w.rippling; }));
+  const pr = await open('tier=low&t=0.3&cam=-75,-8,2.6', undefined, { reduced: true });
+  for (let i = 0; i <= 8; i++) { await pr.mouse.move(520 + i * 20, 520); await sleep(40); }
+  ok('with reduced motion the pointer makes no waves', await pr.evaluate(() => window.__dbw.world.U.uRipOn.value === 0));
+  await pr.close();
+  await done(p, 'sea waves');
+}
+
+// ---- the sun easter egg: the polar ice melts and comes back, and a hurricane grows under the sun and goes away (about 10 seconds)
+{
+  const p = await open('tier=low&t=0.3');
+  const r = await p.evaluate(async () => { const a = window.__dbw, w = a.world, wait = (ms) => new Promise((q) => setTimeout(q, ms)); const t0 = w.lastT; a.tapThing('sun'); await wait(400); const again = w.sunHeat(); const sun = w.sunMark.position.clone().normalize(), st = w.weather.stormDir.clone().applyQuaternion(w.weather.storm.grp.quaternion).normalize(); const h = (s) => w.heat(w.heatAt + s); return { started: w.heatAt >= t0, again, under: +sun.dot(st).toFixed(3), i0: h(0.5).ice, i2: h(2).ice, i10: h(6).ice, i50: h(8).ice, i66: +h(13).ice.toFixed(2), i71: h(30).ice, s03: h(0.3).storm, s1: h(1).storm, s10: h(6).storm, s50: h(8).storm, s66: +h(12.5).storm.toFixed(2), s71: h(30).storm, flare: w.sunMark.flareAt >= t0 - 1 }; });
+  ok('a click on the sun melts the polar ice, from the moment of the click, in a few seconds, and it comes back after about 10 seconds', r.started && r.flare && r.i0 < 0.999 && r.i0 > 0.9 && r.i2 < 0.8 && r.i10 === 0 && r.i50 === 0 && r.i66 > 0.1 && r.i66 < 0.99 && r.i71 === 1, JSON.stringify(r));
+  ok('a click on the sun makes a hurricane that starts under the sun at once, runs about 10 seconds, then goes away; a second click in that time does not start it again', r.under > 0.99 && r.s03 > 0.05 && r.s1 > 0.5 && r.s10 === 1 && r.s50 === 1 && r.s66 > 0.01 && r.s66 < 0.9 && r.s71 === 0 && r.again === false, JSON.stringify(r));
+  await sleep(5000);
+  ok('at about six seconds the hurricane and its rain are in view, and the ice is gone', await p.evaluate(() => { const w = window.__dbw.world, wx = w.weather; return wx.rain.parent.visible && wx.cloudU.uStormOn.value > 0.9 && wx.rainK.value > 0.8 && w.heat(w.lastT).ice < 0.05; }));
+  await done(p, 'sun heat');
+}
+
 // ---- a click finds the volcano also when it is near the edge of the planet
 {
   const p = await open('tier=low&t=0.3');
@@ -554,7 +582,7 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   const met = await p.evaluate(() => { const a = window.__dbw, pts = a.world.meteorMids(), w = window.innerWidth, h = window.innerHeight; let near = 9, seen = 0; for (const q of pts) { const v = a.world.camera.position.clone().set(q[0], q[1], q[2]); near = Math.min(near, v.length()); const s = a.cam.project(v); if (s.front && s.x > 0 && s.x < w && s.y > 0 && s.y < h) seen++; } return { n: pts.length, near: +near.toFixed(2), seen, dist: +a.cam.dist.toFixed(2) }; });
   ok('the meteors pass beside the planet (none comes near it), and most of their paths are in the view', met.n > 100 && met.near >= 1.3 && met.seen > met.n * 0.7 && met.dist > 4, JSON.stringify(met));
   await p.click('#settingsBtn'); await sleep(400);
-  ok('a found easter egg shows its name, and it is a button', await p.evaluate(() => [...document.querySelectorAll('button.egg .nm')].map((e) => e.textContent).join('|') === 'Solar Flare|Tidal Wave|Wireframe|Meteor Shower|Eruption|Launch!|Electric Storm'));
+  ok('a found easter egg shows its name, and it is a button', await p.evaluate(() => [...document.querySelectorAll('button.egg .nm')].map((e) => e.textContent).join('|') === 'Heat Wave|Tidal Wave|Wireframe|Meteor Shower|Eruption|Launch!|Electric Storm'));
   // A found egg brings its trigger to the middle of the view. It does not zoom in, and no region opens.
   const mid = (key, tileId) => p.evaluate((key, tileId) => { const a = window.__dbw, c = a.world.camera, v = tileId ? a.areas.find((q) => q.def.id === tileId).tile.center.clone() : (key === 'sun' ? a.world.sunMark.position.clone() : a.world.U.uMoonDir.value.clone().multiplyScalar(1.72)); const s = a.cam.project(v), w = window.innerWidth, h = window.innerHeight; return { dx: Math.round(Math.abs(s.x - w / 2)), dy: Math.round(Math.abs(s.y - h / 2)), follow: !!a.following, open: !!a.current, mode: a.cam.mode, dist: +a.cam.dist.toFixed(2), facing: +v.normalize().dot(c.position.clone().normalize()).toFixed(3), menu: document.querySelector('#settings').hidden }; }, key, tileId);
   await p.evaluate(() => document.querySelector('button.egg[data-egg="wave"]').click()); await sleep(2400);
@@ -563,7 +591,7 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   await p.click('#settingsBtn'); await sleep(300);
   await p.evaluate(() => document.querySelector('button.egg[data-egg="flare"]').click()); await sleep(2400);
   const m2 = await mid('sun');
-  ok('select Solar Flare: the sun is in the middle of the view, and there is no zoom', m2.dx < 90 && m2.dy < 90 && !m2.follow && m2.mode === 'orbit' && m2.facing > 0.97, JSON.stringify(m2));
+  ok('select Heat Wave: the sun is in the middle of the view, and there is no zoom', m2.dx < 90 && m2.dy < 90 && !m2.follow && m2.mode === 'orbit' && m2.facing > 0.97, JSON.stringify(m2));
   await p.click('#settingsBtn'); await sleep(300);
   await p.evaluate(() => document.querySelector('button.egg[data-egg="erupt"]').click()); await sleep(2400);
   const m3 = await mid(null, 'volcano-ring');

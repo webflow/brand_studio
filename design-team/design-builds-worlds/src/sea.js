@@ -288,17 +288,20 @@ export function addSeaLife(app) {
     for (let i = 0; i < nF; i++) { const at = spot(0.05, floes); if (!at) continue; const k = (side(at[0], at[1]) + 1) / 2, w = 0.025 + k * k * 0.075 + ir() * 0.02; floes.push({ x: at[0], z: at[1], w, d: w * (0.6 + ir() * 0.4), ry: ir() * TAU, ph: ir() * 6, n: i % 4 }); }
     world.addAnimator(tile, (db, fb, t) => {
       if (app.practice && app.practice.cfg && app.practice.tile === tile) return;
-      const tt = REDUCED ? 0 : t;
+      const tt = REDUCED ? 0 : t, ice = world.heat(t).ice;   // a click on the sun melts the ice: it gets small and goes down into the sea. It comes back after about 10 seconds.
+      if (ice < 0.02) return;
       for (const g of bergs) {
-        db.push(g.x + Math.sin(tt * 0.05 + g.ph) * 0.006, Math.sin(tt * 0.7 + g.ph) * 0.002, g.z + Math.cos(tt * 0.04 + g.ph) * 0.006, g.ry + Math.sin(tt * 0.03 + g.ph) * 0.1, g.s, Math.sin(tt * 0.5 + g.ph) * 0.022);
+        db.push(g.x + Math.sin(tt * 0.05 + g.ph) * 0.006, Math.sin(tt * 0.7 + g.ph) * 0.002 - (1 - ice) * 0.03 * g.s, g.z + Math.cos(tt * 0.04 + g.ph) * 0.006, g.ry + Math.sin(tt * 0.03 + g.ph) * 0.1, g.s * (0.25 + 0.75 * ice) * Math.min(1, ice * 4), Math.sin(tt * 0.5 + g.ph) * 0.022);
         berg(db, g.kind);
         db.pop();
       }
       // Pack ice: thin flat pieces, some with a second piece on top. They move up and down a little with the sea.
       for (const f of floes) {
         const y = -0.004 + Math.sin(tt * 0.9 + f.ph) * 0.0015;
-        db.box(f.w, 0.006, f.d, f.n === 1 ? ICE2 : ICE, { x: f.x, y, z: f.z, ry: f.ry });
-        if (f.n === 0 && f.w > 0.05) db.box(f.w * 0.5, 0.005, f.d * 0.55, ICE, { x: f.x + 0.006, y: y + 0.006, z: f.z, ry: f.ry + 0.5, lod: 1 });
+        const fk = Math.max(0, Math.min(1, ice * 1.6 - ((f.ph * 0.1) % 0.6)));   // the thin pieces melt first, one after the other
+        if (fk <= 0) continue;
+        db.box(f.w * fk, 0.006, f.d * fk, f.n === 1 ? ICE2 : ICE, { x: f.x, y, z: f.z, ry: f.ry });
+        if (fk > 0.9 && f.n === 0 && f.w > 0.05) db.box(f.w * 0.5, 0.005, f.d * 0.55, ICE, { x: f.x + 0.006, y: y + 0.006, z: f.z, ry: f.ry + 0.5, lod: 1 });
       }
     }, { minLod: 0 });
   };

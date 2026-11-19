@@ -158,6 +158,15 @@ export class Cam {
   }
 
   // Which tile is under a screen point? Returns { tile, point } or null.
+  // The point of the sea surface under the pointer, as a direction from the middle of the planet (length 1). null = the pointer is not over the planet.
+  seaPoint(cx, cy, R = 0.988) {
+    const rect = this.el.getBoundingClientRect();
+    _ndc.set(((cx - rect.left) / rect.width) * 2 - 1, -((cy - rect.top) / rect.height) * 2 + 1);
+    _ray.setFromCamera(_ndc, this.camera);
+    const o = _ray.ray.origin, d = _ray.ray.direction, b = o.dot(d), disc = b * b - (o.lengthSq() - R * R);
+    if (disc < 0) return null;
+    return o.clone().addScaledVector(d, -b - Math.sqrt(disc)).normalize();
+  }
   pick(cx, cy) {
     const rect = this.el.getBoundingClientRect();
     _ndc.set(((cx - rect.left) / rect.width) * 2 - 1, -((cy - rect.top) / rect.height) * 2 + 1);

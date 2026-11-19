@@ -59,10 +59,10 @@ void main(){
   n -= smoothstep(0.72, 0.95, abs(p.y)) * 0.12;                                 // fewer clouds at the poles: the auroras live there
   float stormK = 0.0;
   float d = acos(clamp(dot(p, uStormC), -1.0, 1.0));
-  if (uStormOn > 0.5 && d < 0.34) {                                             // the storm: a cyclone (see cyclone())
+  if (uStormOn > 0.01 && d < 0.34) {                                            // uStormOn = how strong it is, 0 to 1 (it grows after a click on the sun, then it goes away)                                             // the storm: a cyclone (see cyclone())
     float th = atan(dot(p, cross(uStormC, uStormX)), dot(p, uStormX));
     float r = d / 0.34, hc = cyclone(r, -th, uT * 4.6, 0.1);   // it turns fast: one turn in about 14 seconds, like a hurricane in a weather film
-    float env = 1.0 - smoothstep(0.72, 1.0, r);
+    float env = (1.0 - smoothstep(0.72, 1.0, r)) * uStormOn;
     stormK = env;
     n = mix(n, 0.565 + hc * 0.62 + (n - 0.5) * 0.12, env);
   }
@@ -239,9 +239,9 @@ export class Weather {
       for (let i = 0; i < N; i++) { const a = r() * TAU, d = Math.sqrt(r()) * 0.2, dir = c0.clone().addScaledVector(e1, Math.cos(a) * d).addScaledVector(e3, Math.sin(a) * d).normalize(), q = r(); for (let k = 0; k < 2; k++) { p.push(dir.x, dir.y, dir.z); end.push(k); ph.push(q); } }
       const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); g.setAttribute('aEnd', new THREE.Float32BufferAttribute(end, 1)); g.setAttribute('aPhase', new THREE.Float32BufferAttribute(ph, 1));
       this.rain = new THREE.LineSegments(g, new THREE.ShaderMaterial({
-        uniforms: { uTime: world.U.uTime, uSunDir: world.U.uSunDir },
+        uniforms: { uTime: world.U.uTime, uSunDir: world.U.uSunDir, uRainK: (this.rainK = { value: 0 }) },
         vertexShader: 'attribute float aEnd; attribute float aPhase; uniform float uTime; varying float vA; varying vec3 vW; void main(){ float f = fract(uTime * 1.25 + aPhase); float rr = mix(1.175, 1.0, f) + aEnd * 0.022; vec4 wp = modelMatrix * vec4(position * rr, 1.0); vW = wp.xyz; vA = (1.0 - smoothstep(0.85, 1.0, f)) * smoothstep(0.0, 0.1, f); gl_Position = projectionMatrix * viewMatrix * wp; }',
-        fragmentShader: 'uniform vec3 uSunDir; varying float vA; varying vec3 vW; void main(){ float day = smoothstep(-0.15, 0.2, dot(normalize(vW), uSunDir) + ' + DAY_GLSL + '); gl_FragColor = vec4(mix(vec3(0.45, 0.55, 0.75), vec3(0.86, 0.91, 0.97), day), vA * 0.6); }',
+        fragmentShader: 'uniform vec3 uSunDir; uniform float uRainK; varying float vA; varying vec3 vW; void main(){ float day = smoothstep(-0.15, 0.2, dot(normalize(vW), uSunDir) + ' + DAY_GLSL + '); gl_FragColor = vec4(mix(vec3(0.45, 0.55, 0.75), vec3(0.86, 0.91, 0.97), day), vA * 0.6 * uRainK); }',
         transparent: true, depthWrite: false,
       }));
       this.rain.frustumCulled = false; this.rain.renderOrder = 5; this.storm.grp.add(this.rain);
@@ -271,12 +271,21 @@ export class Weather {
   }
   update(t) {
     const on = CONFIG.dynamics.clouds, tt = REDUCED ? 30 : t, s = this.storm, tier = this.world.tier;
-    s.grp.visible = on && CONFIG.dynamics.weather;
+    // The hurricane shows only after a click on the sun (world.sunHeat). It starts at the place on the planet that is directly under the sun, so it is clear that the sun makes it.
+    const heat = this.world.heat(t), w = this.world;
     s.grp.quaternion.setFromAxisAngle(s.axis, tt * s.speed + Math.sin(tt * 0.021) * 0.05);   // a slow path that is not a plain circle
+    if (w.heatNew) {
+      w.heatNew = false;
+      const goal = (w.sunMark ? w.sunMark.position.clone() : w.sunDir.clone()).normalize();
+      s.off = new THREE.Quaternion().setFromUnitVectors(this.stormDir.clone().applyQuaternion(s.grp.quaternion).normalize(), goal).multiply(s.grp.quaternion); s.off0 = new THREE.Quaternion().copy(s.grp.quaternion).invert();
+    }
+    if (s.off) s.grp.quaternion.premultiply(new THREE.Quaternion().copy(s.off).multiply(s.off0));   // the same slow path, moved so that it starts at that place
+    s.grp.visible = on && CONFIG.dynamics.weather && heat.storm > 0.002;
+    this.rainK.value = Math.max(0, (heat.storm - 0.35) / 0.65);
     this.cloudU.uT.value = tt;
     this.cloudU.uStormC.value.copy(this.stormDir).applyQuaternion(s.grp.quaternion);
     this.cloudU.uStormX.value.copy(this.stormX).applyQuaternion(s.grp.quaternion);
-    this.cloudU.uStormOn.value = s.grp.visible ? 1 : 0;
+    this.cloudU.uStormOn.value = s.grp.visible ? heat.storm : 0;
     this.shells.forEach((m, i) => { m.visible = on && i < (tier === 'low' ? 2 : tier === 'medium' ? 3 : 4); });
     this.wind.visible = CONFIG.dynamics.weather;
     if (this.world.stormEye) this.world.stormEye.uT.value = tt;

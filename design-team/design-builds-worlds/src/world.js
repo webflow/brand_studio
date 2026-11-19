@@ -61,7 +61,7 @@ export class World {
       uHoverC: { value: new THREE.Vector3() }, uHoverR: { value: 0 }, uHoverTile: { value: -1 },
       uTime: { value: 0 }, uLod: { value: 0 },
       uKeyDir: { value: new THREE.Vector3(0, 1, 0) }, uDetail: { value: 1 }, uBg: { value: rgb(WHITE) },
-      uLitC: { value: new THREE.Vector3() }, uLitR: { value: 0 }, uLitTile: { value: -1 }, uLitK: { value: 0 }, uHole: { value: new THREE.Vector4(0, 1, 0, 2) }, uWave: { value: new THREE.Vector4(0, 1, 0, -1) }, uWire: { value: 0 }, uBuild: { value: new THREE.Vector4(0, 1, 0, 99) }, uBuildT: { value: new Float32Array(96).fill(-100) }, uCut: { value: 0 }, uCutD: { value: 0.16 }, uCutR: { value: 1e9 }, uCutXR: { value: 0 }, uCutM: { value: new THREE.Matrix4() }, uCutE: { value: [0, 1, 2, 3, 4, 5].map(() => new THREE.Vector3(0, 0, 1)) }, uCutX1: { value: new THREE.Vector3() }, uCutX3: { value: new THREE.Vector3() }, uHiC: { value: new THREE.Vector3() }, uHiU: { value: new THREE.Vector3(0, 1, 0) }, uHiP: { value: new THREE.Vector3() }, uHiCol: { value: new THREE.Vector3(0.078, 0.431, 0.961) }, uMoonDir: { value: new THREE.Vector3(0, 1, 0) },
+      uLitC: { value: new THREE.Vector3() }, uLitR: { value: 0 }, uLitTile: { value: -1 }, uLitK: { value: 0 }, uHole: { value: new THREE.Vector4(0, 1, 0, 2) }, uWave: { value: new THREE.Vector4(0, 1, 0, -1) }, uWire: { value: 0 }, uBuild: { value: new THREE.Vector4(0, 1, 0, 99) }, uRip: { value: new Float32Array(40).fill(-1) }, uRipOn: { value: 0 }, uBuildT: { value: new Float32Array(96).fill(-100) }, uCut: { value: 0 }, uCutD: { value: 0.16 }, uCutR: { value: 1e9 }, uCutXR: { value: 0 }, uCutM: { value: new THREE.Matrix4() }, uCutE: { value: [0, 1, 2, 3, 4, 5].map(() => new THREE.Vector3(0, 0, 1)) }, uCutX1: { value: new THREE.Vector3() }, uCutX3: { value: new THREE.Vector3() }, uHiC: { value: new THREE.Vector3() }, uHiU: { value: new THREE.Vector3(0, 1, 0) }, uHiP: { value: new THREE.Vector3() }, uHiCol: { value: new THREE.Vector3(0.078, 0.431, 0.961) }, uMoonDir: { value: new THREE.Vector3(0, 1, 0) },
       uLights: { value: Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, 0, 0)) },
       uLightDir: { value: Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, 0, -1)) },
       uLightCol: { value: Array.from({ length: 8 }, () => new THREE.Vector3(1, 0.86, 0.6)) },
@@ -128,13 +128,13 @@ export class World {
   }
   // The live backdrop is clear: the color of the page shows behind the planet (with the option bg=white it is a white backdrop).
   // A photo needs a backdrop of its own: solid(true, color) gives a solid backdrop of that color, and solid(false) gives the live backdrop again.
-  // On a dark color the planet has no glow of air around it (there the glow is a bright halo).
+  // The planet has no glow of air around it, on a dark color or on a light one.
   solid(on, hex = WHITE) {
     const col = on ? hex : HOST_BG, c = rgb(col), full = on || !CLEAR;   // full: a solid backdrop
     this.renderer.setClearColor(srgb(col), full ? 1 : 0);
     this.backdrop.visible = full; this.backdrop.material.uniforms.uC.value.copy(c);
     for (const m of this.rings.children) { m.material.uniforms.uSolid.value = full ? 1 : 0; m.material.uniforms.uBgc.value.copy(c); }
-    this.rings.visible = !isDark(col);
+    this.rings.visible = false;   // no glow of air around the planet, on a dark color or on a light one
     this.U.uBg.value.copy(c);
   }
 
@@ -259,6 +259,30 @@ export class World {
     this.postRT = null;
   }
 
+  // Small waves where the pointer goes over the sea: each one is a ring that grows and fades in three seconds, so the waves stay as a trail behind the pointer. The sea shader draws them with the same square cells as its other waves.
+  // Ten at most are alive at one time. dir = the place on the sea (length 1).
+  ripple(dir) {
+    const R = this.rips || (this.rips = { list: [], last: null, n: 0 }), t = this.lastT || 0;
+    if (R.last && R.last.dir.distanceTo(dir) < 0.022 && t - R.last.t < 0.5) return false;   // not for each small move: one ring for each cell that the pointer goes over
+    R.last = { dir: dir.clone(), t }; R.list[R.n++ % 10] = R.last; return true;
+  }
+  stepRipples(t) {
+    const R = this.rips; if (!R) return false;
+    const a = this.U.uRip.value; let on = 0;
+    for (let i = 0; i < 10; i++) { const q = R.list[i], age = q ? t - q.t : -1; if (q && age >= 0 && age < 3) { a[i * 4] = q.dir.x; a[i * 4 + 1] = q.dir.y; a[i * 4 + 2] = q.dir.z; a[i * 4 + 3] = age; on++; } else a[i * 4 + 3] = -1; }
+    this.U.uRipOn.value = on ? 1 : 0;
+    return on > 0;
+  }
+  // The sun easter egg also makes a heat wave. The ice around the poles melts, and it comes back after about 10 seconds. A hurricane grows in the clouds, runs for about 10 seconds, then it goes away.
+  // The hurricane is not there at other times. The result is false while a heat wave is on.
+  sunHeat() { const t = this.lastT || 0; if (t - (this.heatAt ?? -999) < 18) return false; this.heatAt = t; this.heatNew = true; return true; }
+  // ice: 1 = all the ice is there, 0 = it is melted. storm: 0 = no hurricane, 1 = it is at full size.
+  heat(t) {
+    const a = t - (this.heatAt ?? -999), sm = (lo, hi, x) => { const k = Math.max(0, Math.min(1, (x - lo) / (hi - lo))); return k * k * (3 - 2 * k); };
+    if (a < 0 || a > 17) return { ice: 1, storm: 0 };
+    return { ice: 1 - sm(0, 4, a) + sm(10, 16, a),   // the ice starts to melt at once, at the same time as the flares and the hurricane
+       storm: sm(0, 1.6, a) * (1 - sm(10, 15, a)) };   // the hurricane starts to show at once, and it is at full size in less than two seconds
+  }
   // The load-in. The sea is there from the start, and so is the Webflow island, but it is dark. It powers on. Then the other islands rise out of the sea, one after the other: the ones near the Webflow island first.
   // The cost: each block has the index of its tile (one byte), and the shader moves it down by an amount that it reads from a list of 93 start times.
   startBuild(home) {
@@ -471,6 +495,7 @@ export class World {
     U.uWave.value.w = this.waveAt != null && t - this.waveAt < 9 ? Math.max(0, t - this.waveAt) : -1;
     if (this.wire || this.wireK > 0) this.stepWire(dt);
     if (this.build) this.stepBuild(dt);
+    this.rippling = this.stepRipples(t);
     for (const f of this.tickers) f(t, U.uLod.value);
     this.runAnimators(t, dt, camDir, limb);
 

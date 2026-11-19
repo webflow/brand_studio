@@ -51,6 +51,7 @@ export function setupInteraction(app) {
     if (app.setHi) app.setHi(thing);
     const hit = cam.pick(x, y);
     const tile = hit ? hit.tile : null;
+    if (!REDUCED && !thing && app.mode !== 'design') { const sp = cam.seaPoint(x, y); if (sp && world.ripple(sp)) cam.changed(); }   // the pointer makes small waves on the sea
     setLit(tile && app.regionAt(tile.index) ? tile : null);
     if (app.current && tile === app.current.tile) { setHover(null); tip.hidden = true; if (app.detailHover) app.detailHover(x, y); if (thing && tip.hidden) thingTip(thing, x, y); return; }
     if (app.mode === 'design') { setHover(null); tip.hidden = true; return; }
@@ -214,7 +215,7 @@ export function setupInteraction(app) {
     if (REDUCED) litLin = lgoal; else litLin = lgoal > litLin ? Math.min(1, litLin + dt / 0.45) : Math.max(0, litLin - dt / 0.35);
     if (litLin <= 0 && !litWant) litShown = null;
     U.uLitK.value = (1 - (1 - litLin) * (1 - litLin)) * CONFIG.focus.nightLight;
-    app.busy = Math.abs(focusGoal - U.uFocusK.value) > 0.01 || litLin !== lgoal || (world.outline.k > 0.01 && world.outline.k < 0.99);
+    app.busy = Math.abs(focusGoal - U.uFocusK.value) > 0.01 || litLin !== lgoal || !!world.rippling || (world.outline.k > 0.01 && world.outline.k < 0.99);
     if (app.current && app.mode !== 'design' && lightBtn.hidden === (world.dayAt(app.current.tile.center) < 0.5)) syncLightBtn();
   };
 }

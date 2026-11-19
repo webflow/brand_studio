@@ -148,6 +148,7 @@ uniform float uCut, uCutD; uniform mat4 uCutM;
 varying float vWv, vWx, vPw;
 uniform float uWire;
 uniform vec4 uBuild;
+uniform vec4 uRip[10]; uniform float uRipOn;   // small waves under the pointer: xyz = the place on the sea, w = the age in seconds (under 0 = none)
 uniform vec4 uHole;   // the bed of the open sea has a round opening here (xyz = direction, w = cos of its size). A sea tile with a trench shows its own, deeper floor.
 uniform float uFocusR, uFocusK, uFocusTile, uDim;
 uniform vec3 uHoverC;
@@ -286,6 +287,15 @@ void main() {
     wopa = shelf * 0.3 + foam * 0.6;
     float fres = pow(1.0 - max(dot(up, V), 0.0), 3.0);
     tone -= fres * 1.7;
+    if (uRipOn > 0.5) {
+      // Waves from the pointer: a ring of cells that are one step lighter, and behind it a ring that is a little darker. The ring grows and fades. It uses the cells of the sea, so it is made of the same squares.
+      vec3 nq = normalize(Wq);
+      for (int i = 0; i < 10; i++) {
+        vec4 rp = uRip[i]; if (rp.w < 0.0) continue;
+        float x = (distance(nq, rp.xyz) - (0.01 + rp.w * 0.032)) / 0.016, life = smoothstep(0.0, 0.06, rp.w) * (1.0 - smoothstep(1.2, 3.0, rp.w));
+        tone += (exp(-(x + 1.6) * (x + 1.6)) * 0.7 - exp(-x * x) * 1.7) * life * (1.0 - shelf);
+      }
+    }
     tone = floor(tone * 2.0 + 0.5) / 2.0;
   } else if (kind == 14.0) {
     // Seabed: blocks of sand and rock under the water.

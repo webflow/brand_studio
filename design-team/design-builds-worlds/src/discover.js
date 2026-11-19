@@ -36,7 +36,7 @@ export function setupDiscover(app) {
           else list.push({ key, label, sub, C, up: C.clone().normalize(), R, a0, a1, zoom: false, tap: () => { world.meteors(C.clone().normalize()); if (cam.mode === 'orbit') { cam.auto = false; cam.flyGoal = { lon: cam.lon, lat: cam.lat, dist: CONFIG.camera.zoomMax }; } say('A meteor shower'); } });   // the camera goes out, so the meteors that pass beside the planet are in view
         });
       });
-      const s = world.sunMark.position; list.push({ key: 'sun', label: 'Sun', sub: 'Select it for solar flares', C: s.clone(), up: s.clone().normalize(), R: 0.17, a0: -0.17, a1: 0.17, zoom: false, tap: () => { if (world.sunMark.flare) world.sunMark.flare(); say('Solar flares'); } });
+      const s = world.sunMark.position; list.push({ key: 'sun', label: 'Sun', sub: 'Select it for a heat wave', C: s.clone(), up: s.clone().normalize(), R: 0.17, a0: -0.17, a1: 0.17, zoom: false, tap: () => { if (world.sunMark.flare) world.sunMark.flare(); const hot = world.sunHeat(); say(hot ? 'A heat wave: solar flares, the polar ice melts, and a hurricane grows under the sun' : 'Solar flares'); } });
     }
     for (const th of world.seaThings || []) if (th.pos) add('sea' + th.id, th.label, th.legend ? (app.legendFound && app.legendFound(th.legend) ? 'Legend of the sea · in your passport' : 'Legend of the sea · select it for your passport') : 'At sea', th.pos.clone(), th.pos.clone().normalize(), th.hr, th.a0, th.a1, true);
     const now = world.lastT || 0, cp = world.camera.position, cl = cp.length();
