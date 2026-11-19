@@ -506,7 +506,14 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   const t0 = await p.evaluate(() => window.__dbw.practice.tile.index);
   await p.click('#settingsBtn'); await sleep(300);
   ok('your region: a saved region has Move, Hide, and Delete in the menu', await p.evaluate(() => window.__dbw.myRegion() === 'placed' && [...document.querySelectorAll('#menuMine button')].map((b) => b.textContent).join() === 'Move,Hide,Delete' && !document.querySelector('#designBtn').hidden));
+  await p.keyboard.press('Escape'); await sleep(1800);
+  { const fr = await p.evaluate((t0) => { const a = window.__dbw, c = a.world.camera.position.clone().normalize(); let best = null, bd = -2; for (const t of a.world.tiles) { if (t.index > 91 || a.byTile.has(t.index) || t.index === t0) continue; const d = t.center.clone().normalize().dot(c); if (d > bd) { bd = d; best = t; } } const s = a.cam.project(best.center); return { x: s.x, y: s.y, facing: bd }; }, t0); await p.mouse.move(fr.x + 3, fr.y + 3); await sleep(150); await p.mouse.move(fr.x, fr.y); await sleep(400);
+    ok('a visitor with a region on the planet gets no label and no outline on a free tile', fr.facing > 0.5 && await p.evaluate(() => document.querySelector('#tip').hidden && window.__dbw.world.outline.k < 0.05 && window.__dbw.myRegion() === 'placed'), JSON.stringify(fr)); }
+  await p.mouse.move(5, 5); await p.click('#settingsBtn'); await sleep(300);
   await p.evaluate(() => document.querySelector('#menuMine [data-act="hide"]').click()); await sleep(3200);
+  { const fr = await p.evaluate((t0) => { const a = window.__dbw, c = a.world.camera.position.clone().normalize(); let best = null, bd = -2; for (const t of a.world.tiles) { if (t.index > 91 || a.byTile.has(t.index) || t.index === t0) continue; const d = t.center.clone().normalize().dot(c); if (d > bd) { bd = d; best = t; } } const s = a.cam.project(best.center); return { x: s.x, y: s.y, facing: bd }; }, t0); await p.mouse.move(fr.x + 3, fr.y + 3); await sleep(150); await p.mouse.move(fr.x, fr.y); await sleep(400);
+    ok('a visitor with a hidden region gets "Put your region here" and the outline on a free tile', await p.evaluate(() => !document.querySelector('#tip').hidden && document.querySelector('#tip').textContent.includes('Put your region here') && window.__dbw.world.outline.k > 0.6)); }
+  await p.mouse.move(5, 5);
   ok('your region: Hide takes it off the planet, keeps it, and frees its tile', await p.evaluate(() => { const a = window.__dbw; return a.myRegion() === 'hidden' && !a.practice.cfg && !a.practice.mesh.visible && a.canClaim(); }));
   await p.click('#settingsBtn'); await sleep(300);
   ok('your region: a hidden region shows "Put it on the planet" and no design button', await p.evaluate(() => document.querySelector('#designBtn').hidden && !!document.querySelector('#menuMine [data-act="place"]') && document.querySelector('#menuMine').textContent.includes('hidden')));

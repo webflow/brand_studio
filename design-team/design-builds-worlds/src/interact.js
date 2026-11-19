@@ -20,15 +20,17 @@ export function setupInteraction(app) {
 
   function showTip(reg, tile, x, y) {
     if (!tile) { tip.hidden = true; return; }
+    // A free tile has a label only when the visitor can put a region on it: they have no region, or their region is hidden. A visitor with a region on the planet gets no label on free tiles.
+    if (!reg && !(app.canClaim && app.canClaim())) { tip.hidden = true; return; }
     const tt = reg ? regionTitle(reg) : null;
-    tip.innerHTML = reg ? `${reg.name.replace(/[<&]/g, '')}<small>${tt.num}${reg.kind === 'sample' ? ' · Sample' : ''}</small>` : `${app.canClaim && app.canClaim() ? (app.myRegion && app.myRegion() === 'hidden' ? 'Put your region here' : 'Claim this region') : 'Free tile'}<small>Tile ${String(tile.index).padStart(3, '0')}</small>`;
+    tip.innerHTML = reg ? `${reg.name.replace(/[<&]/g, '')}<small>${tt.num}${reg.kind === 'sample' ? ' · Sample' : ''}</small>` : `${app.canClaim && app.canClaim() ? (app.myRegion && app.myRegion() === 'hidden' ? 'Put your region here' : 'Claim this region') : ''}<small>Tile ${String(tile.index).padStart(3, '0')}</small>`;
     tip.style.left = x + 'px'; tip.style.top = y + 'px'; tip.hidden = false;
   }
   function thingTip(c, x, y) { tip.innerHTML = `${c.label}<small>${String(c.sub).replace(/[<&]/g, '')}</small>`; tip.style.left = (c.sx ?? x) + 'px'; tip.style.top = Math.max(96, (c.sy ?? y) + 14) + 'px'; tip.hidden = false; }
   function setHover(tile) {
     const reg = tile ? app.regionAt(tile.index) : null;
-    // A free tile is open ocean: show its outline. A region gets a small lift.
-    world.outline.set(tile && !reg ? tile : null);
+    // A free tile is open ocean: show its outline, but only when the visitor can put a region on it (they have no region, or their region is hidden). A region gets a small lift.
+    world.outline.set(tile && !reg && app.canClaim && app.canClaim() ? tile : null);
     U.uHoverTile.value = reg ? tile.index : -1;
     if (reg) { U.uHoverC.value.copy(tile.center); U.uHoverR.value = tile.rcirc * 1.02; } else U.uHoverR.value = 0;
   }
