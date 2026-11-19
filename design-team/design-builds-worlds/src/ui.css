@@ -82,6 +82,9 @@ body.panel-open #bottom,body.focused #bottom{opacity:0;visibility:hidden}
 .mbody section{border-top:1px solid var(--line);padding:20px 0 24px}
 .mbody section.cover{border-top:0;padding:30px 0 26px;position:relative}
 .cover .num{font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;margin-bottom:14px}
+.plink{display:inline-flex;align-items:center;gap:6px;margin:0 0 14px;padding:4px 8px 4px 6px;border:1px solid var(--line);border-radius:999px;background:none;color:var(--text-secondary);font:inherit;font-size:12px;font-weight:500;cursor:pointer}
+.plink:hover{color:var(--text-primary);background:var(--alpha-200)}
+.plink:focus-visible{outline:2px solid var(--border-focused);outline-offset:2px}
 .cover h1{font-size:46px;line-height:.96;letter-spacing:-.035em;margin:0 60px 12px 0;font-weight:700;overflow-wrap:anywhere}
 .cover .motto{font-size:15px;color:var(--g6);margin:0 0 18px;max-width:32ch}
 .tag{display:inline-block;background:var(--k);color:#fff;font-size:10px;letter-spacing:.09em;text-transform:uppercase;padding:5px 8px 4px;font-weight:700}
@@ -330,6 +333,11 @@ button.stamp:hover{background:var(--alpha-200)}
 button.stamp:hover .badge{transform:scale(1.06)}
 .stamp:focus-visible{outline:2px solid var(--border-focused);outline-offset:-2px}
 #goBtn[hidden]{display:none}
+/* Only the list of the unique areas (the link over the title of a unique area opens the menu in this form). */
+#settings.only-areas>:not(#menuPass),#settings.only-areas #menuPass>*{display:none}
+#settings.only-areas #menuPass>h3.areas-h{display:flex;margin-top:0;padding-top:6px;border-top:0}
+#settings.only-areas #menuPass>.stamps.areas{display:grid}
+#settings.only-areas #menuPass{border-top:0;padding-bottom:8px}
 #designBtn[hidden],#menuMine[hidden]{display:none}
 #menuMine{border-top:1px solid var(--line);padding:8px 8px 10px}
 #menuMine h3.leg{margin:0;padding:6px 0 8px;border:0;color:var(--text-primary);font-size:13px;font-weight:600}
@@ -348,6 +356,13 @@ button.stamp:hover .badge{transform:scale(1.06)}
 .stamp.legend{cursor:default}
 #lore{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;background:color-mix(in srgb,var(--neutral-1200) 45%,transparent)}
 #lore[hidden]{display:none}
+@keyframes dbwFade{from{opacity:0}to{opacity:1}}
+@keyframes dbwRise{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+#lore,#ask{animation:dbwFade .3s ease both}
+#lore .lorecard,#ask .lorecard{animation:dbwRise .38s cubic-bezier(.2,.8,.2,1) both}
+#lore.out{animation:dbwFade .15s ease reverse both}
+#lore.out .lorecard{animation:dbwRise .15s ease reverse both}
+@media (prefers-reduced-motion:reduce){#lore,#ask,#lore .lorecard,#ask .lorecard{animation:none}}
 .lorecard{width:min(380px,100%);max-height:calc(100dvh - 32px);overflow:auto;background:#fff;color:var(--text-primary);border-radius:var(--radius-lg);box-shadow:var(--shadow-popover);padding:20px;display:grid;gap:8px;justify-items:start}
 .lorecard img{width:128px;height:128px;justify-self:center;object-fit:contain}
 .lorecard small{font-size:12px;color:var(--text-secondary)}

@@ -1,11 +1,11 @@
 // Interaction: hover names, open and close a region, the Region Manual panel, keyboard access.
 import { manualHTML, regionTitle, accentHex } from './manual.js';
-import { CONFIG } from './config.js';
+import { CONFIG, REDUCED } from './config.js';
 
 export function setupInteraction(app) {
   const { world, cam, $ } = app, U = world.U;
   const tip = $('#tip'), panel = $('#panel'), live = $('#live'), canvas = world.canvas;
-  let focusGoal = 0, tipTimer = 0, litGoal = 0, litPin = null, claimArm = null;
+  let focusGoal = 0, tipTimer = 0, litWant = null, litShown = null, litLin = 0, litPin = null, claimArm = null;
   app.current = null;
   app.regionAt = (i) => app.byTile.get(i) || (app.practice && app.practice.reg && app.practice.tile.index === i ? app.practice.reg : null);
   app.areas.forEach((a, i) => (a.index = i));
@@ -35,7 +35,7 @@ export function setupInteraction(app) {
   // Night light: the tile under the pointer is lit, so a person can still enjoy it at night.
   function setLit(tile) {
     const t = tile || litPin;
-    if (t) { U.uLitTile.value = t.index; U.uLitC.value.copy(t.center); U.uLitR.value = t.rcirc * (tile ? 1.03 : 1.14); litGoal = 1; } else litGoal = 0;
+    litWant = t ? { t, r: t.rcirc * (tile ? 1.03 : 1.14) } : null;   // the light does not jump: see the fade in app.update
   }
   const lightBtn = $('#lightBtn');
   function syncLightBtn() {
@@ -115,6 +115,7 @@ export function setupInteraction(app) {
 
   function bindPanel(reg) {
     panel.querySelector('.x').onclick = () => app.closeRegion();
+    const pl = panel.querySelector('#passLink'); if (pl) pl.onclick = () => { if (app.openPassport) app.openPassport(); };   // a unique area: a link to the list of the 12 areas in the passport
     const ph = panel.querySelector('#photoBtn'); if (ph) ph.onclick = () => app.takePhoto && app.takePhoto(reg);
     const hb = panel.querySelector('#hintBtn'); if (hb) hb.onclick = () => app.hintDetail && app.hintDetail(app.current || reg);
     const eb = panel.querySelector('#editBtn'); if (eb) eb.onclick = () => { app.closeRegion(); app.enterDesign(); };
@@ -203,9 +204,17 @@ export function setupInteraction(app) {
     if (prevUpdate) prevUpdate(t, dt);
     const k = 1 - Math.exp(-dt * 5);
     U.uFocusK.value += (focusGoal - U.uFocusK.value) * k;
-    const lg = litGoal * CONFIG.focus.nightLight;
-    U.uLitK.value += (lg - U.uLitK.value) * (1 - Math.exp(-dt * 6));
-    app.busy = Math.abs(focusGoal - U.uFocusK.value) > 0.01 || Math.abs(lg - U.uLitK.value) > 0.01 || (world.outline.k > 0.01 && world.outline.k < 0.99);
+    // The night light comes on with a soft fade that starts at once (fast at first, then slow: about 0.45 seconds), and it goes off in about 0.35 seconds.
+    // When the pointer goes to a different tile, the light starts its fade on the new tile at once. It does not wait for the first light to go off.
+    if (litWant && (!litShown || litShown.t !== litWant.t || litShown.r !== litWant.r)) {
+      if (litShown && litShown.t !== litWant.t) litLin = 0;
+      U.uLitTile.value = litWant.t.index; U.uLitC.value.copy(litWant.t.center); U.uLitR.value = litWant.r; litShown = litWant;
+    }
+    const lgoal = litWant ? 1 : 0;
+    if (REDUCED) litLin = lgoal; else litLin = lgoal > litLin ? Math.min(1, litLin + dt / 0.45) : Math.max(0, litLin - dt / 0.35);
+    if (litLin <= 0 && !litWant) litShown = null;
+    U.uLitK.value = (1 - (1 - litLin) * (1 - litLin)) * CONFIG.focus.nightLight;
+    app.busy = Math.abs(focusGoal - U.uFocusK.value) > 0.01 || litLin !== lgoal || (world.outline.k > 0.01 && world.outline.k < 0.99);
     if (app.current && app.mode !== 'design' && lightBtn.hidden === (world.dayAt(app.current.tile.center) < 0.5)) syncLightBtn();
   };
 }

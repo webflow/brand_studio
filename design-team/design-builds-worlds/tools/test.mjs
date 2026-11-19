@@ -178,7 +178,10 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   ok('free tile is ocean: hover shows its outline and "Claim this region" (the visitor has no region yet)', await p.evaluate(() => window.__dbw.world.outline.k > 0.8 && document.querySelector('#tip').textContent.includes('Claim this region')));
   ok('no empty tile meshes: only regions and areas are raised', await p.evaluate(() => { const a = window.__dbw; return a.world.staticMesh.geometry.attributes.position.count > 0 && !a.practice.mesh.visible; }));
   const reg = await p.evaluate(() => { const a = window.__dbw; let best = null; for (const r of a.samples) { const d = r.tile.center.dot(a.world.camera.position.clone().normalize()); if (a.world.dayAt(r.tile.center) > 0.2) continue; if (!best || d > best.d) best = { d, r }; } const s = a.cam.project(best.r.tile.center); return { x: s.x, y: s.y, name: best.r.name }; });
+  await p.evaluate(() => { window.__lit = []; const u = window.__dbw.world.U.uLitK, t0 = performance.now(); const f = () => { window.__lit.push([Math.round(performance.now() - t0), +u.value.toFixed(3)]); if (performance.now() - t0 < 850) requestAnimationFrame(f); }; requestAnimationFrame(f); });
   await p.mouse.move(reg.x, reg.y); await sleep(900);
+  const lit = await p.evaluate(() => { const v = window.__lit.filter((q) => q[1] > 0); let step = 0; for (let i = 1; i < window.__lit.length; i++) step = Math.max(step, window.__lit[i][1] - window.__lit[i - 1][1]); const first = v[0] ? v[0][0] : -1, full = (window.__lit.find((q) => q[1] > 0.95 * window.__lit[window.__lit.length - 1][1]) || [0])[0]; return { n: window.__lit.length, step: +step.toFixed(3), ms: full - first, end: window.__lit[window.__lit.length - 1][1] }; });
+  ok('night side: the light comes on with a soft fade that starts at once (no jump, no wait)', lit.end > 0.7 && lit.step < 0.3 && lit.ms > 180 && lit.ms < 700, JSON.stringify(lit));
   ok('night side: hover lights the tile', await p.evaluate(() => window.__dbw.world.U.uLitK.value > 0.7), reg.name);
   ok('lamps and beams reach the shader at night', await p.evaluate(() => window.__dbw.world.U.uLightN.value >= 1 && window.__dbw.world.lights.length > 20), await p.evaluate(() => window.__dbw.world.U.uLightN.value + ' of ' + window.__dbw.world.lights.length));
   await p.mouse.click(reg.x, reg.y); await sleep(1500);
@@ -371,6 +374,8 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   const a1 = await st();
   ok('a click on Publish launches the rocket', a1.since >= 0 && a1.since < 3 && a1.toast.includes('Published'), JSON.stringify(a1));
   ok('a second launch waits for the new rocket', a1.again === false);
+  const far = await p.evaluate(async () => { const a = window.__dbw, r = a.areas[6], v = r.tile.center.clone().normalize(); a.closeRegion(); await new Promise((q) => setTimeout(q, 1600)); a.cam.auto = false; a.cam.flyGoal = null; a.cam.lon = Math.atan2(v.z, v.x) + 1.9; a.cam.lat = 0; a.cam.changed(); await new Promise((q) => setTimeout(q, 500)); const n0 = r.rocket.now; await new Promise((q) => setTimeout(q, 500)); return { d: r.rocket.now - n0, facing: v.dot(a.world.camera.position.clone().normalize()) }; });
+  ok('the rocket is drawn also when its island is behind the edge of the planet', far.d > 0.3 && far.facing < 0, JSON.stringify(far));
   await done(p, 'rocket');
 }
 // ---- clicks that do something: the sun, the moon, the satellite, the volcano, the lighthouse. None of them zooms.
@@ -404,6 +409,60 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   else ok('a real click on the sun starts the flare and does not zoom', true, 'the sun is not in the frame; the direct test above covers the action');
   await done(p, 'action clicks');
 }
+// ---- the passport: Webflow lore comes right after the unique areas, and a picture that is made in the load-in is not empty
+{
+  const p0 = await open('tier=low&t=0.3'); await p0.evaluate(() => localStorage.setItem('dbw-lore', JSON.stringify(['wolfdew', 'founders', 'flexbox', 'cms']))); await p0.close();
+  const p = await open('intro=1', undefined, { wait: 900 });
+  const mid = await p.evaluate(() => !!window.__dbw.world.build);
+  await p.click('#settingsBtn'); await sleep(900);
+  const r = await p.evaluate(async () => { const px = []; for (const im of document.querySelectorAll('.stamp.lorest.on img')) { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'); await im.decode(); x.drawImage(im, 0, 0, 64, 64); const d = x.getImageData(0, 0, 64, 64).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 40) n++; px.push(n); } const hs = [...document.querySelectorAll('#menuPass h3')].map((h) => h.firstChild.textContent.trim()); return { px, hs }; });
+  ok('a passport picture that is made in the load-in shows its thing (the wolf, the wizards, the boat, the rack)', mid && r.px.length === 4 && r.px.every((n) => n > 150), JSON.stringify(r.px));
+  ok('the passport order: Unique areas, Webflow lore, Legends of the sea, Easter eggs', r.hs.join() === 'Passport,Unique areas,Webflow lore,Legends of the sea,Easter eggs', r.hs.join());
+  await p.evaluate(() => localStorage.removeItem('dbw-lore'));
+  await done(p, 'passport pictures');
+}
+
+// ---- Escape closes the menu, and the focus goes back to the menu button (not to the planet, where the focus line is a border around the full frame)
+{
+  const p = await open('tier=low&t=0.3');
+  await p.focus('#settingsBtn'); await p.keyboard.press('Enter'); await sleep(300);
+  await p.keyboard.press('Tab'); await sleep(100);
+  const inMenu = await p.evaluate(() => document.querySelector('#settings').contains(document.activeElement));
+  await p.keyboard.press('Escape'); await sleep(200);
+  ok('Escape closes the menu and gives the focus to the menu button', inMenu && await p.evaluate(() => document.querySelector('#settings').hidden && document.activeElement.id === 'settingsBtn' && getComputedStyle(document.querySelector('#c')).boxShadow === 'none'), await p.evaluate(() => document.activeElement.id + ' ' + document.activeElement.tagName));
+  await done(p, 'menu focus');
+}
+
+// ---- a unique area: no "not claimable" badge, and a link to the list of unique areas in the passport
+{
+  const p = await open('light=studio&open=a3&tier=low'); await sleep(900);
+  ok('a unique area has no "not claimable" badge, and a "Unique areas" link over its title', await p.evaluate(() => { const c = document.querySelector('#panel .cover'), l = c.querySelector('#passLink'); return !c.querySelector('.tag') && !c.textContent.toLowerCase().includes('not claimable') && !!l && l.textContent.trim() === 'Unique areas' && l.nextElementSibling.tagName === 'H1'; }));
+  await p.click('#passLink'); await sleep(300);
+  ok('the link opens only the list of unique areas, with the focus on the area that is open', await p.evaluate(() => { const m = document.querySelector('#settings'), f = document.activeElement, vis = (q) => { const e = m.querySelector(q); return !!e && e.getBoundingClientRect().height > 0; }; return !m.hidden && f.classList.contains('stamp') && f.dataset.i === '3' && !!window.__dbw.current && vis('.stamps.areas') && vis('h3.areas-h') && !vis('#menuTime') && !vis('.stamps.legends') && !vis('.stamps.eggs') && !vis('#menuQ') && !vis('#menuReset') && !vis('#menuYou') && m.getBoundingClientRect().height < 420 && m.querySelectorAll('.stamps.areas button.stamp').length === 12; }), await p.evaluate(() => String(Math.round(document.querySelector('#settings').getBoundingClientRect().height))));
+  await p.click('#settingsBtn'); await sleep(250);
+  ok('the menu button then shows the full menu', await p.evaluate(() => { const m = document.querySelector('#settings'); return !m.hidden && !m.classList.contains('only-areas') && m.querySelector('#menuTime').getBoundingClientRect().height > 0 && m.querySelector('#menuQ').getBoundingClientRect().height > 0; }));
+  await p.click('#passLink'); await sleep(250);
+  await p.evaluate(() => document.querySelector('.stamps.areas button.stamp[data-i="7"]').click()); await sleep(900);
+  ok('a stamp in that list opens the next unique area', await p.evaluate(() => { const a = window.__dbw; return a.current === a.areas[7] && document.querySelector('#settings').hidden && !document.querySelector('#settings').classList.contains('only-areas') && !!document.querySelector('#panel #passLink'); }));
+  await p.click('#settingsBtn'); await sleep(300);
+  ok('Webflow lore: a stamp that is not found is a button', await p.evaluate(() => { const b = document.querySelector('.stamp.lorest[data-lore-go="cms"]'); return !!b && b.tagName === 'BUTTON' && !b.classList.contains('on') && b.getAttribute('aria-label').includes('not found') && window.__dbw.lore().length === 0; }));
+  await p.evaluate(() => document.querySelector('.stamp.lorest[data-lore-go="cms"]').click()); await sleep(900);
+  ok('Webflow lore: a stamp that is not found opens the area where the thing is, and it stays not found', await p.evaluate(() => { const a = window.__dbw; return !!a.current && a.current.def.id === 'ufo-crash' && document.querySelector('#settings').hidden && document.querySelector('#lore').hidden && a.lore().length === 0; }));
+  const sm = await open('light=studio&open=3&tier=low'); await sleep(700);
+  ok('a sample region has no such link', await sm.evaluate(() => !document.querySelector('#panel #passLink') && !!document.querySelector('#panel .cover')));
+  await sm.close();
+  await done(p, 'area link');
+}
+
+// ---- a click finds the volcano also when it is near the edge of the planet
+{
+  const p = await open('tier=low&t=0.3');
+  const r = [];
+  for (const [dist, off] of [[2.2, 0], [4.2, 0], [4.2, 0.9], [3, 1.1], [4.2, -1.0]]) r.push(await p.evaluate(async (dist, off) => { const a = window.__dbw, t = a.areas[2].tile, v = t.center.clone().normalize(), V = v.constructor; a.cam.auto = false; a.cam.flyGoal = null; a.cam.lon = Math.atan2(v.z, v.x) + off; a.cam.lat = Math.asin(v.y); a.cam.dist = dist; a.cam.changed(); await new Promise((q) => setTimeout(q, 450)); return [0.1, 0.3, 0.5].map((y) => { const s = a.cam.project(new V(0, y, 0).applyMatrix4(t.matrix)), th = a.pickThing(s.x, s.y); return th ? th.key.replace(/\d+$/, '') : '-'; }).join(); }, dist, off));
+  ok('the pointer finds the volcano on its lower, middle, and upper part, from near, from far, and near the edge of the planet', r.every((q) => q === 'volcano,volcano,volcano'), JSON.stringify(r));
+  await done(p, 'volcano pick');
+}
+
 // ---- a region is made on a tile with a sea creature: the creature goes to a tile next to it
 {
   const p = await open('tier=low&t=0.3');
@@ -517,20 +576,36 @@ const kb = statSync(path).size / 1024; ok('file size is 2 MB or smaller', kb <= 
   ok('the easter eggs section has no helper text, and the menu ends with a reset button', await p.evaluate(() => !document.querySelector('#menuPass').textContent.includes('Some things') && document.querySelector('#settings').lastElementChild.id === 'menuReset'));
   // Webflow lore: the white wolf on the North ice crown
   await p.evaluate(() => { const a = window.__dbw, ar = a.areas.find((q) => q.def.id === 'north-ice-crown'), v = ar.tile.center.clone().normalize(); a.cam.auto = false; a.cam.flyGoal = null; a.cam.lon = Math.atan2(v.z, v.x); a.cam.lat = Math.max(-1.2, Math.min(1.2, Math.asin(v.y))); a.cam.changed(); }); await sleep(700);
-  ok('Webflow lore: the passport shows Wolfdew as not found, with its name', await p.evaluate(() => { const st = document.querySelectorAll('.stamp.lorest'); return st.length === 1 && !st[0].classList.contains('on') && st[0].textContent.includes('Wolfdew') && document.querySelector('#menuPass').textContent.includes('0 of 1 found') && document.querySelector('#lore').hidden; }));
+  ok('Webflow lore: the passport shows Wolfdew as not found, with its name', await p.evaluate(() => { const st = document.querySelectorAll('.stamp.lorest'); return st.length === 4 && !st[0].classList.contains('on') && st[0].textContent.includes('Wolfdew') && document.querySelector('#menuPass').textContent.includes('0 of 4 found') && document.querySelector('#lore').hidden; }));
   ok('Webflow lore: a click on the wolf opens its story and marks it in the passport', await p.evaluate(() => { const a = window.__dbw; const hit = a.tapThing('wolf'); const box = document.querySelector('#lore'); return hit && a.lore().join() === 'wolfdew' && !box.hidden && document.querySelector('#loreT').textContent === 'Wolfdew' && document.querySelector('#loreP').textContent.includes('Webflow, backwards') && document.activeElement.id === 'loreX' && JSON.parse(localStorage.getItem('dbw-lore')).length === 1; }));
   ok('Webflow lore: the found wolf shows a picture of its model in the passport and in the story', await p.evaluate(() => { const im = document.querySelector('button.stamp.lorest.on .badge.pic img'), im2 = document.querySelector('#loreI'); return !!im && im.src.startsWith('data:image/png') && !im2.hidden && im2.src === im.src; }));
-  await p.keyboard.press('Escape'); await sleep(200);
+  await p.keyboard.press('Escape'); await sleep(280);
   ok('Webflow lore: Escape closes the story, and the menu stays open', await p.evaluate(() => document.querySelector('#lore').hidden && !document.querySelector('#settings').hidden));
-  await p.evaluate(() => document.querySelector('button.stamp.lorest.on').click()); await sleep(2600);
-  const m4 = await mid(null, 'north-ice-crown');
-  ok('Webflow lore: a found stamp brings the ice crown to the middle and opens the story again', m4.facing > 0.9 && !m4.open && await p.evaluate(() => !document.querySelector('#lore').hidden && document.querySelector('#settings').hidden), JSON.stringify(m4));
-  await p.evaluate(() => document.querySelector('#loreX').click()); await sleep(200);
+  await p.evaluate(() => document.querySelector('button.stamp.lorest.on').click()); await sleep(3600);
+  const m4 = await p.evaluate(() => { const a = window.__dbw, t = a.areas.find((q) => q.def.id === 'north-ice-crown').tile, c = a.world.camera, up = t.center.clone().normalize(), wolf = t.center.constructor ? new t.center.constructor(Math.cos(2.2) * 0.58, 0.3, Math.sin(2.2) * 0.58).applyMatrix4(t.matrix) : null, to = c.position.clone().sub(wolf), d = to.length(), s = a.cam.project(wolf); return { mode: a.cam.mode, following: String(a.following || ''), open: !!a.current, d: +d.toFixed(3), tilt: +(Math.acos(to.normalize().dot(up)) * 57.3).toFixed(0), dx: Math.round(Math.abs(s.x - innerWidth / 2)), dy: Math.round(Math.abs(s.y - innerHeight / 2)), lore: !document.querySelector('#lore').hidden, menu: document.querySelector('#settings').hidden, back: !document.querySelector('#backBtn').hidden }; });
+  ok('Webflow lore: a found stamp takes the camera near the wolf, to look at it from the side (not from above), and opens the story again', m4.mode === 'object' && m4.following.startsWith('wolf') && !m4.open && m4.d < 0.9 && m4.tilt > 40 && m4.tilt < 80 && m4.dx < 160 && m4.dy < 200 && m4.lore && m4.menu && m4.back, JSON.stringify(m4));
+  await p.evaluate(() => document.querySelector('#loreX').click()); await sleep(260);
+  // the founders: three wizards in the storm eye, one thing to select
+  await p.evaluate(() => window.__dbw.stopFollow()); await sleep(1700);   // leave the close view of the wolf, and wait until the camera is back at the planet
+  await p.evaluate(() => { const a = window.__dbw, ar = a.areas.find((q) => q.def.id === 'storm-eye'), v = ar.tile.center.clone().normalize(); a.cam.auto = false; a.cam.flyGoal = null; a.cam.lon = Math.atan2(v.z, v.x); a.cam.lat = Math.max(-1.2, Math.min(1.2, Math.asin(v.y))); a.cam.changed(); }); await sleep(700);
+  ok('Webflow lore: the three wizards are one thing, with the names of the founders and the label "Webflow founders"', await p.evaluate(() => { const a = window.__dbw, q = a.areas.find((x) => x.def.id === 'storm-eye').taps.filter((x) => x.key === 'wizards'); return q.length === 1 && q[0].label === 'Vlad, Sergie, and Bryant' && q[0].sub() === 'Webflow founders'; }));
+  ok('Webflow lore: a click on the wizards opens their story, and the window comes in with a transition', await p.evaluate(() => { const a = window.__dbw, hit = a.tapThing('wizards'), box = document.querySelector('#lore'), cs = getComputedStyle(box.querySelector('.lorecard')); return hit && a.lore().join() === 'wolfdew,founders' && !box.hidden && document.querySelector('#loreT').textContent === 'Vlad, Sergie, and Bryant' && document.querySelector('#loreP').textContent.includes('founders of Webflow') && cs.animationName === 'dbwRise' && parseFloat(cs.animationDuration) > 0.2 && !document.querySelector('#loreI').hidden; }));
+  await p.evaluate(() => document.querySelector('#loreX').click()); await sleep(60);
+  ok('Webflow lore: the window goes out gently, then it is hidden', await p.evaluate(() => !document.querySelector('#lore').hidden && document.querySelector('#lore').classList.contains('out')) && (await sleep(240), await p.evaluate(() => document.querySelector('#lore').hidden && !document.querySelector('#lore').classList.contains('out'))));
+  // Webflow CMS: a server rack that is partly under the sand at the UFO crash site
+  await p.evaluate(() => { const a = window.__dbw, ar = a.areas.find((q) => q.def.id === 'ufo-crash'), v = ar.tile.center.clone().normalize(); a.cam.auto = false; a.cam.flyGoal = null; a.cam.lon = Math.atan2(v.z, v.x); a.cam.lat = Math.max(-1.2, Math.min(1.2, Math.asin(v.y))); a.cam.changed(); }); await sleep(700);
+  ok('Webflow lore: the server rack says "Webflow CMS" and "Released in 2015", and a click opens the story', await p.evaluate(() => { const a = window.__dbw, q = a.areas.find((x) => x.def.id === 'ufo-crash').taps.find((x) => x.key === 'rack'); const hit = a.tapThing('rack'); return !!q && q.label === 'Webflow CMS' && q.sub() === 'Released in 2015' && hit && a.lore().includes('cms') && !document.querySelector('#lore').hidden && document.querySelector('#loreT').textContent === 'Webflow CMS' && document.querySelector('#loreP').textContent.includes('October of 2015') && !document.querySelector('#loreI').hidden; }));
+  await p.evaluate(() => document.querySelector('#loreX').click()); await sleep(260);
+  // the flexbox game: a man with a remote control on the shore of the Mirror lake, and a boat that goes between nine places
+  await p.evaluate(() => { const a = window.__dbw, ar = a.areas.find((q) => q.def.id === 'mirror-lake'), v = ar.tile.center.clone().normalize(); a.cam.auto = false; a.cam.flyGoal = null; a.cam.lon = Math.atan2(v.z, v.x); a.cam.lat = Math.max(-1.2, Math.min(1.2, Math.asin(v.y))); a.cam.changed(); }); await sleep(700);
+  ok('Webflow lore: the boat goes to nine places in three columns and three rows, and it stays on the lake', await p.evaluate(() => { const ar = window.__dbw.areas.find((q) => q.def.id === 'mirror-lake'), xs = new Set(), zs = new Set(), cells = new Set(); let far = 0; for (let t = 0; t < 40; t += 0.05) { const q = ar.boatAt(t); cells.add(q.cell); far = Math.max(far, Math.hypot(q.x, q.z - 0.14)); if (((t / 2.3) % 1) > 0.62) { xs.add(q.x.toFixed(2)); zs.add(q.z.toFixed(2)); } } return cells.size === 9 && xs.size === 3 && zs.size === 3 && far < 0.5; }));
+  ok('Webflow lore: the boat operator says "The flexbox game" and "Released in 2016", and a click opens the story', await p.evaluate(() => { const a = window.__dbw, q = a.areas.find((x) => x.def.id === 'mirror-lake').taps[0]; const hit = a.tapThing('flexman'); return q.label === 'The flexbox game' && q.sub() === 'Released in 2016' && hit && a.lore().join() === 'wolfdew,founders,cms,flexbox' && !document.querySelector('#lore').hidden && document.querySelector('#loreT').textContent === 'The flexbox game' && !document.querySelector('#loreI').hidden; }));
+  await p.evaluate(() => document.querySelector('#loreX').click()); await sleep(260);
   await p.click('#settingsBtn'); await sleep(300);
   await p.evaluate(() => document.querySelector('#resetBtn').click());
   ok('the first click on Reset passport only asks', await p.evaluate(() => document.querySelector('#resetBtn').textContent === 'Select again to reset' && window.__dbw.eggs().length === 7 && window.__dbw.passport().length > 0));
   await p.evaluate(() => document.querySelector('#resetBtn').click()); await sleep(200);
-  ok('the second click empties the passport: areas, legends, easter eggs', await p.evaluate(() => { const a = window.__dbw, t = document.querySelector('#menuPass').textContent; return a.eggs().length === 0 && a.legends().length === 0 && a.lore().length === 0 && t.includes('0 of 1 found') && a.passport().length === 0 && t.includes('0 of 12 visited') && t.includes('0 of 6 found') && t.includes('0 of 7 found') && !localStorage.getItem('dbw-eggs') && !localStorage.getItem('dbw-passport') && !localStorage.getItem('dbw-legends') && document.querySelector('#resetBtn').textContent === 'Reset passport'; }));
+  ok('the second click empties the passport: areas, legends, easter eggs', await p.evaluate(() => { const a = window.__dbw, t = document.querySelector('#menuPass').textContent; return a.eggs().length === 0 && a.legends().length === 0 && a.lore().length === 0 && t.includes('0 of 4 found') && a.passport().length === 0 && t.includes('0 of 12 visited') && t.includes('0 of 6 found') && t.includes('0 of 7 found') && !localStorage.getItem('dbw-eggs') && !localStorage.getItem('dbw-passport') && !localStorage.getItem('dbw-legends') && document.querySelector('#resetBtn').textContent === 'Reset passport'; }));
   await done(p, 'easter eggs');
 }
 await browser.close();

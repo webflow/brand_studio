@@ -115,7 +115,8 @@ export const AREAS = [
     build({ b, terrain, area, anim }) {
       // A large white arctic wolf stands on the second ice terrace. It moves, so it is drawn each frame. A visitor selects it to read the Wolfdew story (Webflow lore, menu.js).
       const WA = 2.2, WX = Math.cos(WA) * 0.58, WZ = Math.sin(WA) * 0.58;
-      anim((db, fb, t) => { db.push(WX, 0.18, WZ, -WA, 0.8); DRAW.wolf(db, REDUCED ? 3 : t); db.pop(); });
+      // sens = 0: the snow of winter does not cover the wolf. (With snow on it, the wolf was white on white ice: it was there, but nobody could see it.)
+      anim((db, fb, t) => { const s0 = db.sens; db.sens = 0; db.push(WX, 0.18, WZ, -WA, 0.8); DRAW.wolf(db, REDUCED ? 3 : t); db.pop(); db.sens = s0; });
       area.taps = [{ key: 'wolf', label: 'Wolfdew', sub: () => 'Webflow backwards', at: [WX, 0.18, WZ], R: 0.14, a0: 0.0, a1: 0.31, tap: () => true }];
       terrain({ h: () => 0.05, top: { row: ROW.snow, tone: 1.8, step: 0 }, side: C('snow', 4.4), sens: 0 });
       [0.82, 0.66, 0.5, 0.36, 0.24].forEach((R, i) => b.cyl(R, 0.07, C('snow', 3.4 - i * 0.8), { y: 0.04 + i * 0.07 }));
@@ -340,12 +341,12 @@ export const AREAS = [
   {
     id: 'floating-islands', name: 'Floating islands', ring: 'upper', hues: ['grass', 'rock', 'orange'],
     details: ['kite', 'picnic'],   // hidden details that only this area has
-    look: 'Stacked cut-paper discs that hover above the tile. Each has a ground shadow.',
-    motion: 'Islands drift slowly. Shadows slide on the ground.', season: 'In winter, snow covers the ground.', az: 1.0,
+    look: 'Three islands that hover above the tile, with one machine built across them: ramps, a see-saw, a row of dominoes, a wheel, and a flag.',
+    motion: 'The machine runs again and again, one part after the other. A ball rolls down the ramps of the highest island and falls to the next one. It tips a see-saw, and the dominoes fall. The last domino pushes a second ball off the edge. That ball lands on the lowest island and turns a wheel, which lifts a flag, and paper pieces fly. Then two small balloons carry the balls back to the start. The islands drift slowly.', season: 'In winter, snow covers the ground.', az: 1.0,
     build({ b, terrain, anim }) {
       // Low hills and a pond. A waterfall drops from one island into the pond.
       const H = terrain({ h: (x, z) => (Math.hypot(x + 0.02, z - 0.415) < 0.19 ? -0.07 : 0.035 + n(x, z, 2.6, 5) * 0.1), top: { row: ROW.grass, tone: 4.8, step: 0.35 }, side: C('earth', 6.6), sens: 0.4 });
-      const isl = [[-0.35, 0.2, 0.42, 0.26, 0], [0.38, -0.25, 0.56, 0.2, 1.7], [0.1, 0.42, 0.3, 0.15, 3.1], [-0.2, -0.45, 0.68, 0.13, 4.4]];
+      const isl = [[-0.35, 0.2, 0.42, 0.26, 0], [0.38, -0.25, 0.56, 0.2, 1.7], [0.1, 0.42, 0.3, 0.15, 3.1]];   // A (the middle one in height), B (the highest), C (the lowest, with the waterfall)
       const r = rng(77);
       for (let i = 0; i < 20; i++) {
         const a = r() * TAU, d = 0.18 + r() * 0.66, x = Math.cos(a) * d, z = Math.sin(a) * d, y = H(x, z), s = 0.8 + r() * 0.7;
@@ -355,29 +356,92 @@ export const AREAS = [
       for (let i = 0; i < 16; i++) { const x = (r() - 0.5) * 1.5, z = (r() - 0.5) * 1.5, y = H(x, z); if (y > 0.02 && Math.hypot(x, z) < 0.86) { b.box(0.02 + r() * 0.03, 0.012 + r() * 0.02, 0.02 + r() * 0.03, C('rock', 3.4 + r() * 2), { x, y, z, ry: r() * 3, lod: 1 }); b.box(0.012, 0.008, 0.012, C('rock', 5), { x: x + 0.025, y, z: z + 0.01, lod: 2 }); } }
       for (let i = 0; i < 46; i++) { const x = (r() - 0.5) * 1.6, z = (r() - 0.5) * 1.6, y = H(x, z); if (y > 0.02 && Math.hypot(x, z) < 0.88) { b.box(0.003, 0.012, 0.003, C('forest', 6), { x, y, z, lod: 2 }); b.box(0.008, 0.006, 0.008, C(i % 3 ? 'orange' : 'plaster', i % 3 ? 4.5 : 0.6), { x, y: y + 0.012, z, lod: 2 }); } }
       for (let i = 0; i < 5; i++) { const a = i * 1.3 + 0.4; b.box(0.03, 0.004, 0.03, C('forest', 3.6), { x: -0.02 + Math.cos(a) * 0.11, y: 0.001, z: 0.415 + Math.sin(a) * 0.1, lod: 1 }); }
+      // ---- The machine. One run takes 16 seconds, then it starts again. m = the time in this run.
+      // 0.6 the ball starts down the three ramps of island B. 3.1 it falls to island A. 4.0 it lands on the see-saw. 4.25 the dominoes start to fall. 5.85 the last one pushes the blue ball.
+      // 6.4 the blue ball falls to island C. 7.3 it lands in the cup, and the wheel turns. 7.8 the flag goes up. 9.6 paper pieces fly. 12.5 two balloons carry the balls back, the dominoes stand up, the flag comes down.
+      const RB = 0.014, ZB = 0.03, ZA = 0.07, TOP = 0.038, RZS = 1;
+      const RAMP = [[-0.11, 0.172, 0.07, 0.132], [0.07, 0.118, -0.07, 0.088], [-0.07, 0.074, 0.17, 0.046]];   // on island B: [x0, y0, x1, y1] of each ramp
+      const WOOD = C('earth', 6), WOOD2 = C('earth', 7.6), METAL = C('neutral', 6.5), BALL1 = [ROW.orange, 5, 0, 0], BALL2 = [ROW.blue, 5, 0, 0], DOM = ['orange', 'yellow', 'blue', 'purple', 'pink', 'green', 'red', 'blue', 'orange'];
+      const SEE = [-0.14, TOP + 0.02, ZA], TEE = [0.175, TOP + RB, ZA], CUP = [-0.07, TOP + 0.012, 0.03], POLE = [0.055, TOP, -0.05];
+      const mixv = (a, b2, k) => [a[0] + (b2[0] - a[0]) * k, a[1] + (b2[1] - a[1]) * k, a[2] + (b2[2] - a[2]) * k];
+      const arc = (a, b2, k, up) => { const p = mixv(a, b2, k); p[1] += Math.sin(k * PI) * up; return p; };
       anim((db, fb, t, env) => {
+        const tt = REDUCED ? 0 : t, m = REDUCED ? 0 : t % 16;
+        const P = isl.map(([x, z, y, R, ph]) => [x + Math.sin(tt * 0.13 + ph) * 0.1, y + Math.sin(tt * 0.4 + ph) * 0.02, z + Math.cos(tt * 0.11 + ph * 2) * 0.08]);
+        // A point on an island, in the units of the tile. Islands A and B do not turn. Island C is turned half a circle (its waterfall must be over the pond).
+        const at = (i, p) => (i === 2 ? [P[2][0] - p[0], P[2][1] + p[1], P[2][2] - p[2]] : [P[i][0] + p[0], P[i][1] + p[1], P[i][2] + p[2]]);
+        const seeS = m >= 4.0 && m < 12.6 ? -1 + 2 * (1 - smooth(4.0, 4.25, m)) : 1 - 2 * (1 - smooth(12.6, 13.0, m)) * (m >= 12.6 ? 1 : 0);   // 1 = the left end is up (start), -1 = it is down
+        const seeLeft = [SEE[0] - 0.047, SEE[1] + seeS * 0.014 + 0.004 + RB, ZA];
         isl.forEach(([x, z, y, R, ph], i) => {
-          const tt = REDUCED ? 0 : t;
-          db.push(x + Math.sin(tt * 0.13 + ph) * 0.1, y + Math.sin(tt * 0.4 + ph) * 0.02, z + Math.cos(tt * 0.11 + ph * 2) * 0.08, ph, 1);
+          db.push(P[i][0], P[i][1], P[i][2], i === 2 ? PI : 0, 1);
           db.cyl(R, 0.03, C('grass', 5.2)); db.cyl(R * 0.92, 0.008, C('grass', 4.2), { y: 0.03 });
           db.cyl(R * 0.78, 0.03, C('rock', 4.6), { y: -0.03 }); db.cyl(R * 0.52, 0.03, C('rock', 5.6), { y: -0.06 }); db.cyl(R * 0.26, 0.04, C('rock', 6.6), { y: -0.1 });
-          db.cyl(0.008, 0.06, C('earth', 7.6), { x: R * 0.4, y: 0.038 }); db.ball(0.045, C('forest', 5.6, 11), { x: R * 0.4, y: 0.08 }); db.ball(0.03, C('forest', 4.6, 11), { x: R * 0.4 + 0.02, y: 0.115 });
-          db.box(0.008, 0.04, 0.008, C('earth', 7.6), { x: -R * 0.1, y: 0.038, z: -R * 0.55 }); db.ball(0.032, C('forest', 6.2, 11), { x: -R * 0.1, y: 0.066, z: -R * 0.55 });
-          db.box(0.03, 0.018, 0.026, C('rock', 4), { x: R * 0.1, y: 0.038, z: R * 0.6, lod: 1 }); db.box(0.02, 0.03, 0.02, C('rock', 6.2), { x: -R * 0.3, y: -0.13, z: R * 0.2, lod: 1 }); db.box(0.016, 0.022, 0.016, C('rock', 7), { x: R * 0.25, y: -0.11, z: -R * 0.2, lod: 1 });
+          const tx = i === 1 ? -R * 0.55 : R * 0.4, tz = i === 1 ? -R * 0.5 : i === 0 ? -R * 0.35 : -R * 0.1;   // the tree is not in the way of the machine
+          db.cyl(0.008, 0.06, C('earth', 7.6), { x: tx, y: 0.038, z: tz }); db.ball(0.045, C('forest', 5.6, 11), { x: tx, y: 0.08, z: tz }); db.ball(0.03, C('forest', 4.6, 11), { x: tx + 0.02, y: 0.115, z: tz });
+          db.box(0.03, 0.018, 0.026, C('rock', 4), { x: R * 0.1, y: 0.038, z: -R * 0.7, lod: 1 }); db.box(0.02, 0.03, 0.02, C('rock', 6.2), { x: -R * 0.3, y: -0.13, z: R * 0.2, lod: 1 }); db.box(0.016, 0.022, 0.016, C('rock', 7), { x: R * 0.25, y: -0.11, z: -R * 0.2, lod: 1 });
           for (let k = 0; k < 5; k++) { const a = k * 1.9 + ph; db.box(0.006, 0.03 + (k % 3) * 0.02, 0.006, C('forest', 5.4 + (k % 2)), { x: Math.cos(a) * R * 0.93, y: -(0.03 + (k % 3) * 0.02) + 0.03, z: Math.sin(a) * R * 0.93, lod: 2 }); }
-          if (i < 2) {
-            db.box(0.07, 0.05, 0.06, C('plaster', 1), { x: -R * 0.3, y: 0.038 }); db.cone(0.055, 0.05, C('orange', 5), { x: -R * 0.3, y: 0.088 }); db.box(0.02, 0.022, 0.01, win('blue', 7, 0.1 * i), { x: -R * 0.3, y: 0.05, z: 0.03, lod: 1 });
-            db.box(0.014, 0.026, 0.008, C('earth', 7), { x: -R * 0.3 + 0.02, y: 0.038, z: 0.03, lod: 1 }); db.box(0.012, 0.03, 0.012, C('rock', 4.6), { x: -R * 0.3 - 0.02, y: 0.1, z: -0.012, lod: 1 });
-            for (let k = 0; k < 5; k++) db.box(0.003, 0.014, 0.003, C('plaster', 0.6), { x: -R * 0.3 - 0.05 + k * 0.025, y: 0.038, z: 0.06, lod: 2 });
-            db.box(0.11, 0.003, 0.003, C('plaster', 0.6), { x: -R * 0.3, y: 0.048, z: 0.06, lod: 2 });
+          if (i === 1) {
+            // Island B: three ramps, one over the other. The ball goes down them, from side to side.
+            RAMP.forEach(([x0, y0, x1, y1], k) => {
+              const L = Math.hypot(x1 - x0, y1 - y0) + 0.02;
+              db.box(L, 0.006, 0.034, k % 2 ? WOOD2 : WOOD, { x: (x0 + x1) / 2, y: (y0 + y1) / 2 - 0.012, z: ZB, rz: RZS * Math.atan2(y1 - y0, x1 - x0) });
+              for (const [px, py] of [[x0, y0], [x1, y1]]) db.box(0.007, py - TOP - 0.008, 0.007, WOOD2, { x: px, y: TOP, z: ZB + 0.024 });
+              db.box(0.006, 0.02, 0.034, WOOD2, { x: x1 + (x1 > x0 ? 0.012 : -0.012) * (k < 2 ? 1 : 0), y: y1 - 0.012, z: ZB, lod: 1 });   // a stop at the end of the first two ramps: the ball falls to the next ramp
+            });
+            db.box(0.006, 0.026, 0.034, [ROW.orange, 5, 0, 0], { x: -0.094, y: 0.172 + 0.03 * smooth(0.3, 0.6, m) * (1 - smooth(15.2, 15.8, m)), z: ZB });   // the gate at the top: it goes up, and the ball starts
           }
-          if (i === 0) { const L = y + Math.sin(tt * 0.4 + ph) * 0.02 - 0.06; for (const sz of [-1, 1]) db.box(0.002, L, 0.002, C('earth', 8), { x: -R * 0.9, y: -L + 0.02, z: sz * 0.012, lod: 1 }); for (let k = 0; k < 12; k++) db.box(0.002, 0.002, 0.026, C('earth', 7), { x: -R * 0.9, y: 0.01 - (k / 12) * L, z: 0, lod: 2 }); }
-          if (i === 2) { const L = y + Math.sin(tt * 0.4 + ph) * 0.02; db.box(0.026, L + 0.03, 0.012, C('sea', 1.6, 6), { x: R * 0.82, y: -L }); db.box(0.014, L + 0.03, 0.014, C('snow', 0.4, 6), { x: R * 0.82 + Math.sin(tt * 3) * 0.004, y: -L }); for (let k = 0; k < 4; k++) db.box(0.018, 0.01, 0.018, C('snow', 0.4, 6), { x: R * 0.82 + Math.cos(k * 1.7 + tt * 2) * 0.03, y: -L, z: Math.sin(k * 1.7 + tt * 2) * 0.03, lod: 1 }); }
-          else db.box(0.012, 0.16, 0.012, C('sea', 2.4), { x: R * 0.82, y: -0.14, lod: 1 });
+          if (i === 0) {
+            // Island A: the see-saw, the row of dominoes, and the blue ball on its stand.
+            db.box(0.012, 0.022, 0.03, WOOD2, { x: SEE[0], y: TOP, z: ZA }); db.box(0.1, 0.005, 0.028, WOOD, { x: SEE[0], y: SEE[1], z: ZA, rz: RZS * -seeS * 0.3 });
+            for (let k = 0; k < 9; k++) {
+              const t0 = 4.25 + k * 0.17, a = 1.22 * smooth(t0, t0 + 0.35, m) * (1 - smooth(13 + (8 - k) * 0.15, 13.4 + (8 - k) * 0.15, m));
+              db.box(0.007, 0.036, 0.024, [ROW[DOM[k]], 5, 0, 0], { x: -0.075 + k * 0.026, y: TOP, z: ZA, rz: RZS * -a });
+            }
+            db.cyl(0.008, 0.004, METAL, { x: TEE[0], y: TOP, z: ZA });
+            const L = P[0][1] - 0.06; for (const sz of [-1, 1]) db.box(0.002, L, 0.002, C('earth', 8), { x: -R * 0.9, y: -L + 0.02, z: sz * 0.012, lod: 1 }); for (let k = 0; k < 12; k++) db.box(0.002, 0.002, 0.026, C('earth', 7), { x: -R * 0.9, y: 0.01 - (k / 12) * L, z: 0, lod: 2 });   // the rope ladder to the ground
+          }
+          if (i === 2) {
+            // Island C: the cup where the blue ball lands, the wheel that it turns, and the flag that the wheel lifts. Then paper pieces fly from the top of the pole.
+            db.cyl(0.024, 0.014, METAL, { x: CUP[0], y: TOP, z: CUP[2] }); db.cyl(0.018, 0.004, C('neutral', 9), { x: CUP[0], y: TOP + 0.014, z: CUP[2] });
+            const u = m - 7.3, phi = u > 0 && m < 15.9 ? 14.137 * (1 - Math.exp(-u * 1.1)) : 0;
+            db.box(0.008, 0.075, 0.008, WOOD2, { x: 0, y: TOP, z: 0.05 }); db.cyl(0.012, 0.012, METAL, { x: 0, y: 0.104, z: 0.036, rx: PI / 2 });
+            for (let k = 0; k < 4; k++) { db.push(0, 0.11, 0.03, 0, 1, 0, phi + k * PI / 4); db.box(0.085, 0.006, 0.014, k % 2 ? [ROW.yellow, 5, 0, 0] : [ROW.orange, 5, 0, 0], { y: -0.003 }); db.pop(); }
+            const fk = smooth(7.8, 9.6, m) * (1 - smooth(12.5, 14, m));
+            db.box(0.005, 0.18, 0.005, METAL, { x: POLE[0], y: TOP, z: POLE[2] }); db.ball(0.007, [ROW.yellow, 4, 0, 0], { x: POLE[0], y: TOP + 0.176, z: POLE[2] });
+            db.box(0.05, 0.03, 0.004, [ROW.blue, 5, 0, 0], { x: POLE[0] + 0.027, y: TOP + 0.012 + fk * 0.13, z: POLE[2] }); db.box(0.002, 0.012 + fk * 0.13, 0.002, C('neutral', 8.5), { x: POLE[0] + 0.004, y: TOP, z: POLE[2] + 0.004, lod: 1 });
+            if (m > 9.6 && m < 11.8) for (let k = 0; k < 18; k++) {
+              const q = m - 9.6, a = k * 2.4, v = 0.1 + (k % 4) * 0.035, s2 = 0.011 * (1 - smooth(1.6, 2.2, q));
+              db.box(s2, s2 * 0.3, s2, [ROW[DOM[k % 9]], 4, 6, 0], { x: POLE[0] + Math.cos(a) * v * q, y: TOP + 0.19 + (0.24 + (k % 3) * 0.06) * q - 0.2 * q * q, z: POLE[2] + Math.sin(a) * v * q, ry: q * 6 + k, rz: q * 4 });
+            }
+            const L = P[2][1]; db.box(0.026, L + 0.03, 0.012, C('sea', 1.6, 6), { x: R * 0.82, y: -L }); db.box(0.014, L + 0.03, 0.014, C('snow', 0.4, 6), { x: R * 0.82 + Math.sin(tt * 3) * 0.004, y: -L }); for (let k = 0; k < 4; k++) db.box(0.018, 0.01, 0.018, C('snow', 0.4, 6), { x: R * 0.82 + Math.cos(k * 1.7 + tt * 2) * 0.03, y: -L, z: Math.sin(k * 1.7 + tt * 2) * 0.03, lod: 1 });
+          } else db.box(0.012, 0.16, 0.012, C('sea', 2.4), { x: R * 0.82, y: -0.14, lod: 1 });
           db.cyl(0.002, 0.04, C('neutral', 8.5), { y: -0.14, lod: 1 }); db.ball(0.016, win('yellow', 1, 0.02), { y: -0.17, lod: 1 });
-          if (env.low) db.cyl(R * 0.9, 0.003, C('grass', 6.4), { y: 0.052 - y });
+          if (env.low) db.cyl(R * 0.9, 0.003, C('grass', 6.4), { y: 0.052 - P[i][1] });
           db.pop();
         });
+        // ---- The two balls, and the balloons that carry them back. These are drawn in the units of the tile, because they go from one island to the next.
+        const r0 = [RAMP[0][0], RAMP[0][1] + RB, ZB], onR = (k, f) => [RAMP[k][0] + (RAMP[k][2] - RAMP[k][0]) * f, RAMP[k][1] + (RAMP[k][3] - RAMP[k][1]) * f + RB, ZB], ez = (a, b2) => { const k = clamp((m - a) / (b2 - a), 0, 1); return k * k; };
+        let o, balloon1 = 0;
+        if (m < 0.6) o = at(1, r0);
+        else if (m < 1.4) o = at(1, onR(0, ez(0.6, 1.4)));
+        else if (m < 1.55) o = at(1, mixv(onR(0, 1), onR(1, 0), (m - 1.4) / 0.15));
+        else if (m < 2.2) o = at(1, onR(1, ez(1.55, 2.2)));
+        else if (m < 2.35) o = at(1, mixv(onR(1, 1), onR(2, 0), (m - 2.2) / 0.15));
+        else if (m < 3.1) o = at(1, onR(2, ez(2.35, 3.1)));
+        else if (m < 4.0) o = arc(at(1, onR(2, 1)), at(0, [seeLeft[0], SEE[1] + 0.018 + RB, ZA]), (m - 3.1) / 0.9, 0.1);
+        else if (m < 12.5) o = at(0, seeLeft);
+        else if (m < 15.5) { const k = smooth(12.6, 15.4, m); o = arc(at(0, seeLeft), at(1, r0), k, 0.07); balloon1 = Math.sin(k * PI) > 0.02 ? 1 : 0; }
+        else o = at(1, r0);
+        let q, balloon2 = 0;
+        const cup = [CUP[0], CUP[1] + RB, CUP[2]];
+        if (m < 5.85) q = at(0, TEE);
+        else if (m < 6.4) q = at(0, [TEE[0] + 0.075 * ez(5.85, 6.4), TEE[1], ZA]);
+        else if (m < 7.3) q = arc(at(0, [TEE[0] + 0.075, TEE[1], ZA]), at(2, cup), (m - 6.4) / 0.9, 0.06);
+        else if (m < 12.5) q = at(2, cup);
+        else if (m < 15.5) { const k = smooth(12.6, 15.4, m); q = arc(at(2, cup), at(0, TEE), k, 0.1); balloon2 = Math.sin(k * PI) > 0.02 ? 1 : 0; }
+        else q = at(0, TEE);
+        db.ball(RB, BALL1, { x: o[0], y: o[1] - RB, z: o[2] }); db.ball(RB, BALL2, { x: q[0], y: q[1] - RB, z: q[2] });
+        for (const [on, p2, hue] of [[balloon1, o, 'red'], [balloon2, q, 'pink']]) if (on) { db.box(0.002, 0.05, 0.002, C('neutral', 8.5), { x: p2[0], y: p2[1] + RB * 0.6, z: p2[2] }); db.ball(0.03, [ROW[hue], 4, 0, 0], { x: p2[0], y: p2[1] + 0.05, z: p2[2], sy: 1.15 }); }
       });
     },
   },
@@ -513,7 +577,8 @@ export const AREAS = [
         if (flame > 0) { const f = flame * (0.85 + 0.3 * Math.sin(st.now * 47)); db.pyr(0.1, 0.62 * f, 0.1, FIRE1, { y: 0.0, rx: PI }); db.pyr(0.066, 0.42 * f, 0.066, FIRE2, { y: 0.0, rx: PI }); db.pyr(0.034, 0.2 * f, 0.034, WH, { y: 0.0, rx: PI }); }
         db.pop();
       };
-      anim((db, fb, t) => {
+      // This part is drawn also when the island is behind the edge of the planet: the rocket goes far up, so it is in view when its island is not. (Before, the rocket went away in the middle of its flight when the island was near the edge.)
+      const rocketAnim = anim((db, fb, t) => {
         st.now = t;
         const tt = t - st.t0, live = tt < T_READY;
         // The lift: a disc in the pad. It goes down empty, then it comes up with the new rocket.
@@ -561,6 +626,7 @@ export const AREAS = [
         // Sparks under the rocket in the first seconds.
         if (tt < T_UP + 0.8) for (let i = 0; i < 6; i++) { const f = (t * 2.2 + i / 6) % 1, a = i * 1.05 + t; db.box(0.012, 0.012, 0.012, [ROW.yellow, 3, 6, 0], { x: PX + Math.cos(a) * f * 0.14, y: PY + 0.03 + Math.sin(f * PI) * 0.05, z: PZ + Math.sin(a) * f * 0.14 }); }
       });
+      rocketAnim.dir = null;
     },
   },
   {
@@ -630,7 +696,7 @@ export const AREAS = [
     id: 'storm-eye', name: 'Storm eye', ring: 'lower', hues: ['sea', 'snow', 'yellow'],
     details: ['bottle', 'umbrella'],   // hidden details that only this area has
     marks: [['Wizard tower', 0, 0]],
-    look: 'Spiral storm arms seen from above. A calm round center with the dark tower of a wizard: black stone, a pointed roof, green light in the windows, and a ball of purple light over it.',
+    look: 'Spiral storm arms seen from above. A calm round center with the dark tower of a wizard: black stone, a pointed roof, green light in the windows, and a ball of purple light over it. Three wizards with staffs stand on a rock near it.',
     motion: 'Soft cloud layers turn in spiral arms. Soft lightning now and then. Select the tower for an electric storm: it grows over the open ocean next to this area.', season: '', seasonal: { n: 14, keep: (x, z) => Math.hypot(x, z) > 0.06 }, az: 1.1, tilt: 0.7,
     build({ b, terrain, anim, light, world, tile, area }) {
       const H = terrain({ h: (x, z) => lerp(0.07, -0.13, smooth(0.11, 0.22, Math.hypot(x, z))), top: { row: ROW.sand, tone: 2.8, step: 0 }, side: C('sea', 8.4), water: C('sea', 7), sens: 0 });
@@ -660,6 +726,12 @@ export const AREAS = [
       }, { base });
       light(0, 0.69, 0, 1.1, [0.75, 0.5, 1]);
       light(0, 0.1, 0.06, 0.5, [0.5, 1, 0.5]);
+      // Webflow lore: three wizards with staffs stand on a flat rock in the sea, at the edge of the storm. A visitor selects them to read about the founders of Webflow (menu.js).
+      // The rock is outside the cloud of the storm, so the cloud does not hide them. They look at the tower.
+      const FA = 2.5, FX = Math.cos(FA) * 0.74, FZ = Math.sin(FA) * 0.74;
+      b.cyl(0.1, 0.16, C('rock', 8.8), { x: FX, y: -0.165, z: FZ });   // the rock goes down to the bed of the sea
+      anim((db, fb, t) => { const s0 = db.sens; db.sens = 0; db.push(FX, 0.012, FZ, -FA - PI / 2, 0.62); DRAW.founders(db, REDUCED ? 2.2 : t); db.pop(); db.sens = s0; });   // sens = 0: no winter snow on them
+      light(FX, 0.14, FZ, 0.4, [0.8, 0.8, 1]);
       // The storm: see-through cloud layers with spiral arms. They turn around the calm eye (see addStormEye).
       addStormEye(world, tile);
       // Lightning: a glow inside the cloud and a bolt that goes down to the sea in a zigzag. It flashes two or three times, then it is gone.
@@ -667,7 +739,8 @@ export const AREAS = [
       // and the storm grows over each tile next to this one that is open ocean: dark clouds come over it, and lightning hits the sea there too.
       const DUR = 7, ls = { t0: -99, now: 0 };
       area.storm = ls;
-      area.taps = [{ key: 'tower', label: 'Wizard tower', sub: () => (ls.now - ls.t0 < DUR ? 'An electric storm' : 'Select it for an electric storm'), at: [0, H(0, 0), 0], R: 0.11, a0: 0.0, a1: 0.72, tap: () => { if (ls.now - ls.t0 < DUR) return false; ls.t0 = ls.now; return true; } }];
+      area.taps = [{ key: 'tower', label: 'Wizard tower', sub: () => (ls.now - ls.t0 < DUR ? 'An electric storm' : 'Select it for an electric storm'), at: [0, H(0, 0), 0], R: 0.11, a0: 0.0, a1: 0.72, tap: () => { if (ls.now - ls.t0 < DUR) return false; ls.t0 = ls.now; return true; } },
+        { key: 'wizards', label: 'Vlad, Sergie, and Bryant', sub: () => 'Webflow founders', at: [FX, 0.012, FZ], R: 0.13, a0: 0.0, a1: 0.2, tap: () => true }];
       // One piece of a bolt: a thin box from the lower point (b) up to the upper point (a). A large bolt has a wide, faint glow around its white core.
       const piece = (fb, ax, ay, az, bx, by, bz, w, al, big) => {
         const vx = ax - bx, vy = ay - by, vz = az - bz, L = Math.hypot(vx, vy, vz), o = { x: bx, y: by, z: bz, rz: -Math.asin(vx / L), rx: Math.atan2(vz, vy) };
@@ -751,8 +824,8 @@ export const AREAS = [
   {
     id: 'mirror-lake', name: 'Mirror lake', ring: 'lower', hues: ['grass', 'sea', 'yellow'],
     details: ['rowboat', 'easel'],   // hidden details that only this area has
-    look: 'A perfectly flat round lake. A symmetric tower on the shore. The lake is a real mirror: it shows the tower, the trees, and the sky.',
-    motion: 'Fog rises at dawn. Ripples answer a nearby click.', season: 'In winter, snow covers the grass.', seasonal: { floes: false }, az: PI / 2, tilt: 0.98, lights: [[0, 0.2, -0.4, 0.6]],
+    look: 'A perfectly flat round lake. A symmetric tower on the shore. The lake is a real mirror: it shows the tower, the trees, and the sky. On the other shore, a man steers a small boat by remote control.',
+    motion: 'Fog rises at dawn. Ripples answer a nearby click. The boat goes between nine places on the lake, in three columns and three rows.', season: 'In winter, snow covers the grass.', seasonal: { floes: false }, az: PI / 2, tilt: 0.98, lights: [[0, 0.2, -0.4, 0.6]],
     build({ b, terrain, anim, area, world, tile }) {
       const cz = 0.14, R = 0.62;
       const H = terrain({ h: (x, z) => lerp(-0.17, 0.055, smooth(R - 0.36, R + 0.03, Math.hypot(x, z - cz))), top: { row: ROW.grass, tone: 5, step: 0.3, bandH: 0.05 }, side: C('earth', 7), water: C('sea', 6.6), sens: 0.45 });
@@ -770,6 +843,21 @@ export const AREAS = [
       for (const s of [-1, 1]) for (let i = 0; i < 4; i++) { const x = s * (0.26 + i * 0.13), z = tz + 0.02 + i * i * 0.035, y = H(x, z); b.cyl(0.01, 0.04, C('earth', 7.6), { x, z, y: y - 0.01 }); b.cone(0.05, 0.1 + (3 - i) * 0.02, C('forest', 6.4), { x, z, y: y + 0.02, pat: 1 }); b.cone(0.036, 0.08, C('forest', 5.4), { x, z, y: y + 0.075 + (3 - i) * 0.012 }); }
       const st = area.state = { ripple: -99 };
       area.onTap = () => { st.ripple = st.now || 0; };
+      // Webflow lore: the flexbox game. A man stands on the shore opposite the tower, with a remote control. His boat goes between nine places on the lake: three columns and three rows,
+      // as the nine places where CSS flexbox can put a thing in a box (start, center, end, in each direction). The grid itself is not drawn.
+      const MX = 0.0, MZ = cz + R + 0.08, MY = H(MX, MZ), GX = 0.17, GZ = 0.15, GC = cz + 0.06;
+      const ORDER = [0, 1, 2, 5, 4, 3, 6, 7, 8, 4, 2, 6, 0, 8], STEP = 2.3, MOVE = 1.3;   // the cells in the order that the boat goes to them; the seconds for one step; the seconds that it moves in a step
+      const cell = (k) => [(k % 3 - 1) * GX, GC + (Math.floor(k / 3) - 1) * GZ];
+      area.boatAt = (t) => { const u = t / STEP, i = Math.floor(u) % ORDER.length, f = smooth(0, MOVE / STEP, u - Math.floor(u)), a = cell(ORDER[i]), c2 = cell(ORDER[(i + 1) % ORDER.length]); return { x: a[0] + (c2[0] - a[0]) * f, z: a[1] + (c2[1] - a[1]) * f, dx: c2[0] - a[0], dz: c2[1] - a[1], go: f > 0.02 && f < 0.98 ? 1 : 0, cell: f < 0.5 ? ORDER[i] : ORDER[(i + 1) % ORDER.length] }; };
+      area.taps = [{ key: 'flexman', label: 'The flexbox game', sub: () => 'Released in 2016', at: [MX, MY, MZ], R: 0.07, a0: 0.0, a1: 0.16, tap: () => true }];
+      let head = PI;
+      anim((db, fb, t) => {
+        const tt = REDUCED ? 0 : t, q = area.boatAt(tt), s0 = db.sens; db.sens = 0;   // no winter snow on them
+        if (q.go) head = Math.atan2(q.dx, q.dz);
+        db.push(MX, MY - 0.004, MZ, Math.atan2(q.x - MX, q.z - MZ), 0.42); DRAW.rcMan(db, tt); db.pop();   // he turns to look at his boat
+        db.push(q.x, 0.004 + Math.sin(tt * 2.2) * 0.0015, q.z, head, 0.5, Math.sin(tt * 1.7) * 0.03, 0); DRAW.rcBoat(db, tt, q.go); db.pop();
+        db.sens = s0;
+      });
       anim((db, fb, t, env) => {
         st.now = t;
         if (CONFIG.dynamics.fog) {
@@ -785,11 +873,11 @@ export const AREAS = [
     id: 'ufo-crash', name: 'UFO crash site', ring: 'lower', hues: ['sand', 'earth', 'green'],
     details: ['beamcow', 'tinfoil'],   // hidden details that only this area has
     marks: [['Saucer', 0.24, -0.12], ['Skid mark', -0.3, 0.26]],
-    look: 'Dry desert land. A flying saucer lies in a crater at the end of a long skid mark, with parts of it all over the sand. Small green aliens try to repair it.',
+    look: 'Dry desert land. A flying saucer lies in a crater at the end of a long skid mark, with parts of it all over the sand. Small green aliens try to repair it. Away from the saucer, a server rack lies partly under the sand.',
     motion: 'The saucer smokes, and its lights go on and off. The aliens work, carry parts, and wave.', season: '', seasonal: { flowers: ['yellow', 'orange'], n: 22, keep: (x, z) => Math.hypot(x - 0.24, z + 0.12) > 0.5 }, az: 1.25, tilt: 0.95,
     lights: [[0.24, 0.26, -0.12, 0.9, [0.5, 1.0, 0.62]], [-0.42, 0.14, 0.4, 0.4, [0.5, 1.0, 0.62]]],
     animals: { rMin: 0.55, rMax: 0.9 },
-    build({ b, terrain, tile, anim }) {
+    build({ b, terrain, tile, anim, area, light }) {
       const SX = 0.24, SZ = -0.12, TX0 = -0.78, TZ0 = 0.62;   // the saucer, and where the skid mark starts
       const tdx = SX - TX0, tdz = SZ - TZ0, tl = Math.hypot(tdx, tdz), ux = tdx / tl, uz = tdz / tl;
       const H = terrain({
@@ -804,6 +892,11 @@ export const AREAS = [
       });
       b.sens = 0;
       const METAL = C('neutral', 2.8), METAL2 = C('neutral', 4.6), DARK = C('neutral', 9), GREEN = C('green', 5), GLASS = [ROW.sea, 2.6, 1, 0.1];
+      // Webflow lore: a server rack lies partly under the sand, away from the saucer. Its lights still go on and off. A visitor selects it to read about Webflow CMS (menu.js).
+      const KX = 0.42, KZ = 0.5, KY = H(KX, KZ);
+      anim((db, fb, t) => { const s0 = db.sens; db.sens = 0; db.push(KX, KY + 0.004, KZ, 4.67, 0.72); DRAW.rack(db, REDUCED ? 0.4 : t); db.pop(); db.sens = s0; });
+      light(KX, KY + 0.1, KZ + 0.04, 0.3, [0.5, 1.0, 0.62]);
+      area.taps = [{ key: 'rack', label: 'Webflow CMS', sub: () => 'Released in 2015', at: [KX, KY, KZ], R: 0.11, a0: 0.0, a1: 0.2, tap: () => true }];
       // Scorched ground in the crater and along the skid mark.
       for (let i = 1; i < 9; i++) { const x = TX0 + ux * i * 0.1, z = TZ0 + uz * i * 0.1; b.box(0.09, 0.004, 0.07, C('earth', 7.4 + (i % 2) * 0.6), { x, y: H(x, z) - 0.001, z, ry: Math.atan2(ux, uz) }); }
       // The saucer: a wide round disc with a glass dome. It stands at an angle in the crater, with one edge in the sand.

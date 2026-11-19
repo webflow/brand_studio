@@ -10,7 +10,7 @@ const ROLE = ['Accent 1', 'Accent 2'], USE = ['roofs, large shapes', 'walls, det
 const SIZE_LABEL = { small: 'Small', medium: 'Medium', large: 'Large' };
 
 export function regionTitle(reg) {
-  if (reg.kind === 'area') return { num: 'Unique area ' + String(reg.index + 1).padStart(2, '0'), tag: 'Unique area · not claimable' };
+  if (reg.kind === 'area') return { num: 'Unique area ' + String(reg.index + 1).padStart(2, '0'), tag: 'Unique area' };   // a unique area has no badge in its panel; this text is only for the list of regions that a screen reader gets
   if (reg.kind === 'practice') return { num: 'Practice region', tag: 'Practice region, not saved' };
   return { num: 'Region ' + pad3(reg.number), tag: 'Sample region' };
 }
@@ -80,7 +80,7 @@ export function manualHTML(app, reg) {
   if (reg.kind === 'area') {
     const d = reg.def;
     return `${head}<div class="mbody" tabindex="-1">
-    <section class="cover"><h1>${esc(reg.name)}</h1><p class="motto">${esc(d.look)}</p><div class="tag">${esc(tt.tag)}</div></section>
+    <section class="cover"><button class="plink" id="passLink" aria-label="Unique areas: open the passport to go to a different one"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M12 4l8 5.8-3 9.4H7L4 9.8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>Unique areas<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><h1>${esc(reg.name)}</h1><p class="motto">${esc(d.look)}</p></section>
     <section><h2>Identity</h2><dl class="spec"><dt>Type</dt><dd>Unique area. One of 12. Nobody can claim it.</dd><dt>Position</dt><dd>${{ north: 'North pole', south: 'South pole', upper: 'Upper ring', lower: 'Lower ring' }[d.ring]}</dd><dt>Since</dt><dd>Day one</dd><dt>Tile</dt><dd>Pentagon ${pad3(reg.tile.index)}</dd></dl></section>
     <section><h2>Palette</h2>${swRow([...d.hues.map((h, i) => swatches(h, h === 'darkblue' ? [5] : [1, 3, 5, 7], `Color ${i + 1}: ${HUE_LABEL[h]}`)), d.extra ? '<span class="sw" tabindex="0" role="img" aria-label="White, #FFFFFF" style="background:#FFFFFF"><span class="swt"><b>White</b><code>#FFFFFF</code>Plus</span></span>' : ''])}</section>
     <section><h2>Seasons</h2><p>${esc(reg.season || d.season)}</p></section>

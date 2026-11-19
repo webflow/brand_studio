@@ -9,6 +9,7 @@ import { PrimBatch, Builder } from './prims.js';
 
 const V = THREE.Vector3;
 const C = (row, tone, kind = 0, prm = 0) => [ROW[row], tone, kind, prm];
+const PI = Math.PI;
 const _m = new THREE.Matrix4(), _up = new V(), _fw = new V(), _rt = new V(), _p = new V();
 
 export const LEGENDS = [['whiteWhale', 'White whale'], ['kraken', 'Kraken'], ['charybdis', 'Charybdis'], ['titanic', 'Titanic'], ['nessie', 'Nessie'], ['queenAnne', "Queen Anne's Revenge"]];
@@ -16,10 +17,73 @@ export const LEGENDS = [['whiteWhale', 'White whale'], ['kraken', 'Kraken'], ['c
 // The model of each legend of the sea, in its own units (y = up, z = the way it looks). The ocean draws it, and the passport makes a picture of it.
 // tt = the time (for the parts that move). ph = a number that is different for each one.
 export const DRAW = {
+  // Webflow CMS (Webflow lore): a server rack that is partly under the sand, at an angle. Its small lights go on and off. Not a legend of the sea: it is here so that the passport can make its picture in the same way.
+  rack(b, tt = 0) {
+    const FRAME = C('neutral', 8.8), UNIT = C('neutral', 6.2), UNIT2 = C('neutral', 7.4), SAND = C('sand', 3.6), SAND2 = C('sand', 4.6), LED = ['green', 'blue', 'yellow', 'green'];
+    b.box(0.26, 0.03, 0.22, SAND, { y: -0.012 }); b.box(0.15, 0.03, 0.13, SAND2, { x: 0.035, y: 0.012, z: -0.02, ry: 0.5 }); b.box(0.08, 0.02, 0.07, SAND, { x: -0.07, y: 0.014, z: 0.05, ry: 0.3 });   // the sand around it
+    for (let k = 0; k < 5; k++) b.box(0.014, 0.01, 0.03, FRAME, { x: -0.06 - k * 0.022, y: 0.012 - k * 0.002, z: 0.07 + Math.sin(k * 1.3) * 0.02, ry: 0.9 + Math.sin(k) * 0.5 });   // a cable that comes out of the sand
+    b.push(0.01, -0.13, 0, 0.35, 1, -0.3, 0.36);                                                              // the rack: most of its lower part is under the sand
+    b.box(0.12, 0.32, 0.11, FRAME, {}); b.box(0.124, 0.012, 0.114, UNIT2, { y: 0.318 }); b.box(0.004, 0.3, 0.09, [ROW.blue, 5, 0, 0], { x: 0.061, y: 0.01 });   // the cabinet, its top, and a blue line on its side
+    for (let i = 0; i < 7; i++) {
+      const y = 0.02 + i * 0.042;
+      b.box(0.1, 0.032, 0.006, i % 3 === 1 ? UNIT2 : UNIT, { y, z: 0.055 }); b.box(0.03, 0.004, 0.004, FRAME, { x: 0.028, y: y + 0.008, z: 0.059 }); b.box(0.03, 0.004, 0.004, FRAME, { x: 0.028, y: y + 0.018, z: 0.059 });   // one server, with air slots
+      for (let j = 0; j < 3; j++) { const on = Math.sin(tt * (2.2 + j * 1.3) + i * 1.9 + j * 2.4) > -0.2; b.box(0.008, 0.008, 0.004, on ? [ROW[LED[(i + j) % 4]], 3, 6, 0] : FRAME, { x: -0.036 + j * 0.014, y: y + 0.012, z: 0.059 }); }
+    }
+    b.pop();
+  },
+  // The flexbox game (Webflow lore): a man on the shore with a remote control, and the small boat that he steers. Not legends of the sea: they are here so that the passport can make their picture in the same way.
+  // The man looks along +z. His thumbs move on the remote, and its light goes on and off. tt = the time.
+  rcMan(b, tt = 0) {
+    const SKIN = C('plaster', 2.4), SHIRT = [ROW.blue, 5, 0, 0], PANTS = [ROW.blue, 8.6, 0, 0], SHOE = C('neutral', 9), HAIR = C('earth', 8), BOX = C('neutral', 8.4);
+    const lean = Math.sin(tt * 0.9) * 0.05, th = Math.sin(tt * 5) * 0.004;
+    for (const sx of [-1, 1]) { b.box(0.04, 0.12, 0.045, PANTS, { x: sx * 0.028 }); b.box(0.044, 0.018, 0.065, SHOE, { x: sx * 0.028, z: 0.01 }); }
+    b.push(0, 0.12, 0, 0, 1, lean, 0);
+    b.box(0.11, 0.12, 0.06, SHIRT, {}); b.box(0.11, 0.014, 0.062, PANTS, {});                                         // body and belt
+    b.box(0.07, 0.07, 0.065, SKIN, { y: 0.125 }); b.box(0.076, 0.026, 0.07, HAIR, { y: 0.19 }); b.box(0.076, 0.04, 0.02, HAIR, { y: 0.15, z: -0.028 });   // head and hair
+    for (const sx of [-1, 1]) { b.box(0.03, 0.03, 0.09, SHIRT, { x: sx * 0.065, y: 0.07, z: 0.045, rx: 0.35 }); b.box(0.026, 0.026, 0.03, SKIN, { x: sx * 0.04, y: 0.045 + (sx > 0 ? th : -th), z: 0.1 }); }   // arms, and hands on the remote
+    b.box(0.09, 0.022, 0.05, BOX, { y: 0.04, z: 0.1 }); b.box(0.004, 0.07, 0.004, C('neutral', 6), { x: 0.03, y: 0.062, z: 0.085, rx: -0.3 });   // the remote and its antenna
+    b.box(0.012, 0.008, 0.012, [ROW[Math.sin(tt * 6) > 0 ? 'red' : 'neutral'], 4, 6, 0], { x: -0.025, y: 0.062, z: 0.105 });
+    b.pop();
+  },
+  // The boat: a small white motor boat with a blue line. It looks along +z. wake = 0 to 1: the foam behind it when it moves.
+  rcBoat(b, tt = 0, wake = 0) {
+    const HULL = C('plaster', 0.3), BLUE = [ROW.blue, 5, 0, 0], DARK = C('neutral', 8.6);
+    b.box(0.09, 0.03, 0.2, HULL, { y: -0.008 }); b.pyr(0.09, 0.07, 0.03, HULL, { y: 0.007, z: 0.1, rx: PI / 2 });           // the hull and its point
+    b.box(0.094, 0.008, 0.204, BLUE, { y: 0.006 }); b.box(0.06, 0.03, 0.07, BLUE, { y: 0.022, z: -0.01 }); b.box(0.05, 0.016, 0.004, [ROW.sea, 2.6, 1, 0.1], { y: 0.03, z: 0.026 });   // the line, the cabin, the glass
+    b.box(0.03, 0.03, 0.03, DARK, { y: 0.004, z: -0.105 }); b.box(0.003, 0.08, 0.003, DARK, { x: 0.02, y: 0.05, z: -0.03 }); b.box(0.01, 0.008, 0.01, [ROW.red, 4, 6, 0], { x: 0.02, y: 0.13, z: -0.03 });   // the motor, the antenna, its light
+    if (wake > 0.05) for (let k = 0; k < 5; k++) { const f = (tt * 1.6 + k / 5) % 1, s = (0.03 + f * 0.05) * wake; for (const sx of [-1, 1]) b.box(s, 0.006, s, C('snow', 0.4), { x: sx * (0.02 + f * 0.06), y: -0.006, z: -0.13 - f * 0.2 }); }
+  },
+  // The picture for the passport: the man, and the boat next to him.
+  flexgame(b, tt = 0) { b.push(-0.09, 0, 0, 0.4, 1); DRAW.rcMan(b, tt); b.pop(); b.push(0.12, 0.03, 0.04, -0.5, 1.1); DRAW.rcBoat(b, tt, 0); b.pop(); },
+  // Three wizards with staffs, side by side on a flat rock (Webflow lore: the founders). Not a legend of the sea: it is here so that the passport can make its picture in the same way.
+  // They move: each one lifts its staff in turn, the light on each staff gets bright and dim, their robes move a little, and small lights go up from the staffs. tt = the time.
+  founders(b, tt = 2.2) {
+    const SKIN = C('plaster', 2.2), BEARD = C('snow', 0.4), WOOD = C('earth', 7), ROCK = C('rock', 7.6), ROCK2 = C('rock', 8.6);
+    b.cyl(0.2, 0.03, ROCK2, { y: -0.03 }); b.cyl(0.17, 0.02, ROCK, { y: 0 }); b.box(0.09, 0.03, 0.07, ROCK2, { x: -0.15, y: -0.01, z: 0.06, ry: 0.5 });   // the rock
+    const W = [[-0.115, 0.015, 0.22, 'blue', 5, 'yellow'], [0, -0.02, 0, 'purple', 6, 'green'], [0.115, 0.015, -0.22, 'darkblue', 5, 'pink']];
+    W.forEach(([x, z, ry, hue, tone, orb], i) => {
+      const ph = tt * 0.9 - i * 2.094, lift = Math.max(0, Math.sin(ph)), sway = Math.sin(tt * 1.4 + i * 1.7) * 0.04, bob = Math.sin(tt * 1.1 + i) * 0.003;
+      const R = [ROW[hue], tone, 0, 0], R2 = [ROW[hue], tone + 2, 0, 0], GL = [ROW[orb], 3, 6, 0];
+      b.push(x, 0.02 + bob, z, ry, 1, 0, sway * 0.3);
+      b.cone(0.05, 0.13, R, {}); b.cyl(0.052, 0.012, R2, {}); b.cyl(0.03, 0.05, R, { y: 0.085 });                    // the robe: wide at the feet
+      b.box(0.062, 0.012, 0.04, R2, { y: 0.106 });                                                                  // a belt
+      b.ball(0.027, SKIN, { y: 0.135 }); b.box(0.034, 0.045, 0.014, BEARD, { y: 0.1, z: 0.022, t: 0.5, rx: PI }); b.box(0.008, 0.008, 0.008, SKIN, { y: 0.158, z: 0.026 });   // head, a long white beard, nose
+      b.cyl(0.042, 0.006, R2, { y: 0.176 }); b.cone(0.03, 0.085, R, { y: 0.18, rz: 0.12 + sway });                   // the hat: a brim and a point that bends
+      b.box(0.014, 0.05, 0.014, R, { x: -0.034, y: 0.085, rz: 0.25 });                                              // the arm that hangs down
+      // The arm with the staff. The staff goes up when it is the turn of this wizard.
+      b.push(0.04, 0.12, 0.012, 0, 1, -lift * 0.5, -0.25 - lift * 0.35);
+      b.box(0.014, 0.05, 0.014, R, { y: -0.012, x: 0.004 });
+      b.box(0.008, 0.26, 0.008, WOOD, { x: 0.016, y: -0.1 }); b.box(0.02, 0.012, 0.02, WOOD, { x: 0.016, y: 0.155 });
+      b.ball(0.016 + lift * 0.007, GL, { x: 0.016, y: 0.166 });
+      for (let k = 0; k < 3; k++) { const f = (tt * 0.55 + k / 3 + i * 0.3) % 1; if (lift > 0.25) b.box(0.007 * (1 - f), 0.007 * (1 - f), 0.007 * (1 - f), GL, { x: 0.016 + Math.sin(f * 9 + k) * 0.016, y: 0.2 + f * 0.11, z: Math.cos(f * 7 + k) * 0.016 }); }
+      b.pop();
+      b.pop();
+    });
+  },
   // The white arctic wolf of the North ice crown (not a legend of the sea: it is here so that the passport can make its picture in the same way). Its coat is white with a blue tint.
   // It stands and breathes, and its tail moves. From time to time it lifts its head to howl, and its ears move. tt = the time.
   wolf(b, tt = 3) {
-    const W = C('snow', 1.4), W2 = C('snow', 2.7), W3 = C('snow', 3.6), K = [ROW.neutral, 9, 0, 0], EYE = [ROW.blue, 4, 6, 0];
+    const W = C('snow', 1.9), W2 = C('snow', 3.2), W3 = C('snow', 4.4), K = [ROW.neutral, 9, 0, 0], EYE = [ROW.blue, 4, 6, 0];   // a little more blue than the ice, so the wolf does not get lost on it
     const cyc = tt % 11, howl = Math.min(1, Math.max(0, (cyc - 6.5) / 0.8)) * Math.min(1, Math.max(0, (10 - cyc) / 0.8)), hk = howl * howl * (3 - 2 * howl);   // 0 = it looks ahead, 1 = it howls
     const br = Math.sin(tt * 1.6) * 0.004, tail = Math.sin(tt * 1.3) * 0.22 + Math.sin(tt * 3.1) * 0.06, ear = Math.max(0, Math.sin(tt * 0.9 + 1) - 0.92) * 6 * Math.sin(tt * 22);
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) { b.box(0.036, 0.12, 0.04, W2, { x: sx * 0.04, z: sz * 0.115 }); b.box(0.04, 0.016, 0.05, W3, { x: sx * 0.04, z: sz * 0.115 + 0.006 }); }   // legs and paws
@@ -117,14 +181,14 @@ export const DRAW = {
 };
 
 // A small picture of the model of one legend, for the passport. It is made one time, then kept. If the picture cannot be made, the result is ''.
-const PICS = new Map(), POSE = { wolf: 3,  whiteWhale: 0.6, kraken: 4.4, charybdis: 0.4, titanic: 0.25, nessie: 0.9, queenAnne: 0.2 };   // POSE: a time at which the model has a good pose
+const PICS = new Map(), POSE = { wolf: 3, founders: 2.2, flexgame: 0.2, rack: 0.4,  whiteWhale: 0.6, kraken: 4.4, charybdis: 0.4, titanic: 0.25, nessie: 0.9, queenAnne: 0.2 };   // POSE: a time at which the model has a good pose
 export function legendPicture(world, id, px = 224) {
   if (PICS.has(id)) return PICS.get(id);
   let url = '';
   try {
     const r = world.renderer, U = world.U, S = px * 2;
     const batch = new PrimBatch(world.spaceMat, { shadow: false });
-    const b = new Builder(batch, null, new THREE.Matrix4().makeScale(0.25, 0.25, 0.25).setPosition(0, 1, 0), 0); b.sens = 0;
+    const b = new Builder(batch, null, new THREE.Matrix4().makeScale(0.25, 0.25, 0.25).setPosition(0, 1, 0), 255); b.sens = 0;   // 255 = on no tile: the load-in does not move it
     DRAW[id](b, POSE[id], 0); batch.commit();
     // The box that holds all the shapes, then a camera that looks at it from the front, a little from above.
     const box = new THREE.Box3(), v = new V(), m = new THREE.Matrix4();
@@ -139,10 +203,11 @@ export function legendPicture(world, id, px = 224) {
     const keep = ['uFocusK', 'uWire', 'uShadowOn', 'uCut', 'uLitK', 'uLod', 'uHoverR', 'uAlpha'].map((k) => [k, U[k].value]), sun0 = world.sunDir.clone(), col0 = new THREE.Color(), a0 = r.getClearAlpha(), tgt0 = r.getRenderTarget();
     r.getClearColor(col0);
     for (const [k] of keep) U[k].value = k === 'uLod' || k === 'uAlpha' ? 1 : 0;
+    const build0 = U.uBuild.value.w; U.uBuild.value.w = 99;   // the load-in has no effect on the picture. (Before, a picture that was made in the load-in was empty, and it stayed empty.)
     world.sunDir.set(0.35, 0.8, 0.5).normalize();
     r.setRenderTarget(rt); r.setClearColor(0xffffff, 0); r.clear(); r.render(scene, cam);
     r.readRenderTargetPixels(rt, 0, 0, S, S, buf);
-    r.setRenderTarget(tgt0); r.setClearColor(col0, a0); world.sunDir.copy(sun0); for (const [k, val] of keep) U[k].value = val;
+    r.setRenderTarget(tgt0); r.setClearColor(col0, a0); world.sunDir.copy(sun0); for (const [k, val] of keep) U[k].value = val; U.uBuild.value.w = build0;
     scene.remove(batch.group); batch.dispose(); rt.dispose();
     // Rows come from the bottom up. Then the picture is made smaller, which makes its edges smooth.
     const big = document.createElement('canvas'); big.width = big.height = S;

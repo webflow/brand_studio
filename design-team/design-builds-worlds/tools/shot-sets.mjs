@@ -34,6 +34,24 @@ export const SETS = {
     { name: 'south', q: 't=0.30&season=0.3&tier=high&cam=0,-68,2.5', wait: 2500 },
     { name: 'close', q: 't=0.30&season=0.3&tier=high&cam=-120,60,1.7', wait: 2500, dpr: 2 },
   ],
+  alink: [{ name: 'panel', q: 'tier=high&open=a3&light=studio', wait: 2200 }, { name: 'open', q: 'tier=high&open=a3&light=studio', wait: 2200, run: async (page) => { await page.click('#passLink'); await sleep(500); } }],
+  founders: [
+    { name: 'eye', q: 'tier=high&open=a8&light=studio&nopanel=1', w: 1100, h: 760, dpr: 2, wait: 2200, run: async (page) => { await page.evaluate(() => { const f = window.__dbw.cam.focus; f.dist *= 0.62; f.tilt = 1.0; }); await sleep(1200); } },
+    { name: 'modal', q: 't=0.30&season=0.3&tier=high', wait: 2500, run: async (page) => { await page.evaluate(() => { localStorage.removeItem('dbw-lore'); const a = window.__dbw, ar = a.areas.find((q) => q.def.id === 'storm-eye'), v = ar.tile.center.clone().normalize(); a.cam.auto = false; a.cam.lon = Math.atan2(v.z, v.x); a.cam.lat = Math.asin(v.y); a.cam.changed(); }); await sleep(900); await page.evaluate(() => window.__dbw.tapThing('wizards')); await sleep(900); } },
+  ],
+  lorefound: [{ name: 'menu', q: 'intro=1', wait: 2500, run: async (page) => { await page.evaluate(() => { localStorage.setItem('dbw-lore', JSON.stringify(['wolfdew', 'founders', 'flexbox', 'cms'])); }); await page.reload(); await sleep(900); await page.click('#settingsBtn'); await sleep(900); await page.evaluate(() => { const e = document.querySelector('#settings'), h = [...e.querySelectorAll('h3.leg')].find((q) => q.textContent.startsWith('Unique areas')); e.scrollTop = h.offsetTop - 10; }); await sleep(400); return null; } }],
+  rube: [0.2, 2.6, 3.6, 5.2, 6.9, 8.6, 10.4, 14].map((mm) => ({ name: 'm' + mm, q: 'tier=high&open=a5&light=studio&nopanel=1&season=0.3', w: 1100, h: 760, wait: 2200, run: async (page) => { await page.evaluate((mm) => { const a = window.__dbw, w = a.world, f = a.cam.focus; f.dist *= 0.8; const r0 = w.render.bind(w); w.render = (t, dt, o) => r0(160 + mm, 0, o); }, mm); await sleep(1100); } })),
+  flex: [
+    { name: 'lake', q: 'tier=high&open=a10&light=studio&nopanel=1&season=0.3', w: 1100, h: 760, wait: 2600 },
+    { name: 'man', q: 'tier=high&open=a10&light=studio&nopanel=1&season=0.3', w: 1100, h: 760, dpr: 2, wait: 2200, run: async (page) => { await page.evaluate(() => { const f = window.__dbw.cam.focus; f.dist *= 0.45; f.az = (f.az || 0) + Math.PI; f.tilt = 1.0; }); await sleep(1400); } },
+    { name: 'modal', q: 't=0.30&season=0.3&tier=high', wait: 2500, run: async (page) => { await page.evaluate(() => { localStorage.removeItem('dbw-lore'); const a = window.__dbw, ar = a.areas.find((q) => q.def.id === 'mirror-lake'), v = ar.tile.center.clone().normalize(); a.cam.auto = false; a.cam.lon = Math.atan2(v.z, v.x); a.cam.lat = Math.asin(v.y); a.cam.changed(); }); await sleep(900); await page.evaluate(() => window.__dbw.tapThing('flexman')); await sleep(900); } },
+  ],
+  cms: [
+    { name: 'site', q: 'tier=high&open=a11&light=studio&nopanel=1&season=0.3', w: 1100, h: 760, wait: 2600 },
+    { name: 'rack', q: 'tier=high&open=a11&light=studio&nopanel=1&season=0.3', w: 1100, h: 760, dpr: 2, wait: 2200, run: async (page) => { await page.evaluate(() => { const f = window.__dbw.cam.focus; f.dist *= 0.6; f.tilt = 1.0; }); await sleep(1400); } },
+    { name: 'modal', q: 't=0.30&season=0.3&tier=high', wait: 2500, run: async (page) => { await page.evaluate(() => { localStorage.removeItem('dbw-lore'); const a = window.__dbw, ar = a.areas.find((q) => q.def.id === 'ufo-crash'), v = ar.tile.center.clone().normalize(); a.cam.auto = false; a.cam.lon = Math.atan2(v.z, v.x); a.cam.lat = Math.asin(v.y); a.cam.changed(); }); await sleep(900); await page.evaluate(() => window.__dbw.tapThing('rack')); await sleep(900); } },
+  ],
+  lorecam: ['wolfdew', 'founders', 'flexbox', 'cms'].map((id) => ({ name: id, q: 't=0.30&season=0.3&tier=high', wait: 2200, run: async (page) => { await page.evaluate(() => localStorage.setItem('dbw-lore', JSON.stringify(['wolfdew', 'founders', 'flexbox', 'cms']))); await page.reload(); await sleep(2600); await page.click('#settingsBtn'); await sleep(500); await page.evaluate((id) => document.querySelector(`button.stamp.lorest[data-lore="${id}"]`).click(), id); await sleep(4200); await page.evaluate(() => document.querySelector('#loreX').click()); await sleep(500); return null; } })),
   cp1: [
     { name: '1-planet-day', q: 't=0.30&tier=high&cam=-75,16,4.2' },
     { name: '2-sunrise-line', q: 't=0.30&tier=high&cam=-10,22,3.2' },

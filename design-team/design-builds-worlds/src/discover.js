@@ -16,6 +16,8 @@ export function setupDiscover(app) {
   const say = (text) => { const live = document.querySelector('#live'); if (live) live.textContent = text + '.'; cam.changed(); };
   // For the tests: do the action of one thing by its key.
   app.tapThing = (key) => { collect(); const c = list.find((q) => q.key === key || q.key.startsWith(key)); if (c && c.tap) { c.tap(); if (app.eggTap) app.eggTap(c.key); return true; } return false; };
+  // Find one thing by its key (or the start of its key). null = it is not in view now.
+  app.findThing = (key) => { collect(); return list.find((q) => q.key === key || q.key.startsWith(key)) || null; };
   // Bring one thing into view, with no zoom. The passport uses this for a found easter egg.
   // A thing in orbit (the sun, the moon, the satellite, the comet): the camera goes out and turns until the thing is in the middle, with the planet behind it.
   // A thing on a unique area (tile = its tile): the planet turns until that tile is in the middle.
@@ -71,8 +73,14 @@ export function setupDiscover(app) {
       if (hidden(mid)) continue;
       const s = cam.project(mid); if (!s.front) continue;
       const e = cam.project(mid.clone().addScaledVector(_r, Math.max(c.R, (c.a1 - c.a0) / 2))), sr = Math.max(12, Math.hypot(e.x - s.x, e.y - s.y) * 0.9);
+      // The thing is a cylinder: from the side, it is a long shape on the screen, not a circle. So the pointer is on it when it is near the line from the bottom of the cylinder to its top.
+      // (With a circle at the middle only, a tall thing near the edge of the planet did not get a click on its lower part: the volcano.)
+      const pa = cam.project(_m.copy(c.C).addScaledVector(c.up, c.a0)), pb = cam.project(_o.copy(c.C).addScaledVector(c.up, c.a1));
+      const er = cam.project(_m.copy(mid).addScaledVector(_r, c.R)), wr = Math.max(12, Math.hypot(er.x - s.x, er.y - s.y) * 0.9);
+      const lx = pb.x - pa.x, ly = pb.y - pa.y, ll = lx * lx + ly * ly, q = ll > 0.01 ? Math.max(0, Math.min(1, ((x - pa.x) * lx + (y - pa.y) * ly) / ll)) : 0;
+      const on = Math.hypot(s.x - x, s.y - y) < sr || Math.hypot(pa.x + lx * q - x, pa.y + ly * q - y) < wr;
       // The smallest thing under the pointer wins: an animal that stands next to a tower, not the tower.
-      if (Math.hypot(s.x - x, s.y - y) < sr && sr < bs) { bs = sr; best = c; c.sx = s.x; c.sy = s.y - sr * 1.05; }   // sx, sy: where the label goes (over the top of the object)
+      if (on && sr < bs) { bs = sr; best = c; c.sx = s.x; c.sy = s.y - sr * 1.05; }   // sx, sy: where the label goes (over the top of the object)
     }
     return best;
   };
